@@ -1,0 +1,20 @@
+export default {
+    YELLOW: '#F3B202',
+    YELLOW_TRANSPARENT: 'rgba(243, 178, 2, 0.75)',
+    RED: '#F0243D',
+    RED_LIGHT: '#f36071',
+    BLUE_LIGHT: '#398dec',
+    BLUE: '#2483f0',
+    BLUE_DARK: '#1c7ceb',
+    WHITE: '#ffffff',
+    WHITE_DARK: '#f8f8f8',
+    GREY: 'rgb(175, 175, 175)',
+    GREY_LIGHT: 'rgb(212, 212, 212)',
+    GREY_LIGHT_TRANSPARENT: 'rgba(212, 212, 212, 0.75)',
+    BLACK: 'rgb(32, 32, 32)',
+    BLACK_LIGHT: '#2E2E2C',
+    BLACK_TRANSPARENT: 'rgba(46, 46, 44, 0.75)',
+    FONT_OPENSANS: 'Open Sans',
+    FONT_BEBAS: 'Bebas Neue',
+  };
+  

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "apitool-alpha-reactnative",
+    "name": "Apitool",
     "slug": "apitool-alpha-reactnative",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -21,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.hoffer.apitool"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/images/logos/icon-white-yellow.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "08a09d84-4abe-477b-ba0f-6efb2172acf4"
+      }
     }
   }
 }
