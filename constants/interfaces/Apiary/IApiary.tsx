@@ -2,7 +2,7 @@ import {ISettings} from './ISettings';
 
 export interface IApiary {
     id: number;
-    ownerId: number;
+    userId: number;
     name: string;
     image: string;
     hives: number;

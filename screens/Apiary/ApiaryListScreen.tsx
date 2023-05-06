@@ -1,12 +1,8 @@
 // React Imports //
-import React, { useCallback } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
-import Icon from 'react-native-vector-icons/Ionicons';
-
-
-// Modules Imports //
 
 //1 API
 import { deleteApiary, getApiarys } from '../../modules/API/Apiarys';
@@ -16,13 +12,13 @@ import { statusToColor } from '../../modules/Apiary/ApiaryStatus';
 import Capitalize from '../../modules/Capitalize';
 
 // Assets Imports //  
-import BlankImage from '../../assets/images/blank-image.jpg'
 import HoneyIcon from '../../assets/images/icons/honey-icon.png'
 import ElectricIcon from '../../assets/images/icons/batery-full-icon.png'
 import CuredIcon from '../../assets/images/icons/cured-icon.png'
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
 import { ToastAndroid } from 'react-native';
 import DatePretty from '../../modules/DatePretty';
+import { APIARY_IMG_URL } from '../../constants/APIConfig';
 
 
 const ApiaryCard = ({ apiaryInfo }: any) => {
@@ -42,11 +38,10 @@ const ApiaryCard = ({ apiaryInfo }: any) => {
   }
   
 
-
   return (
     <View style={styles.apiaryCard}>
-
-      {apiaryInfo.image ? <Image style={styles.apiaryImage} source={{ uri: apiaryInfo.image }} /> : <Image style={styles.apiaryImage} source={BlankImage} />}
+      
+      <Image style={styles.apiaryImage} source={{ uri: `${APIARY_IMG_URL}${apiaryInfo.image}` }} />
       <View style={styles.apiaryData}>
         <Text style={styles.apiaryDataName}> {Capitalize(apiaryInfo.name)} </Text>
         <Text style={styles.apiaryDataDate}> {DatePretty(apiaryInfo.updatedAt)} </Text>
@@ -72,6 +67,8 @@ const ApiaryListScreen = ({ navigation }: any) => {
   const [searchValue, setSearchValue] = useState('');
 
   const isFocused = useIsFocused()
+
+
 
 
 
@@ -134,9 +131,10 @@ const ApiaryListScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
-    loadApiarys()
+    loadApiarys().then(
+      
+    )
   }, [isFocused])
-
 
   return (
     <View style={styles.container}>
@@ -254,8 +252,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   apiaryTreatment: {
-    width: 20,
-    height: 20,
+    width: 25,
+    height: 25,
     marginRight: 5,
   },
 

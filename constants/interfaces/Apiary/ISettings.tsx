@@ -1,5 +1,7 @@
 export interface ISettings {
     id: number;
+    apiaryId: number,
+    apiaryUserId: number,
     honey: boolean;
     levudex: boolean;
     sugar: boolean;

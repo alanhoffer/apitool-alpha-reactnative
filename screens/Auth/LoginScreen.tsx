@@ -1,9 +1,10 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useState } from 'react';
 import getTheme from '../../constants/themes';
 import AuthContext from '../../modules/API/AuthContext';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const LoginScreen = ({ route, navigation }: any) => {
@@ -13,6 +14,15 @@ const LoginScreen = ({ route, navigation }: any) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [remember, setRemember] = useState(false);
+
+    const handleRemember = () => {
+        setRemember(!remember)
+        if(!remember){
+            ToastAndroid.show('Email guardado!' , ToastAndroid.SHORT);
+            return AsyncStorage.setItem('email', email);
+        }
+        return AsyncStorage.removeItem('email')
+    }
 
     const handleLogin = () => {
         Login(email, password)
@@ -28,6 +38,17 @@ const LoginScreen = ({ route, navigation }: any) => {
 
         });
     }
+
+    useEffect(() => {
+        
+        AsyncStorage.getItem('email')
+        .then((response:any) => {
+            if (response){
+                setEmail(response)
+                setRemember(true);
+            }
+        })
+    })
 
     return (
         <View style={styles.container}>
@@ -55,7 +76,7 @@ const LoginScreen = ({ route, navigation }: any) => {
                 />
                 <View style={styles.rememberContainer2}>
                     <View style={styles.rememberContainer}>
-                        <TouchableOpacity onPress={() => setRemember(!remember)}>
+                        <TouchableOpacity onPress={() => handleRemember()}>
                             <View style={styles.checkbox}>
                                 {remember && <Icon name="checkmark" size={12} color="black" style={{ fontWeight: 'bold' }} />}
                             </View>

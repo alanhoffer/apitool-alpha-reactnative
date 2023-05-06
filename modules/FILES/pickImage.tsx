@@ -14,6 +14,6 @@ export async function pickImage(){
 
     if (!result.canceled) {
       const createdImage = createImage(result.assets[0])
-      return createdImage
+      return  
     }
   };

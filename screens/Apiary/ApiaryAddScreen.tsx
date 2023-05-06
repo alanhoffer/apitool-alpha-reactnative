@@ -11,7 +11,7 @@ import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
 import BlankImage from '../../assets/images/blank-image.jpg'
 import { statusToText } from "../../modules/Apiary/ApiaryStatus";
 import { fenceToDays } from "../../modules/Apiary/ApiaryFence"
-
+import ImagePick from "../../components/imagePicker";
 
 function ApiaryAddScreen({ route, navigation }: any) {
 
@@ -35,6 +35,9 @@ function ApiaryAddScreen({ route, navigation }: any) {
         settings: apiarySettings,
         tComment: ''
     })
+
+    const [apiaryImage,  setApiaryImage] = useState()
+
 
     const [apiaryTreatment, setApiaryTreatment] = useState({
         tOxalic: false,
@@ -96,6 +99,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
     }
 
     const handleSubmit = async () => {
+
         if (apiaryData.name.length < 4) {
             ToastAndroid.show(`Nombre muy corto`, ToastAndroid.SHORT);
             return
@@ -104,8 +108,9 @@ function ApiaryAddScreen({ route, navigation }: any) {
             ToastAndroid.show(`Nombre muy largo`, ToastAndroid.SHORT);
             return
         }
-        createApiary(apiaryData).then(createdSuccessful => {
-            if (createdSuccessful) {
+        createApiary(apiaryImage, apiaryData).then(createdSuccessful => {
+            if (true) {
+
                 ToastAndroid.show(`Apiario creado`, ToastAndroid.SHORT);
                 navigation.navigate('ApiaryListScreen')
             }
@@ -117,16 +122,6 @@ function ApiaryAddScreen({ route, navigation }: any) {
 
         })
     }
-
-    const handleImage = async () => {
-
-        const pickedImage = await pickImage();
-
-        if (pickedImage != null) {
-            handleSliderValueChange(pickedImage, 'image')
-        }
-
-    };
 
 
     useEffect(() => {
@@ -150,12 +145,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
 
-                <TouchableOpacity onPress={handleImage} >
-                    {apiaryData.image ?
-                        <Image style={styles.apiaryInfoImage} source={{ uri: apiaryData.image }} /> :
-                        <Image style={styles.apiaryInfoImage} source={BlankImage} />
-                    }
-                </TouchableOpacity>
+                <ImagePick imageChange={handleSliderValueChange} uploadImage={setApiaryImage} />
 
                 <View style={styles.apiaryNameContainer}>
                     <TextInput
@@ -201,10 +191,11 @@ function ApiaryAddScreen({ route, navigation }: any) {
                         onValueChange={handleApiaryStatusChange}
                         minimumValue={0}
                         maximumValue={3}
-                        thumbTintColor="#CFCFD7"
+                        thumbTintColor="grey"
+                        allowTouchTrack
                         thumbStyle={styles.apiaryInfoItemSliderThumb}
                         trackStyle={{ height: 10 }}
-                        minimumTrackTintColor="#CFCFD7"
+                        minimumTrackTintColor="#525252"
                         maximumTrackTintColor="#EEF0F3" />
                 </View>
 
@@ -216,7 +207,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
                     functionchange={handleSliderValueChange}
                     max={30}
                     min={0}
-                    step={1}
+                    step={0.25}
                     unity=" kg"
                 />
 
@@ -228,7 +219,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
                     functionchange={handleSliderValueChange}
                     max={30}
                     min={0}
-                    step={1}
+                    step={0.25}
                     unity=" kg"
                 />
 
@@ -240,7 +231,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
                     functionchange={handleSliderValueChange}
                     max={30}
                     min={0}
-                    step={1}
+                    step={0.25}
                     unity=" kg"
                 />
 

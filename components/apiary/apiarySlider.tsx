@@ -38,10 +38,11 @@ export default function ApiarySlider(props : Props) {
                         minimumValue={props.min}
                         maximumValue={props.max}
                         onValueChange={handleSliderValueChange}
-                        thumbTintColor="#CFCFD7"
+                        thumbTintColor="grey"
                         thumbStyle={styles.apiaryInfoItemSliderThumb}
                         trackStyle={{ height: 10 }}
-                        minimumTrackTintColor="#CFCFD7"
+                        allowTouchTrack
+                        minimumTrackTintColor="#525252"
                         maximumTrackTintColor="#EEF0F3" />
                 </View>
                 : null}

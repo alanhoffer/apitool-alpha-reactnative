@@ -46,7 +46,7 @@ function ApiaryScreen({ route, navigation }: any) {
                         <Icon name="file-tray-full-outline" size={16}> Historial </Icon>
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => navigation.navigate('ApiarySettingsScreen')}>
+                    <TouchableOpacity onPress={() => navigation.navigate('ApiarySettingsScreen', {apiarySettings: apiaryInfo.settings})}>
                         <Icon name="settings-outline" size={16}> Opciones </Icon>
                     </TouchableOpacity>
                 </View>

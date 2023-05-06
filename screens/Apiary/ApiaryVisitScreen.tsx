@@ -10,6 +10,7 @@ import { pickImage } from "../../modules/FILES/pickImage";
 import Capitalize from "../../modules/Capitalize";
 import BlankImage from '../../assets/images/blank-image.jpg'
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
+import ImagePick from "../../components/imagePicker";
 
 
 
@@ -71,9 +72,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
 
     }
 
-
-
-
     const handleChangeData = (value: number | string, key: string) => {
         setApiaryData({
             ...apiaryData,
@@ -124,20 +122,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         })
     }
 
-
-
-
-
-    const handleImage = async () => {
-
-        const pickedImage = await pickImage();
-
-        if (pickedImage != null) {
-            handleChangeData(pickedImage, 'image')
-        }
-
-    };
-
     useEffect(() => {
         navigation.setOptions({
             headerRight: () =>
@@ -161,14 +145,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
 
-                <TouchableOpacity onPress={handleImage} >
-
-                    {(apiaryNavData.image || apiaryData.image) ?
-                        <Image style={styles.apiaryInfoImage} source={{ uri: apiaryData.image }} /> :
-                        <Image style={styles.apiaryInfoImage} source={BlankImage} />
-                    }
-
-                </TouchableOpacity>
+                <ImagePick imageChange={handleChangeData}/>
 
                 {/* NOMBRE DEL APIARIO */}
                 <View style={styles.apiaryNameContainer}>
@@ -212,10 +189,11 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         onValueChange={handleApiaryStatus}
                         minimumValue={0}
                         maximumValue={3}
-                        thumbTintColor="#CFCFD7"
+                        thumbTintColor="grey"
+                        allowTouchTrack
                         thumbStyle={styles.apiaryInfoItemSliderThumb}
                         trackStyle={{ height: 10 }}
-                        minimumTrackTintColor="#CFCFD7"
+                        minimumTrackTintColor="#525252"
                         maximumTrackTintColor="#EEF0F3" />
                 </View>
 
@@ -224,7 +202,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 <ApiarySlider
                     max={30}
                     min={0}
-                    step={1}
+                    step={0.25}
                     text="Miel"
                     name="honey"
                     unity=" kg"
@@ -236,8 +214,8 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 {/* LEVUDEX */}
                 <ApiarySlider
                     max={20}
-                    min={0.25}
-                    step={1}
+                    min={0}
+                    step={0.25}
                     text="Levudex"
                     name="levudex"
                     unity=" kg"
@@ -250,7 +228,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 <ApiarySlider
                     max={30}
                     min={0}
-                    step={1}
+                    step={0.25}
                     text="Azucar"
                     name="sugar"
                     unity=" kg"

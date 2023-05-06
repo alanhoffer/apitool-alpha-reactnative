@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { BASE_URL } from '../../constants/config';
+import { BASE_URL } from '../../constants/APIConfig';
 
 
 type IAuthProvider = {
@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }: any) => {
       };
 
     const isLoggedIn = () => {
+      console.log()
         try {
             setLoading(true);
             AsyncStorage.getItem('access_token').then(token => {
