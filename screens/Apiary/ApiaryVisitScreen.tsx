@@ -6,11 +6,25 @@ import ApiaryTreatment from '../../components/apiary/ApiaryTreatment';
 import { useEffect, useState } from 'react';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { updateApiary } from "../../modules/API/Apiarys";
-import { pickImage } from "../../modules/FILES/pickImage";
 import Capitalize from "../../modules/Capitalize";
-import BlankImage from '../../assets/images/blank-image.jpg'
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
 import ImagePick from "../../components/imagePicker";
+
+
+
+import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
+import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
+import beehiveFoodSugar from '../../assets/images/icons/beehive_food_sugar.png'
+import beehiveFoodLevudex from '../../assets/images/icons/beehive_food_levudex.png'
+import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
+import beehiveTreatmentFlumetrine from '../../assets/images/icons/beehive_treatment_flumetrine.png'
+import beehiveTreatmentOxalic from '../../assets/images/icons/beehive_treatment_oxalic.png'
+import beehiveBoxGeneral from '../../assets/images/icons/beehive_box_general.png'
+import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
+import colors from "../../constants/colors";
+import { apiaryItems } from "../../constants/Apiary/apiaryItems";
+import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
+import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 
 
 
@@ -20,57 +34,81 @@ function ApiaryVisitScreen({ route, navigation }: any) {
     const [apiaryStatus, setApiaryStatus] = useState(0);
 
     const [apiaryData, setApiaryData] = useState<any>({
+        tOxalic: apiaryNavData.tOxalic,
+        tAmitraz: apiaryNavData.tAmitraz,
+        tFlumetrine: apiaryNavData.tFlumetrine,
         tFence: apiaryNavData.tFence
     });
-    const [apiaryTreatment, setApiaryTreatment] = useState({
+    const [apiaryTreatment, setApiaryTreatment] = useState<any>({
         tOxalic: false,
         tAmitraz: false,
         tFlumetrine: false,
         tFence: false,
     })
 
-    const toggleTreatmentFence = () => {
+    const toggleTreatmentDays = (treatment: any) => {
         setApiaryTreatment({
-            ...apiaryTreatment, tFence: true
+            ...apiaryTreatment, [treatment]: true
         });
-        switch (apiaryData.tFence) {
+        switch (apiaryData[treatment]) {
             case 0:
-                handleChangeData(15, 'tFence')
+                handleChangeData(15, treatment)
                 break;
             case 15:
-                handleChangeData(45, 'tFence')
+                handleChangeData(45, treatment)
                 break;
             case 45:
-                handleChangeData(90, 'tFence')
+                handleChangeData(90, treatment)
                 break;
             case 90:
-                handleChangeData(360, 'tFence')
+                handleChangeData(360, treatment)
                 break;
             case 360:
-                handleChangeData(0, 'tFence');
+                handleChangeData(0, treatment);
                 setApiaryTreatment({
-                    ...apiaryTreatment, tFence: false
+                    ...apiaryTreatment, [treatment]: false
                 });
                 break;
         }
     }
 
-    const toggleTreatment = (key: string) => {
-        let treatmentKey = key as keyof ITreatment;
 
-        if (apiaryTreatment[treatmentKey] == false) {
-            const treatmentValue = apiaryNavData[treatmentKey] + 1
-            handleChangeData(treatmentValue, key)
-        }
-        if (apiaryTreatment[treatmentKey] == true) {
-            delete apiaryData[treatmentKey];
-        }
-        setApiaryTreatment({
-            ...apiaryTreatment,
-            [treatmentKey]: !apiaryTreatment[treatmentKey]
-        });
+    const renderTreatments = () => {
+        // Filtrar los ítems de tratamiento
+        const items = []
+        const treatments = apiaryItems(apiaryNavData).filter(item => item.category === ApiaryItemCategory.TREATMENT);
+        const tfence = apiaryItems(apiaryNavData).filter(item => item.key === 'tFence')
+        items.push(...treatments, ...tfence)
 
-    }
+
+
+        // Dividir los elementos en filas de 2
+        const rows = [];
+        for (let i = 0; i < items.length; i += 2) {
+            rows.push(items.slice(i, i + 2));
+        }
+
+        return (
+            <View style={styles.apiaryInfoContainer}>
+                {rows.map((row, rowIndex) => (
+                    <View key={rowIndex} style={styles.apiaryTreatmentRow}>
+                        {row.map((item, index) => (
+                            <Pressable key={index} onPress={() => toggleTreatmentDays(item.key)}>
+                                <ApiaryInfo
+                                    label={item.title}
+                                    value={handleApiaryQuantity(item.key)}
+                                    image={item.image}
+                                    isVisible={item.isVisible}
+                                    isActive={apiaryTreatment[item.key]}
+                                />
+
+                            </Pressable>
+                        ))}
+                    </View>
+                ))}
+            </View>
+        );
+    };
 
     const handleChangeData = (value: number | string, key: string) => {
         setApiaryData({
@@ -145,7 +183,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
 
-                <ImagePick imageChange={handleChangeData}/>
+                <ImagePick imageChange={handleChangeData} />
 
                 {/* NOMBRE DEL APIARIO */}
                 <View style={styles.apiaryNameContainer}>
@@ -161,8 +199,9 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     max={100}
                     min={1}
                     step={1}
-                    text="colmenas"
+                    text="Colmenas"
                     name="hives"
+                    image={beehiveCollonySize}
                     unity=""
                     isActive={true}
                     quantity={handleApiaryQuantity('hives')}
@@ -171,30 +210,33 @@ function ApiaryVisitScreen({ route, navigation }: any) {
 
 
                 {/* ESTADO DEL APIARIO */}
-                <View style={styles.apiaryInfoItem}>
+                <View style={styles.apiaryStatusContainer}>
+                    <Image style={styles.apiaryIcon} source={beehiveCollonySize} />
+                    <View style={styles.apiaryInfoItem}>
 
-                    <View style={styles.apiaryInfoItemData}>
-                        <Text style={styles.apiaryInfoItemDataText}>
-                            Estado
-                        </Text>
-                        <Text style={styles.apiaryInfoItemDataText}>
-                            {handleApiaryQuantity('status')}
-                        </Text>
+                        <View style={styles.apiaryInfoItemData}>
+                            <Text style={styles.apiaryInfoItemDataText}>
+                                Estado
+                            </Text>
+                            <Text style={styles.apiaryInfoItemDataText}>
+                                {handleApiaryQuantity('status')}
+                            </Text>
+                        </View>
+
+                        <Slider
+                            style={styles.apiaryInfoItemSlider}
+                            step={1}
+                            value={apiaryStatus}
+                            onValueChange={handleApiaryStatus}
+                            minimumValue={0}
+                            maximumValue={3}
+                            thumbTintColor="grey"
+                            allowTouchTrack
+                            thumbStyle={styles.apiaryInfoItemSliderThumb}
+                            trackStyle={{ height: 10 }}
+                            minimumTrackTintColor="#525252"
+                            maximumTrackTintColor="#EEF0F3" />
                     </View>
-
-                    <Slider
-                        style={styles.apiaryInfoItemSlider}
-                        step={1}
-                        value={apiaryStatus}
-                        onValueChange={handleApiaryStatus}
-                        minimumValue={0}
-                        maximumValue={3}
-                        thumbTintColor="grey"
-                        allowTouchTrack
-                        thumbStyle={styles.apiaryInfoItemSliderThumb}
-                        trackStyle={{ height: 10 }}
-                        minimumTrackTintColor="#525252"
-                        maximumTrackTintColor="#EEF0F3" />
                 </View>
 
 
@@ -205,6 +247,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={0.25}
                     text="Miel"
                     name="honey"
+                    image={beehiveFoodHoney}
                     unity=" kg"
                     isActive={apiaryNavData.settings.honey}
                     quantity={handleApiaryQuantity('honey')}
@@ -218,6 +261,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={0.25}
                     text="Levudex"
                     name="levudex"
+                    image={beehiveFoodLevudex}
                     unity=" kg"
                     isActive={apiaryNavData.settings.levudex}
                     quantity={handleApiaryQuantity('levudex')}
@@ -231,6 +275,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={0.25}
                     text="Azucar"
                     name="sugar"
+                    image={beehiveFoodSugar}
                     unity=" kg"
                     isActive={apiaryNavData.settings.sugar}
                     quantity={handleApiaryQuantity('sugar')}
@@ -244,6 +289,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={1}
                     text="Alza"
                     name="box"
+                    image={beehiveBoxGeneral}
                     unity=" Unidades"
                     isActive={apiaryNavData.settings.box}
                     quantity={handleApiaryQuantity('box')}
@@ -257,6 +303,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={1}
                     text="Alza 3/4"
                     name="boxMedium"
+                    image={beehiveBoxGeneral}
                     unity=" Unidades"
                     isActive={apiaryNavData.settings.boxMedium}
                     quantity={handleApiaryQuantity('boxMedium')}
@@ -270,6 +317,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     step={1}
                     text="Alza 1/2"
                     name="boxSmall"
+                    image={beehiveBoxGeneral}
                     unity=" Unidades"
                     isActive={apiaryNavData.settings.boxSmall}
                     quantity={handleApiaryQuantity('boxSmall')}
@@ -279,67 +327,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 {/* TRATAMIENTOS */}
                 <View style={styles.apiaryTreatments}>
 
-
-                    {/* OXALICO */}
-                    <Pressable onPress={() => toggleTreatment('tOxalic')}>
-                        <ApiaryTreatment
-                            max={100}
-                            min={0}
-                            step={1}
-                            name="oxalic"
-                            text="Oxalico"
-                            unity=" Unidades"
-                            isVisible={apiaryNavData.settings.tOxalic}
-                            isActive={apiaryTreatment.tOxalic}
-                            quantity={handleApiaryQuantity('tOxalic')}
-                        />
-                    </Pressable>
-
-                    {/* AMITRAZ */}
-                    <Pressable onPress={() => toggleTreatment('tAmitraz')}>
-                        <ApiaryTreatment
-                            max={100}
-                            min={0}
-                            step={1}
-                            name="amitraz"
-                            text="Amitraz"
-                            unity=" Unidades"
-                            isVisible={apiaryNavData.settings.tAmitraz}
-                            isActive={apiaryTreatment.tAmitraz}
-                            quantity={handleApiaryQuantity('tAmitraz')}
-                        />
-                    </Pressable>
-
-                    {/* FLUMETRINA */}
-                    <Pressable onPress={() => toggleTreatment('tFlumetrine')} >
-                        <ApiaryTreatment
-                            max={100}
-                            min={0}
-                            step={1}
-                            name="flumetrine"
-                            text="Flumetrina"
-                            unity=" Unidades"
-                            isVisible={apiaryNavData.settings.tFlumetrine}
-                            isActive={apiaryTreatment.tFlumetrine}
-                            quantity={handleApiaryQuantity('tFlumetrine')}
-                        />
-                    </Pressable>
-
-                    {/* ELECTRICO */}
-                    <Pressable onPress={() => toggleTreatmentFence()}>
-                        <ApiaryTreatment
-                            max={100}
-                            min={0}
-                            step={1}
-                            name="fence"
-                            text="Electrico"
-                            unity=" Unidades"
-                            isVisible={apiaryNavData.settings.tFence}
-                            isActive={apiaryTreatment.tFence}
-                            quantity={handleApiaryQuantity('tFence')}
-                        />
-                    </Pressable>
-
+                    {renderTreatments()}
 
                 </View>
 
@@ -355,7 +343,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         />
                     </View>
                     : null}
-                    
+
             </View>
         </ScrollView>
     )
@@ -368,6 +356,7 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
     },
+
     addApiaryTitle: {
         marginVertical: 20,
         width: wp('80%'),
@@ -403,12 +392,24 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
         borderRadius: 5,
     },
+
+
+    apiaryStatusContainer: {
+        width: '80%',
+        justifyContent: 'center',
+        flexDirection: 'row',
+    },
     apiaryInfoItem: {
-        width: wp('80%'),
-        marginVertical: 5,
+        width: '80%',
+    },
+    apiaryIcon: {
+        height: 50,
+        tintColor: colors.YELLOW,
+        width: 50,
+        marginRight: 5,
+        resizeMode: 'contain',
     },
     apiaryInfoItemData: {
-        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between'
     },
@@ -424,12 +425,22 @@ const styles = StyleSheet.create({
         width: 18,
         height: 18,
     },
+    apiaryInfoContainer: {
+        flexDirection: 'column',
+        width: '100%',
+    },
     apiaryTreatments: {
         width: wp('80%'),
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-evenly',
-        marginVertical: 40,
+        marginVertical: 10,
+    },
+
+    apiaryTreatmentRow: {
+        flexDirection: 'row',
+        marginVertical: 10,
+        justifyContent: 'space-between',
     },
 
     apiaryTreatment: {

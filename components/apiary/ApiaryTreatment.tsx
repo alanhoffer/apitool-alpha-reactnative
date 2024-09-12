@@ -1,12 +1,14 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, ImageSourcePropType, Image } from "react-native";
 import Capitalize from '../../modules/Capitalize';
+import colors from "../../constants/colors";
 
 interface Props {
     isVisible: boolean,
-    isActive:boolean,
+    isActive: boolean,
     name: string,
-    text:string,
+    image: ImageSourcePropType
+    text: string,
     quantity: number,
     max: number,
     min: number,
@@ -16,16 +18,19 @@ interface Props {
 
 export default function ApiaryTreatment(props: Props) {
     return (
-        <View>
+        <>
             {props.isVisible ?
-                <View style={styles.apiaryTreatment}>
-                    <View style={[styles.apiaryTreatmentBackground, props.isActive ? {backgroundColor: '#F3B202'} : null]}>
-                        <Text style={[styles.apiaryTreatmentTextBackground, props.isActive ? {color: 'white'} : null]}>{props.quantity}</Text>
+               <View style={styles.apiaryTreatmentContainer}>
+                    <Image style={[styles.apiaryTreatmentIcon, props.isActive ? { tintColor: colors.YELLOW} : null]} source={props.image} />
+                    <View style={styles.apiaryTreatment}>
+                        <View style={[styles.apiaryTreatmentBackground, props.isActive ? { backgroundColor: '#F3B202' } : null]}>
+                            <Text style={[styles.apiaryTreatmentTextBackground, props.isActive ? { color: 'white' } : null]}>{props.quantity}</Text>
+                        </View>
+                        <Text style={styles.apiaryTreatmentText}>{Capitalize(props.name)}</Text>
                     </View>
-                    <Text style={styles.apiaryTreatmentText}>{Capitalize(props.name)}</Text>
                 </View>
                 : null}
-        </View>
+        </>
     )
 }
 
@@ -37,9 +42,21 @@ const styles = StyleSheet.create({
         justifyContent: 'space-evenly',
         marginVertical: 40,
     },
+    apiaryTreatmentContainer:{
+        flexDirection:'row',
+        marginVertical: 5,
+        maxWidth: '80%',
+    },
+
 
     apiaryTreatment: {
         alignItems: 'center',
+    },
+    apiaryTreatmentIcon: {
+        height: 50,
+        width: 50,
+        marginRight: 5,
+        resizeMode: 'contain',
     },
     apiaryTreatmentText: {
         color: '#CFCFD7',

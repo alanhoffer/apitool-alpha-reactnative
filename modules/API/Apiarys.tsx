@@ -1,33 +1,28 @@
 import axios from "axios";
-import { BASE_URL } from "../../constants/APIConfig";
+import { BASE_URL } from "../../constants/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert, ToastAndroid } from "react-native";
 
-export async function getApiarys() {
-  const token = await AsyncStorage.getItem('access_token')
-  if (token !== null) {
-    const responseData = await axios.get(
-      `${BASE_URL}apiarys`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+const getToken = async () => {
+  const token = await AsyncStorage.getItem('access_token');
+  if (!token) throw new Error('No token found');
+  return token;
+};
+
+export const getApiarys = async () => {
+  try {
+    const token = await getToken();
+    const response = await axios.get(`${BASE_URL}apiarys`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    ).then(response => {
-      return response
-    }
-    ).catch(error => {
-      return error
     });
-    if (responseData != null) {
-      return responseData.data;
-    }
-
-    return responseData
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching apiarys:', error);
+    return null;
   }
-  return null
-
-
-}
+};
 
 export async function createApiary(profileImage: any, ApiaryData: any) {
 
@@ -57,10 +52,11 @@ export async function createApiary(profileImage: any, ApiaryData: any) {
   data.append('tFlumetrine', ApiaryData.tFlumetrine);
   data.append('tFence', ApiaryData.tFence);
   data.append('tComment', ApiaryData.tComment);
+  data.append('transhumance', ApiaryData.transhumance);
   data.append('settings', JSON.stringify(ApiaryData.settings));
 
 
-  const token = await AsyncStorage.getItem('access_token'); // obteniendo token
+  const token = await getToken();
 
 
   return new Promise(async (resolve, reject) => {
@@ -87,128 +83,91 @@ export async function createApiary(profileImage: any, ApiaryData: any) {
 
 }
 
-export async function deleteApiary(apiaryId: number) {
-
-  const token = await AsyncStorage.getItem('access_token'); // obteniendo token
-  if (token) {
-    return new Promise((resolve, reject) => {
-      axios.delete(`${BASE_URL}apiarys/${apiaryId}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          }
-        }
-      )
-        .then((response: any) => {
-          if (response.status == 200) {
-            resolve(true) // borramos con exito
-          }
-          else {
-            resolve(false) // no pudimos borrar con exito
-          }
-        })
-        .catch((error: Error) => {
-          reject(error) // hubo un error en la peticion
-        })
-    })
-
+export const deleteApiary = async (apiaryId: number) => {
+  try {
+    const token = await getToken();
+    const response = await axios.delete(`${BASE_URL}apiarys/${apiaryId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error deleting apiary:', error);
+    return false;
   }
-  return false // el token no existe retornamos falso 
-}
+};
 
-export async function updateApiary(apiaryId: number, ApiaryData: any) {
-
-  const token = await AsyncStorage.getItem('access_token'); // obteniendo token
-  if (token) {
-    return new Promise((resolve, reject) => {
-      axios.put(
-        `${BASE_URL}apiarys/${apiaryId}`,
-        ApiaryData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-        .then((response: any) => {
-          if (response.status == 200) {
-            resolve(true) // actualizamos con exito
-          }
-          else {
-            resolve(false) // no pudimos actualizar con exito
-          }
-        })
-        .catch((error: Error) => {
-          reject(error) // hubo un error en la peticion
-        })
-    })
-
+export const updateApiary = async (apiaryId: number, ApiaryData: any) => {
+  try {
+    const token = await getToken();
+    const response = await axios.put(`${BASE_URL}apiarys/${apiaryId}`, ApiaryData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error updating apiary:', error);
+    return false;
   }
-  return false // el token no existe retornamos falso 
+};
 
-}
-
-export async function updateSettings(settingsData: any) {
-
-  const token = await AsyncStorage.getItem('access_token'); // obteniendo token
-  if (token) {
-    return new Promise((resolve, reject) => {
-      axios.put(
-        `${BASE_URL}apiarys/settings/${settingsData.id}`,
-        settingsData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
-        .then((response: any) => {
-          if (response.status == 200) {
-            resolve(true) // actualizamos con exito
-          }
-          else {
-            resolve(false) // no pudimos actualizar con exito
-          }
-        })
-        .catch((error: Error) => {
-          reject(error) // hubo un error en la peticion
-        })
-    })
-
+export const updateSettings = async (settingsData: any) => {
+  try {
+    const token = await getToken();
+    const response = await axios.put(`${BASE_URL}apiarys/settings/${settingsData.id}`, settingsData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    return false;
   }
-  return false // el token no existe retornamos falso 
+};
 
-}
+export const toggleHarvestAll = async (harvesting: boolean) => {
+  try {
+    const token = await getToken();
 
-
-
-
-export async function getHistory(apiaryId: number) {
-  const token = await AsyncStorage.getItem('access_token')
-  if (token !== null) {
-    const responseData = await axios.get(
-      `${BASE_URL}apiarys/history/${apiaryId}`,
+    const response = await axios.put(
+      `${BASE_URL}apiarys/harvest/all`,
+      { harvesting }, // Envía el valor de harvesting en el cuerpo de la solicitud
       {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       }
-    ).then(response => {
-      return response
-    }
-    ).catch(error => {
-      return error
-    });
-    if (responseData != null) {
-      return responseData.data;
-    }
+    );
 
-    return responseData
+    if (response.status === 200) {
+      ToastAndroid.show(`${harvesting ? 'Apiarios en cosecha' : 'Apiarios fuera de cosecha'}.`, ToastAndroid.SHORT);
+    } else {
+      ToastAndroid.show('No se pudo actualizar el estado de cosecha.', ToastAndroid.SHORT);
+    }
+  } catch (error) {
+    ToastAndroid.show('Hubo un problema al intentar actualizar el estado de cosecha.', ToastAndroid.SHORT);
+    console.error('Error handling harvest all:', error);
   }
-  return null
+};
 
-
-}
+export const getHistory = async (apiaryId: number) => {
+  try {
+    const token = await getToken();
+    const response = await axios.get(`${BASE_URL}apiarys/history/${apiaryId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    return null;
+  }
+};

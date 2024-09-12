@@ -1,4 +1,4 @@
-import {ISettings} from './ISettings';
+import { IApiarySettings } from './IApiarySettings';
 
 export interface IApiary {
     id: number;
@@ -17,8 +17,9 @@ export interface IApiary {
     tAmitraz: number;
     tFlumetrine: number;
     tFence: number;
+    transhumance: number;
     tComment: string;
     createdAt: Date;
     updatedAt: Date;
-    settings: ISettings;
+    settings: IApiarySettings;
 }

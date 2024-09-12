@@ -3,21 +3,35 @@ import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, T
 import { Slider } from '@rneui/themed';
 import ApiarySlider from '../../components/apiary/apiarySlider';
 import ApiaryTreatment from "../../components/apiary/ApiaryTreatment";
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
-import { pickImage } from "../../modules/FILES/pickImage";
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
-import BlankImage from '../../assets/images/blank-image.jpg'
 import { statusToText } from "../../modules/Apiary/ApiaryStatus";
 import { fenceToDays } from "../../modules/Apiary/ApiaryFence"
 import ImagePick from "../../components/imagePicker";
+
+
+
+import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
+import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
+import beehiveFoodSugar from '../../assets/images/icons/beehive_food_sugar.png'
+import beehiveFoodLevudex from '../../assets/images/icons/beehive_food_levudex.png'
+import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
+import beehiveTreatmentFlumetrine from '../../assets/images/icons/beehive_treatment_flumetrine.png'
+import beehiveTreatmentOxalic from '../../assets/images/icons/beehive_treatment_oxalic.png'
+import beehiveBoxGeneral from '../../assets/images/icons/beehive_box_general.png'
+import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
+import colors from "../../constants/colors";
+import { apiaryItems } from "../../constants/Apiary/apiaryItems";
+import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
+import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 
 function ApiaryAddScreen({ route, navigation }: any) {
 
     const apiarySettings = route.params.apiarySettings;
     const [apiaryStatus, setApiaryStatus] = useState(0)
-    const [apiaryData, setApiaryData] = useState({
+    const [apiaryData, setApiaryData] = useState<any>({
         name: '',
         image: '',
         hives: 12,
@@ -36,67 +50,107 @@ function ApiaryAddScreen({ route, navigation }: any) {
         tComment: ''
     })
 
-    const [apiaryImage,  setApiaryImage] = useState()
+    const [apiaryImage, setApiaryImage] = useState()
 
 
-    const [apiaryTreatment, setApiaryTreatment] = useState({
+    const [apiaryTreatment, setApiaryTreatment] = useState<any>({
         tOxalic: false,
         tAmitraz: false,
         tFlumetrine: false,
         tFence: false,
     })
 
+    const renderTreatments = () => {
+        // Filtrar los ítems de tratamiento
+        const items = []
+        const treatments = apiaryItems(apiaryData).filter(item => item.category === ApiaryItemCategory.TREATMENT);
+        const tfence = apiaryItems(apiaryData).filter(item => item.key === 'tFence')
+        items.push(...treatments, ...tfence)
 
-    const toggleTreatment = (key: string) => {
-        let treatmentKey = key as keyof ITreatment;
-        let treatmentValue = 0;
-        if (apiaryTreatment[treatmentKey] == false) {   
-            treatmentValue = apiaryData[treatmentKey] + 1;
-        }
-        if (apiaryTreatment[treatmentKey] == true) {
-            treatmentValue = apiaryData[treatmentKey] - 1;
+
+
+        // Dividir los elementos en filas de 2
+        const rows = [];
+        for (let i = 0; i < items.length; i += 2) {
+            rows.push(items.slice(i, i + 2));
         }
 
-        handleSliderValueChange(treatmentValue, key)
+        return (
+            <View style={styles.apiaryInfoContainer}>
+                {rows.map((row, rowIndex) => (
+                    <View key={rowIndex} style={styles.apiaryTreatmentRow}>
+                        {row.map((item, index) => (
+                            <Pressable key={index} onPress={() => toggleTreatmentDays(item.key)}>
+                                <ApiaryInfo
+                                    label={item.title}
+                                    value={apiaryData[item.key]}
+                                    image={item.image}
+                                    isVisible={item.isVisible}
+                                    isActive={apiaryTreatment[item.key]}
+                                />
+
+                            </Pressable>
+                        ))}
+                    </View>
+                ))}
+            </View>
+        );
+    };
+
+
+    const toggleTreatmentDays = (treatment: any) => {
         setApiaryTreatment({
-            ...apiaryTreatment,
-            [treatmentKey]: !apiaryTreatment[treatmentKey]
+            ...apiaryTreatment, [treatment]: true
         });
-
+        switch (apiaryData[treatment]) {
+            case 0:
+                handleChangeData(15, treatment)
+                break;
+            case 15:
+                handleChangeData(45, treatment)
+                break;
+            case 45:
+                handleChangeData(90, treatment)
+                break;
+            case 90:
+                handleChangeData(360, treatment)
+                break;
+            case 360:
+                handleChangeData(0, treatment);
+                setApiaryTreatment({
+                    ...apiaryTreatment, [treatment]: false
+                });
+                break;
+        }
     }
 
-    const toggleTreatmentFence = () => {
-
-        const daysResult = fenceToDays(apiaryData.tFence)
-
-        handleSliderValueChange(daysResult, 'tFence')
-
-        setApiaryTreatment({
-            ...apiaryTreatment, tFence: true
-        });
-
-        if (daysResult == 360) {
-            setApiaryTreatment({
-                ...apiaryTreatment, tFence: false
-            });
+    const handleApiaryStatus = (value: number) => {
+        setApiaryStatus(value)
+        switch (value) {
+            case 0:
+                handleChangeData('Malo', 'status');
+                break;
+            case 1:
+                handleChangeData('Medio', 'status');
+                break;
+            case 2:
+                handleChangeData('Bueno', 'status');
+                break;
+            case 3:
+                handleChangeData('Excelente', 'status');
+                break;
         }
-
     }
 
-    const handleSliderValueChange = (value: number | string, campo: string) => {
+
+    const handleChangeData = (value: number | string, campo: string) => {
         setApiaryData({
             ...apiaryData,
             [campo]: value
         });
     };
 
-    const handleApiaryStatusChange = (value: number) => {
-        const statusResult = statusToText(value)
 
-        handleSliderValueChange(statusResult, 'status');
-
-        setApiaryStatus(value)
-    }
 
     const handleSubmit = async () => {
 
@@ -145,189 +199,153 @@ function ApiaryAddScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
 
-                <ImagePick imageChange={handleSliderValueChange} uploadImage={setApiaryImage} />
+                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} />
 
                 <View style={styles.apiaryNameContainer}>
                     <TextInput
                         style={styles.apiaryInfoName}
                         value={apiaryData.name}
                         maxLength={20}
-                        onChangeText={(value) => handleSliderValueChange(value, 'name')}
+                        onChangeText={(value) => handleChangeData(value, 'name')}
                         placeholder='Apiary Name'
                         placeholderTextColor='#BCBDC5'
                     />
                 </View>
 
-
-
+                {/* CANTIDAD DE COLMENAS */}
                 <ApiarySlider
-                    isActive={true}
-                    text="Colmenas"
-                    name="hives"
-                    quantity={apiaryData.hives}
-                    functionchange={handleSliderValueChange}
                     max={100}
                     min={1}
                     step={1}
+                    text="Colmenas"
+                    name="hives"
+                    image={beehiveCollonySize}
                     unity=""
+                    isActive={true}
+                    quantity={apiaryData.hives}
+                    functionchange={handleChangeData}
                 />
 
 
-                <View style={styles.apiaryInfoItem}>
-                    <View style={styles.apiaryInfoItemData}>
+                {/* ESTADO DEL APIARIO */}
+                <View style={styles.apiaryStatusContainer}>
+                    <Image style={styles.apiaryIcon} source={beehiveCollonySize} />
+                    <View style={styles.apiaryInfoItem}>
 
-                        <Text style={styles.apiaryInfoItemDataText}>
-                            Estado
-                        </Text>
-                        <Text style={styles.apiaryInfoItemDataText}>
-                            {apiaryData.status}
-                        </Text>
+                        <View style={styles.apiaryInfoItemData}>
+                            <Text style={styles.apiaryInfoItemDataText}>
+                                Estado
+                            </Text>
+                            <Text style={styles.apiaryInfoItemDataText}>
+                                {apiaryData.status}
+                            </Text>
+                        </View>
 
+                        <Slider
+                            style={styles.apiaryInfoItemSlider}
+                            step={1}
+                            value={apiaryStatus}
+                            onValueChange={handleApiaryStatus}
+                            minimumValue={0}
+                            maximumValue={3}
+                            thumbTintColor="grey"
+                            allowTouchTrack
+                            thumbStyle={styles.apiaryInfoItemSliderThumb}
+                            trackStyle={{ height: 10 }}
+                            minimumTrackTintColor="#525252"
+                            maximumTrackTintColor="#EEF0F3" />
                     </View>
-                    <Slider
-                        style={styles.apiaryInfoItemSlider}
-                        step={1}
-                        value={apiaryStatus}
-                        onValueChange={handleApiaryStatusChange}
-                        minimumValue={0}
-                        maximumValue={3}
-                        thumbTintColor="grey"
-                        allowTouchTrack
-                        thumbStyle={styles.apiaryInfoItemSliderThumb}
-                        trackStyle={{ height: 10 }}
-                        minimumTrackTintColor="#525252"
-                        maximumTrackTintColor="#EEF0F3" />
                 </View>
 
+                {/* ALIMENTO */}
                 <ApiarySlider
-                    isActive={apiarySettings.honey}
+                    max={30}
+                    min={0}
+                    step={0.25}
                     text="Miel"
                     name="honey"
-                    quantity={apiaryData.honey}
-                    functionchange={handleSliderValueChange}
-                    max={30}
-                    min={0}
-                    step={0.25}
+                    image={beehiveFoodHoney}
                     unity=" kg"
+                    isActive={apiaryData.settings.honey}
+                    quantity={apiaryData.honey}
+                    functionchange={handleChangeData}
                 />
 
+                {/* LEVUDEX */}
                 <ApiarySlider
-                    isActive={apiarySettings.levudex}
+                    max={20}
+                    min={0}
+                    step={0.25}
                     text="Levudex"
                     name="levudex"
+                    image={beehiveFoodLevudex}
+                    unity=" kg"
+                    isActive={apiaryData.settings.levudex}
                     quantity={apiaryData.levudex}
-                    functionchange={handleSliderValueChange}
+                    functionchange={handleChangeData}
+                />
+
+                {/* AZUCAR */}
+                <ApiarySlider
                     max={30}
                     min={0}
                     step={0.25}
-                    unity=" kg"
-                />
-
-                <ApiarySlider
-                    isActive={apiarySettings.sugar}
                     text="Azucar"
                     name="sugar"
-                    quantity={apiaryData.sugar}
-                    functionchange={handleSliderValueChange}
-                    max={30}
-                    min={0}
-                    step={0.25}
+                    image={beehiveFoodSugar}
                     unity=" kg"
+                    isActive={apiaryData.settings.sugar}
+                    quantity={apiaryData.sugar}
+                    functionchange={handleChangeData}
                 />
 
+                {/* ALZAS STANDART */}
                 <ApiarySlider
-                    isActive={apiarySettings.box}
+                    max={100}
+                    min={0}
+                    step={1}
                     text="Alza"
                     name="box"
+                    image={beehiveBoxGeneral}
+                    unity=" Unidades"
+                    isActive={apiaryData.settings.box}
                     quantity={apiaryData.box}
-                    functionchange={handleSliderValueChange}
+                    functionchange={handleChangeData}
+                />
+
+                {/* ALZAS 3/4 */}
+                <ApiarySlider
                     max={100}
                     min={0}
                     step={1}
-                    unity=" Unidades"
-                />
-
-                <ApiarySlider
-                    isActive={apiarySettings.boxMedium}
                     text="Alza 3/4"
                     name="boxMedium"
+                    image={beehiveBoxGeneral}
+                    unity=" Unidades"
+                    isActive={apiaryData.settings.boxMedium}
                     quantity={apiaryData.boxMedium}
-                    functionchange={handleSliderValueChange}
+                    functionchange={handleChangeData}
+                />
+
+                {/* ALZAS 1/2 */}
+                <ApiarySlider
                     max={100}
                     min={0}
                     step={1}
-                    unity=" Unidades"
-                />
-
-                <ApiarySlider
-                    isActive={apiarySettings.boxSmall}
                     text="Alza 1/2"
                     name="boxSmall"
-                    quantity={apiaryData.boxSmall}
-                    functionchange={handleSliderValueChange}
-                    max={100}
-                    min={0}
-                    step={1}
+                    image={beehiveBoxGeneral}
                     unity=" Unidades"
+                    isActive={apiaryData.settings.boxSmall}
+                    quantity={apiaryData.boxSmall}
+                    functionchange={handleChangeData}
                 />
 
+
+                {/* TRATAMIENTOS */}
                 <View style={styles.apiaryTreatments}>
 
-                    <Pressable onPress={() => toggleTreatment('tOxalic')}>
-                        <ApiaryTreatment
-                            isVisible={apiarySettings.tOxalic}
-                            isActive={apiaryTreatment.tOxalic}
-                            text="Oxalico"
-                            name="oxalic"
-                            quantity={apiaryData.tOxalic}
-                            max={100}
-                            min={0}
-                            step={1}
-                            unity=" Unidades"
-                        />
-                    </Pressable>
-
-                    <Pressable onPress={() => toggleTreatment('tAmitraz')}>
-                        <ApiaryTreatment
-                            isVisible={apiarySettings.tAmitraz}
-                            isActive={apiaryTreatment.tAmitraz}
-                            text="Amitraz"
-                            name="amitraz"
-                            quantity={apiaryData.tAmitraz}
-                            max={100}
-                            min={0}
-                            step={1}
-                            unity=" Unidades"
-                        />
-                    </Pressable>
-
-                    <Pressable onPress={() => toggleTreatment('tFlumetrine')} >
-                        <ApiaryTreatment
-                            isVisible={apiarySettings.tFlumetrine}
-                            isActive={apiaryTreatment.tFlumetrine}
-                            text="Flumetrina"
-                            name="flumetrine"
-                            quantity={apiaryData.tFlumetrine}
-                            max={100}
-                            min={0}
-                            step={1}
-                            unity=" Unidades"
-                        />
-                    </Pressable>
-
-                    <Pressable onPress={() => toggleTreatmentFence()} >
-                        <ApiaryTreatment
-                            isVisible={apiarySettings.tFence}
-                            isActive={apiaryTreatment.tFence}
-                            text="Electrico"
-                            name="fence"
-                            quantity={apiaryData.tFence}
-                            max={360}
-                            min={0}
-                            step={1}
-                            unity=" Unidades"
-                        />
-                    </Pressable>
+                    {renderTreatments()}
 
                 </View>
 
@@ -336,7 +354,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
                         <TextInput
                             multiline={true}
                             value={apiaryData.tComment}
-                            onChangeText={(text) => handleSliderValueChange(text, 'tComment')}
+                            onChangeText={(text) => handleChangeData(text, 'tComment')}
                             style={styles.apiaryInfoComment}
                             placeholder='Escribe un comentario aqui '
                             placeholderTextColor='#BCBDC5'
@@ -374,6 +392,22 @@ const styles = StyleSheet.create({
         marginVertical: 10,
         width: wp('80%'),
     },
+    apiaryStatusContainer: {
+        width: '80%',
+        justifyContent: 'center',
+        flexDirection: 'row',
+    },
+    apiaryInfoContainer: {
+        flexDirection: 'column',
+        width: '100%',
+    },
+    apiaryIcon: {
+        height: 50,
+        tintColor: colors.YELLOW,
+        width: 50,
+        marginRight: 5,
+        resizeMode: 'contain',
+    },
     apiaryInfo: {
         width: wp('100%'),
         marginVertical: 10,
@@ -384,8 +418,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 6,
         borderRadius: 5,
-
     },
+
+
     apiaryInfoImage: {
         height: wp('40%'),
         width: wp('40%'),
@@ -420,7 +455,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-evenly',
         marginVertical: 20,
     },
-
+    apiaryTreatmentRow: {
+        flexDirection: 'row',
+        marginVertical: 10,
+        justifyContent: 'space-between',
+    },
     apiaryTreatment: {
         alignItems: 'center',
     },

@@ -1,0 +1,98 @@
+// React Imports //
+import React from 'react';
+import { StyleSheet, View, Text, Image } from 'react-native';
+
+// 2 Visuals
+import { statusToColor } from '../../modules/Apiary/ApiaryStatus';
+import Capitalize from '../../modules/Capitalize';
+
+// Assets Imports //  
+import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
+import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
+import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
+import DatePretty from '../../modules/DatePretty';
+import { APIARY_IMG_URL } from '../../constants/api';
+import colors from '../../constants/colors';
+
+export const ApiaryCard = ({ apiaryInfo }: any) => {
+
+    const isTreatmentsActive = () => {
+      return apiaryInfo.tAmitraz || apiaryInfo.tOxalic || apiaryInfo.tFlumetrine >= 1;
+    }
+  
+    const isFoodActive = () => {
+      return apiaryInfo.honey || apiaryInfo.sugar || apiaryInfo.levudex >= 1;
+    }
+  
+    return (
+      <View style={styles.apiaryCard}>
+        <Image style={styles.apiaryImage} source={{ uri: `${APIARY_IMG_URL}${apiaryInfo.image}` }} />
+        <View style={styles.apiaryData}>
+          <Text style={styles.apiaryDataName}> {Capitalize(apiaryInfo.name)} </Text>
+          <Text style={styles.apiaryDataDate}> {DatePretty(apiaryInfo.updatedAt)} </Text>
+          <View style={styles.apiaryTreatments}>
+            {isFoodActive() ? <Image source={beehiveFoodHoney} style={styles.apiaryTreatment} /> : null}
+            {isTreatmentsActive() ? <Image source={beehiveTreatmentGeneral} style={styles.apiaryTreatment} /> : null}
+            {apiaryInfo.tFence >= 1 ? <Image source={beeHiveBateryNocarge} style={styles.apiaryTreatment} /> : null}
+          </View>
+        </View>
+        <Text style={[{ borderTopColor: statusToColor(apiaryInfo.status) }, styles.apiaryStatus]}></Text>
+      </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    apiaryCard: {
+      height: 100,
+      marginVertical: 10,
+      padding: 10,
+      alignItems: 'center',
+      flexDirection: 'row',
+      backgroundColor: '#F9F9F9',
+      borderRadius: 5,
+    },
+    apiaryImage: {
+      height: 80,
+      width: 80,
+      marginRight: 20,
+      resizeMode: 'cover',
+      borderRadius: 5,
+    },
+    apiaryStatus: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      width: 0,
+      height: 0,
+      backgroundColor: "transparent",
+      borderStyle: "solid",
+      borderRightWidth: 20,
+      borderTopWidth: 20,
+      borderRightColor: "transparent",
+      transform: [{ rotate: "90deg" }],
+    },
+    apiaryData: {
+      justifyContent: 'center',
+    },
+    apiaryDataName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.BLACK
+    },
+    apiaryDataDate: {
+      fontSize: 12,
+      color: colors.BLACK_TRANSPARENT,
+      marginBottom: 10,
+    },
+    apiaryTreatments: {
+      alignItems: 'center',
+      flexDirection: 'row',
+    },
+    apiaryTreatment: {
+      width: 20,
+      height: 20,
+      resizeMode: 'contain',
+      tintColor: colors.YELLOW,
+      marginRight: 5,
+    },
+});

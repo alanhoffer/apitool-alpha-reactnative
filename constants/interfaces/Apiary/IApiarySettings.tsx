@@ -1,7 +1,4 @@
-export interface ISettings {
-    id: number;
-    apiaryId: number,
-    apiaryUserId: number,
+export interface IApiarySettingsItems {
     honey: boolean;
     levudex: boolean;
     sugar: boolean;
@@ -13,4 +10,14 @@ export interface ISettings {
     tFlumetrine: boolean;
     tFence: boolean;
     tComment: boolean;
+    transhumance: boolean;
+    harvesting: boolean;
+}
+
+
+
+export interface IApiarySettings extends IApiarySettingsItems {
+    id: number;
+    apiaryId: number;
+    apiaryUserId: number;
 }

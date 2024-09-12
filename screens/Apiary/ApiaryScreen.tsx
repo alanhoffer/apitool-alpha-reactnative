@@ -1,23 +1,54 @@
-
 import { useEffect } from "react";
-import { Text, View, StyleSheet, Image, ScrollView, Pressable, TouchableOpacity } from 'react-native';
-import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { Text, View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 
 import BlankImage from '../../assets/images/blank-image.jpg'
-
 import Capitalize from "../../modules/Capitalize";
 import Icon from 'react-native-vector-icons/Ionicons';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
+import { APIARY_IMG_URL } from "../../constants/api";
+import colors from "../../constants/colors";
+import ApiaryInfo from "../../components/apiary/ApiaryInfo";
+import { apiaryItems } from "../../constants/Apiary/apiaryItems";
+import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 
 function ApiaryScreen({ route, navigation }: any) {
-
-    const { apiaryInfo } = route.params;
-
+    const { apiaryInfo }: { apiaryInfo: IApiary } = route.params;
 
     const totalBoxes = (box: number, boxMedium: number, boxSmall: number): number => {
-        const result = box + (boxMedium * 0.75) + (boxSmall * 0.5)
-        return result
-    }
+        return box + (boxMedium * 0.75) + (boxSmall * 0.5);
+    };
+
+    const renderApiaryInfo = () => {
+        const items = apiaryItems(apiaryInfo).filter(item => item.isVisible === true);
+
+        const rows = [];
+        for (let i = 0; i < items.length; i += 2) {
+            rows.push(items.slice(i, i + 2));
+        }
+        console.log(rows)
+        return (
+            <View style={styles.apiaryInfoContainer}>
+                {rows.map((row, rowIndex) => (
+                    <View key={rowIndex} style={styles.rowContainer}>
+                        {row.map((item, index) => (
+                            item.isVisible && (
+                                <View key={index} style={styles.apiaryDataContainer}>
+                                    <ApiaryInfo
+                                        label={item.title}
+                                        value={item.value}
+                                        image={item.image}
+                                        isVisible={item.isVisible}
+                                        isActive={true}
+                                    />
+                                </View>
+                            )
+                        ))}
+                    </View>
+                ))}
+            </View>
+        );
+    };
 
     useEffect(() => {
         navigation.setOptions({
@@ -26,134 +57,46 @@ function ApiaryScreen({ route, navigation }: any) {
                     text='Visitar'
                     move={() => navigation.navigate('ApiaryVisitScreen', { apiaryNavData: apiaryInfo })}
                 />,
-        })
-    }, [apiaryInfo])
+        });
+    }, [apiaryInfo]);
+
     return (
         <ScrollView style={styles.scrollContainer}>
-            <View style={styles.container}>                
-            {/* <View style={styles.apiaryTitle}>
-                <Text style={styles.apiaryName}>{Capitalize(apiaryInfo.name)}</Text>
-                <Text style={styles.apiarySubTitle}>Bienvenido a tu apiario aqui podras ver toda la informacion actual del apiario y los cambios historicos</Text>
-            </View> */}
+            <View style={styles.container}>
+                {/* Imagen del apiario */}
                 <View>
-                    {apiaryInfo.image ? <Image style={styles.apiaryImage} source={{ uri: apiaryInfo.image }} /> : <Image style={styles.apiaryImage} source={BlankImage} />}
-                    <Text style={{ position: "absolute", bottom: 10, right: 0, backgroundColor: 'rgba(20, 20, 21, 0.6)', fontSize: 18, borderRadius: 5, padding: 8, color: '#CFCFD7' }} > {apiaryInfo.hives} </Text>
+                    <Image
+                        style={styles.apiaryImage}
+                        source={apiaryInfo.image ? { uri: `${APIARY_IMG_URL}${apiaryInfo.image}` } : BlankImage}
+                    />
                 </View>
                 <Text style={styles.apiaryName}>{Capitalize(apiaryInfo.name)}</Text>
+
+                {/* Botones de menu del apiario */}
                 <View style={styles.apiaryMenu}>
-
-                    <TouchableOpacity onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfo })}>
-                        <Icon name="file-tray-full-outline" size={16}> Historial </Icon>
+                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo })}>
+                        <Icon name="file-tray-full-outline" size={22}  />
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={() => navigation.navigate('ApiarySettingsScreen', {apiarySettings: apiaryInfo.settings})}>
-                        <Icon name="settings-outline" size={16}> Opciones </Icon>
+                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfo.settings })}>
+                        <Icon name="settings-outline" size={22}  />
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.apiaryInfo}>
+                {/* Items del apiario */}
+                    {renderApiaryInfo()}
 
-                    <View style={styles.apiaryTreatments}>
-                        {apiaryInfo.settings?.tOxalic ?
-                            <View style={styles.apiaryTreatment}>
-                                <View style={styles.apiaryTreatmentBackground}>
-                                    <Text style={styles.apiaryTreatmentTextBackground} > {apiaryInfo.tOxalic} </Text>
-                                </View>
-                                <Text style={styles.apiaryTreatmentText}>Oxalico</Text>
-                            </View>
-                            : null}
-
-
-                        {apiaryInfo.settings?.tAmitraz ?
-                            <View style={styles.apiaryTreatment}>
-                                <View style={styles.apiaryTreatmentBackground}>
-                                    <Text style={styles.apiaryTreatmentTextBackground} > {apiaryInfo.tAmitraz} </Text>
-                                </View>
-                                <Text style={styles.apiaryTreatmentText}>Amitraz</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.tFlumetrine ?
-                            <View style={styles.apiaryTreatment}>
-                                <View style={styles.apiaryTreatmentBackground}>
-                                    <Text style={styles.apiaryTreatmentTextBackground} > {apiaryInfo.tFlumetrine} </Text>
-                                </View>
-                                <Text style={styles.apiaryTreatmentText}>Flumetrina</Text>
-                            </View>
-                            : null}
-
-                        {apiaryInfo.settings?.tFence ?
-                            <View style={styles.apiaryTreatment}>
-                                <View style={styles.apiaryTreatmentBackground}>
-                                    <Text style={styles.apiaryTreatmentTextBackground} >{apiaryInfo.tFence}</Text>
-                                </View>
-                                <Text style={styles.apiaryTreatmentText}>Electrico</Text>
-                            </View>
-                            : null}
+                {/* Comentarios del apiario */}
+                {apiaryInfo.settings?.tComment && apiaryInfo.tComment.length > 1 && (
+                    <View style={styles.apiaryCommentContainer}>
+                        <Text style={styles.apiaryCommentTitle}>Comentario</Text>
+                        <Text style={styles.apiaryCommentText}>{apiaryInfo.tComment}</Text>
                     </View>
-
-                    <View style={styles.apiaryDataList}>
-
-                        <View style={styles.apiaryData}>
-                            <Text style={styles.apiaryDataText}>Estado</Text>
-                            <Text style={styles.apiaryDataText}>{apiaryInfo.status} </Text>
-                        </View>
-                        {apiaryInfo.settings?.honey ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Miel</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.honey} kg</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.levudex ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Levudex</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.levudex} kg</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.sugar ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Azucar</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.sugar} kg</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.box ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Alza</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.box} Unidades</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.boxMedium ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Alza 3/4</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.boxMedium} Unidades</Text>
-                            </View>
-                            : null}
-                        {apiaryInfo.settings?.boxSmall ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Alza 1/2</Text>
-                                <Text style={styles.apiaryDataText}>{apiaryInfo.boxSmall} Unidades</Text>
-                            </View>
-                            : null}
-                        {(apiaryInfo.settings?.boxMedium | apiaryInfo.settings?.boxSmall) ?
-                            <View style={styles.apiaryData}>
-                                <Text style={styles.apiaryDataText}>Alzas Totales</Text>
-                                <Text style={styles.apiaryDataText}>{totalBoxes(apiaryInfo.box, apiaryInfo.boxMedium, apiaryInfo.boxSmall)} Unidades</Text>
-                            </View>
-                            : null}
-
-                        {(apiaryInfo.settings?.tComment && apiaryInfo.tComment.length > 1) ?
-                            <View style={styles.apiaryCommentContainer}>
-                                <Text style={styles.apiaryCommentTitle}>Comentario</Text>
-                                <Text style={styles.apiaryCommentText}>{apiaryInfo.tComment}</Text>
-                            </View>
-                            : null}
-
-                    </View>
-                </View>
+                )}
             </View>
         </ScrollView>
-    )
+    );
 }
-
 
 const styles = StyleSheet.create({
     scrollContainer: {
@@ -161,106 +104,58 @@ const styles = StyleSheet.create({
     },
     container: {
         alignItems: 'center',
+        paddingBottom: 50,
+    },
+    apiaryInfoContainer: {
+        width: '80%',
+        marginVertical: 10,
+    },
+    rowContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginVertical: 15,
     },
     apiaryMenu: {
-        flex: 1,
         flexDirection: 'row',
         width: wp('80%'),
         marginVertical: 10,
         justifyContent: 'space-evenly',
     },
-    apiaryTitle: {
-        marginVertical: 20,
-        width: wp('80%'),
-    },
-    apiarySubTitle: {
-        color: '#CFCFD7',
-        fontSize: 16,
-        fontWeight: '500',
+    ApiaryMenuItem: {
+        flexDirection: 'row',
+        alignItems:'center',
     },
     apiaryName: {
         fontSize: 24,
         fontWeight: '400',
-        color: '#3C4256',
+        color: colors.BLACK,
         marginVertical: 10,
-    },
-    apiaryInfo: {
-        width: wp('80%'),
-        alignItems: 'center'
     },
 
     apiaryImage: {
-        height: wp('50%'),
-        width: wp('50%'),
+        height: wp('40%'),
+        width: wp('80%'),
         resizeMode: 'cover',
-        borderRadius: 5,
-
+        borderRadius: 10,
         marginVertical: 10,
     },
-
-    apiaryTreatments: {
-        width: wp('80%'),
+    apiaryDataContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-evenly',
-    },
-
-    apiaryTreatment: {
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    apiaryTreatmentText: {
-        color: '#CFCFD7',
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    apiaryTreatmentBackground: {
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderWidth: 0.3,
-        borderColor: '#F5F3F3',
-        borderRadius: 5,
-        backgroundColor: '#F5F5F7',
-        marginBottom: 5,
-    },
-    apiaryTreatmentTextBackground: {
-        color: '#CFCFD7',
-        fontSize: 16,
-        height: 20,
-        fontWeight: '500',
-    },
-    apiaryDataList: {
-        marginBottom: 10,
-        width: wp('80%'),
-    },
-    apiaryData: {
-        width: wp('80%'),
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginVertical: 10,
-    },
-    apiaryDataText: {
-        color: '#CFCFD7',
-        fontSize: 16,
-        fontWeight: '500',
     },
     apiaryCommentContainer: {
         width: wp('80%'),
         marginVertical: 10,
     },
     apiaryCommentTitle: {
-        color: '#3C4256',
+        color: colors.BLACK_LIGHT,
         fontSize: 16,
         fontWeight: '500',
         marginBottom: 5,
     },
     apiaryCommentText: {
-        color: '#CFCFD7',
+        color: colors.BLACK_LIGHT,
         fontSize: 16,
-        fontWeight: '500',
-    }
-})
-
-
+    },
+});
 
 export default ApiaryScreen;

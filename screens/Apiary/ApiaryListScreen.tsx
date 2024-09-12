@@ -1,93 +1,53 @@
 // React Imports //
 import React from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, ToastAndroid, RefreshControl, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
 
-//1 API
-import { deleteApiary, getApiarys } from '../../modules/API/Apiarys';
+// 1 API
+import { deleteApiary, getApiarys, toggleHarvestAll } from '../../modules/API/Apiarys';
 
-//2 Visuals
-import { statusToColor } from '../../modules/Apiary/ApiaryStatus';
-import Capitalize from '../../modules/Capitalize';
+// 2 Visuals
 
 // Assets Imports //  
-import HoneyIcon from '../../assets/images/icons/honey-icon.png'
-import ElectricIcon from '../../assets/images/icons/batery-full-icon.png'
-import CuredIcon from '../../assets/images/icons/cured-icon.png'
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
-import { ToastAndroid } from 'react-native';
-import DatePretty from '../../modules/DatePretty';
-import { APIARY_IMG_URL } from '../../constants/APIConfig';
-
-
-const ApiaryCard = ({ apiaryInfo }: any) => {
-
-  const isTreatmentsActive = () => {
-    if ((apiaryInfo.tAmitraz || apiaryInfo.tOxalic || apiaryInfo.tFlumetrine) >= 1) {
-      return true
-    }
-    return false
-  }
-
-  const isFoodActive = () => {
-    if ((apiaryInfo.honey || apiaryInfo.sugar || apiaryInfo.levudex) >= 1) {
-      return true
-    }
-    return false
-  }
-  
-
-  return (
-    <View style={styles.apiaryCard}>
-      
-      <Image style={styles.apiaryImage} source={{ uri: `${APIARY_IMG_URL}${apiaryInfo.image}` }} />
-      <View style={styles.apiaryData}>
-        <Text style={styles.apiaryDataName}> {Capitalize(apiaryInfo.name)} </Text>
-        <Text style={styles.apiaryDataDate}> {DatePretty(apiaryInfo.updatedAt)} </Text>
-        <View style={styles.apiaryTreatments}>
-
-          {isFoodActive() ? <Image source={HoneyIcon} style={styles.apiaryTreatment} /> : null}
-          {isTreatmentsActive() ? <Image source={CuredIcon} style={styles.apiaryTreatment} /> : null}
-
-          {apiaryInfo.tFence >= 1 ? <Image source={ElectricIcon} style={styles.apiaryTreatment} /> : null}
-
-        </View>
-      </View>
-      <Text style={[{ borderTopColor: statusToColor(apiaryInfo.status) }, styles.apiaryStatus]}></Text>
-    </View>
-  )
-}
+import Icon from 'react-native-vector-icons/Ionicons';
+import colors from '../../constants/colors';
+import { filterApiaryByName } from '../../helpers/Apiary/filterApiaryByName';
+import { ApiaryCard } from '../../components/apiary/ApiaryCard';
 
 const ApiaryListScreen = ({ navigation }: any) => {
 
-  const [apiarysLoaded, setApiarysLoaded] = useState<boolean>(false)
+  const [apiarysLoaded, setApiarysLoaded] = useState<boolean>(false);
   const [apiaryList, setApiaryList] = useState<IApiary[]>([]);
-  const [refresh, setRefresh] = useState<boolean>(false)
+  const [refresh, setRefresh] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState('');
+  const [harvesting, setHarvesting] = useState<boolean>(false);
 
-  const isFocused = useIsFocused()
-
-
-
-
+  const isFocused = useIsFocused();
 
   async function loadApiarys() {
     const apiaryData = await getApiarys();
     if (apiaryData != null) {
-      setApiaryList(apiaryData)
-      setApiarysLoaded(true)
+      setApiaryList(apiaryData);
+      setApiarysLoaded(true);
     }
   }
 
-
-
+  const handleToggleHarvest = async () => {
+    try {
+      await toggleHarvestAll(!harvesting);
+      setHarvesting(prev => !prev);
+    } catch (error) {
+      console.error('Error toggling harvest all:', error);
+    }
+  };
 
   async function handleDeleteApiary(apiary: any) {
-
+    ToastAndroid.show('Confirmar borrado...', ToastAndroid.SHORT);
     Alert.alert(
       `${apiary.name}`,
-      'Se borraran todos los datos y los cambios hechos. Esta seguro?',
+      'Se borrarán todos los datos y los cambios hechos. ¿Está seguro?',
       [
         {
           text: 'Cancelar',
@@ -101,40 +61,32 @@ const ApiaryListScreen = ({ navigation }: any) => {
                 if (deleteSuccessful) {
                   loadApiarys();
                   ToastAndroid.show(`${apiary.name} borrado`, ToastAndroid.SHORT);
-                }
-                else {
+                } else {
                   ToastAndroid.show(`${apiary.name} no se puede borrar`, ToastAndroid.SHORT);
                 }
               })
               .catch((error: Error) => {
                 ToastAndroid.show(`Error al borrar ${error}`, ToastAndroid.SHORT);
-              })
+              });
           },
         },
       ],
       { cancelable: false },
     );
-
-  }
-
-  function filterByName() {
-    return apiaryList.filter(apiary => apiary.name.toLowerCase().startsWith(searchValue.toLowerCase()))
   }
 
   const onRefresh = () => {
     setRefresh(true);
-
-    loadApiarys().then(() =>
-      setRefresh(false)
-    )
-
+    loadApiarys().then(() => setRefresh(false));
   };
 
   useEffect(() => {
-    loadApiarys().then(
-      
-    )
-  }, [isFocused])
+    loadApiarys();
+    const hasHarvesting = apiaryList.some((apiary: IApiary) => apiary.settings.harvesting);
+    if (hasHarvesting) {
+      setHarvesting(true);
+    }
+  }, [isFocused]);
 
   return (
     <View style={styles.container}>
@@ -143,35 +95,40 @@ const ApiaryListScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.apiaryList}>
-
         {apiaryList.length < 1 ?
           <View style={styles.apiaryListEmpty}>
-            <Text style={styles.apiaryListEmptyText}> No tienes ningun apiario </Text>
+            <Text style={styles.apiaryListEmptyText}> No tienes ningún apiario </Text>
             <Text style={styles.apiaryListEmptyText}> Presiona en + Añadir </Text>
           </View>
           :
           <ScrollView style={styles.apiaryListScroll} showsVerticalScrollIndicator={false} refreshControl={
             <RefreshControl refreshing={refresh} onRefresh={onRefresh} />
           }>
-
-            {
-              filterByName().map((apiary, index) => {
-                return (
-                  <TouchableOpacity key={index} onLongPress={() => handleDeleteApiary(apiary)} onPress={() => navigation.navigate('ApiaryScreen', { apiaryInfo: apiary })} >
-
-                    <ApiaryCard apiaryInfo={apiary} />
-
-                  </TouchableOpacity>
-                );
-              })}
-
+            {filterApiaryByName(apiaryList, searchValue).map((apiary, index) => (
+              <TouchableOpacity key={index} onLongPress={() => handleDeleteApiary(apiary)} onPress={() => navigation.navigate('ApiaryScreen', { apiaryInfo: apiary })}>
+                <ApiaryCard apiaryInfo={apiary} />
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         }
       </View>
-    </View>
-  )
-}
 
+      <TouchableOpacity
+        style={[
+          styles.startHarvestingIcon,
+          { borderColor: harvesting ? colors.YELLOW : colors.BLACK_LIGHT }
+        ]}
+        onPress={handleToggleHarvest}
+      >
+        <Icon
+          name="rose-outline"
+          size={26}
+          color={harvesting ? colors.YELLOW : colors.BLACK_LIGHT} 
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -188,7 +145,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 6,
     borderRadius: 5,
-
   },
   apiaryList: {
     flex: 1,
@@ -199,65 +155,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   apiaryListEmptyText: {
-    opacity: 0.5
+    opacity: 0.5,
   },
   apiaryListScroll: {
     flex: 1,
   },
-  apiaryCard: {
-    height: 100,
-    marginVertical: 10,
-    padding: 10,
-    alignItems: 'center',
-    flexDirection: 'row',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 5,
-  },
-  apiaryImage: {
-    height: 80,
-    width: 80,
-    marginRight: 20,
-    resizeMode: 'cover',
-    borderRadius: 5,
-  },
-
-  apiaryStatus: {
+  startHarvestingIcon: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 0,
-    height: 0,
-    backgroundColor: "transparent",
-    borderStyle: "solid",
-    borderRightWidth: 20,
-    borderTopWidth: 20,
-    borderRightColor: "transparent",
-    transform: [{ rotate: "90deg" }],
+    bottom: '5%',
+    right: '10%',
+    padding: 5,
+    borderRadius: 100,
+    borderWidth: 2
   },
-  apiaryData: {
-    justifyContent: 'center',
-  },
-  apiaryDataName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#3C4256'
-  },
-  apiaryDataDate: {
-    fontSize: 12,
-    color: '#CFCFD7',
-    marginBottom: 10,
-  },
-  apiaryTreatments: {
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  apiaryTreatment: {
-    width: 25,
-    height: 25,
-    marginRight: 5,
-  },
-
 });
-
 
 export default ApiaryListScreen;

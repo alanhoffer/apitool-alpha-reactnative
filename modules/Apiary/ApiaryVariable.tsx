@@ -69,13 +69,13 @@ export function valueToPretty(variable: string, valor:string) {
             return `${valor} Unidades`
             break;
         case `tOxalic`:
-            return `${valor} Aplicaciones`
+            return `${valor} Dias`
             break;
         case `tAmitraz`:
-            return `${valor} Aplicaciones`
+            return `${valor} Dias`
             break;
         case `tFlumetrine`:
-            return `${valor} Aplicaciones`
+            return `${valor} Dias`
             break;
         case `tFence`:
             return `${valor} Dias`
