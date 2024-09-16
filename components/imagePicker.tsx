@@ -1,21 +1,21 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useEffect, useState } from "react"
 import * as ImagePicker from 'expo-image-picker';
-import BlankImage from '../assets/images/blank-image.jpg'
+import BlankImage from '../assets/images/apiary-default.png'
 import { View, Text, Button, Image, TouchableOpacity, StyleSheet } from "react-native";
 
 
 interface Props {
     imageChange:Function
     uploadImage:Function
+    image: string
 }
 
 export default function ImagePick( props:Props  ) {
 
     const [hasGalleryPermission, setHasGalleryPermission] = useState<boolean>(false);
-    const [image, setImage] = useState('')
-
-
+    const [image, setImage] = useState<string>('')
+    
 
     useEffect(() => {
                 ImagePicker.requestMediaLibraryPermissionsAsync().then(res => {
@@ -36,6 +36,7 @@ export default function ImagePick( props:Props  ) {
             setImage(result.assets[0].uri)
             props.uploadImage(result.assets[0])
             props.imageChange(result.assets[0].uri, 'image')
+            console.log(result.assets[0].uri, 'image')
         }
     };
 
@@ -47,7 +48,7 @@ export default function ImagePick( props:Props  ) {
     return (
         <View >
             <TouchableOpacity onPress={() => pickImage()}>
-                {image ? <Image style={styles.apiaryInfoImage} source={{ uri: image }} /> : <Image style={styles.apiaryInfoImage} source={BlankImage} />}
+                {image ? <Image style={styles.apiaryInfoImage} source={{ uri: image }} /> : <Image style={styles.apiaryInfoImage} source={{uri: props.image}} />}
             </TouchableOpacity>
         </View>
     )
@@ -63,8 +64,11 @@ const styles = StyleSheet.create({
     },
     apiaryInfoImage: {
         height: wp('40%'),
-        width: wp('40%'),
+        width: wp('80%'),
         resizeMode: 'cover',
-        borderRadius: 5,
+        borderRadius: 10,
+        marginVertical: 10,
+        opacity: 0.8,
     },
+
 })

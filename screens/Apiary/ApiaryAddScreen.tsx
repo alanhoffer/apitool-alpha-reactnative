@@ -45,6 +45,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
         tOxalic: 0,
         tAmitraz: 0,
         tFlumetrine: 0,
+        transhumance: 0,
         tFence: 0,
         settings: apiarySettings,
         tComment: ''
@@ -199,7 +200,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
 
-                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} />
+                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={'../assets/images/apiary-default.png'} />
 
                 <View style={styles.apiaryNameContainer}>
                     <TextInput
@@ -374,6 +375,7 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
     },
+
     addApiaryTitle: {
         marginVertical: 20,
         width: wp('80%'),
@@ -389,24 +391,8 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     apiaryNameContainer: {
-        marginVertical: 10,
+        marginVertical: 20,
         width: wp('80%'),
-    },
-    apiaryStatusContainer: {
-        width: '80%',
-        justifyContent: 'center',
-        flexDirection: 'row',
-    },
-    apiaryInfoContainer: {
-        flexDirection: 'column',
-        width: '100%',
-    },
-    apiaryIcon: {
-        height: 50,
-        tintColor: colors.YELLOW,
-        width: 50,
-        marginRight: 5,
-        resizeMode: 'contain',
     },
     apiaryInfo: {
         width: wp('100%'),
@@ -419,20 +405,32 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 5,
     },
-
-
     apiaryInfoImage: {
         height: wp('40%'),
         width: wp('40%'),
         resizeMode: 'cover',
         borderRadius: 5,
     },
-    apiaryInfoItem: {
-        width: wp('80%'),
+
+
+    apiaryStatusContainer: {
+        width: '80%',
+        justifyContent: 'center',
+        alignItems:'center',
+        flexDirection: 'row',
         marginVertical: 5,
     },
+    apiaryInfoItem: {
+        width: '80%',
+    },
+    apiaryIcon: {
+        height: 40,
+        width: 40,
+        marginRight: 10,
+        tintColor: colors.YELLOW,
+        resizeMode: 'contain',
+    },
     apiaryInfoItemData: {
-        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between'
     },
@@ -448,18 +446,24 @@ const styles = StyleSheet.create({
         width: 18,
         height: 18,
     },
+    apiaryInfoContainer: {
+        flexDirection: 'column',
+        width: '100%',
+    },
     apiaryTreatments: {
         width: wp('80%'),
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-evenly',
-        marginVertical: 20,
+        marginVertical: 10,
     },
+
     apiaryTreatmentRow: {
         flexDirection: 'row',
+        width: wp('80%'),
         marginVertical: 10,
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
     },
+
     apiaryTreatment: {
         alignItems: 'center',
     },
@@ -495,6 +499,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
 
     },
+
 
 
 });

@@ -25,6 +25,7 @@ import colors from "../../constants/colors";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
+import { APIARY_IMG_URL } from "../../constants/api";
 
 
 
@@ -33,12 +34,16 @@ function ApiaryVisitScreen({ route, navigation }: any) {
     const apiaryNavData = route.params.apiaryNavData;
     const [apiaryStatus, setApiaryStatus] = useState(0);
 
+
     const [apiaryData, setApiaryData] = useState<any>({
         tOxalic: apiaryNavData.tOxalic,
         tAmitraz: apiaryNavData.tAmitraz,
         tFlumetrine: apiaryNavData.tFlumetrine,
         tFence: apiaryNavData.tFence
     });
+    const [apiaryImage, setApiaryImage] = useState()
+
+
     const [apiaryTreatment, setApiaryTreatment] = useState<any>({
         tOxalic: false,
         tAmitraz: false,
@@ -146,7 +151,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
 
     const handleSubmit = async () => {
 
-        updateApiary(apiaryNavData.id, apiaryData).then(createdSuccessful => {
+        updateApiary(apiaryImage, apiaryNavData.id, apiaryData).then(createdSuccessful => {
             if (createdSuccessful) {
                 ToastAndroid.show(`Cambios realizados`, ToastAndroid.SHORT);
                 navigation.navigate('ApiaryListScreen')
@@ -182,8 +187,8 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 </View>
             </View>
             <View style={styles.apiaryInfo}>
-
-                <ImagePick imageChange={handleChangeData} />
+   
+            <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={apiaryNavData.image ?  `${APIARY_IMG_URL}${apiaryNavData.image}`  : '../assets/images/apiary-default.png'} />
 
                 {/* NOMBRE DEL APIARIO */}
                 <View style={styles.apiaryNameContainer}>
@@ -397,16 +402,18 @@ const styles = StyleSheet.create({
     apiaryStatusContainer: {
         width: '80%',
         justifyContent: 'center',
+        alignItems:'center',
         flexDirection: 'row',
+        marginVertical: 5,
     },
     apiaryInfoItem: {
         width: '80%',
     },
     apiaryIcon: {
-        height: 50,
+        height: 40,
+        width: 40,
+        marginRight: 10,
         tintColor: colors.YELLOW,
-        width: 50,
-        marginRight: 5,
         resizeMode: 'contain',
     },
     apiaryInfoItemData: {
@@ -440,7 +447,7 @@ const styles = StyleSheet.create({
     apiaryTreatmentRow: {
         flexDirection: 'row',
         marginVertical: 10,
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
     },
 
     apiaryTreatment: {

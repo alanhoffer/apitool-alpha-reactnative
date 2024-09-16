@@ -31,7 +31,6 @@ const ApiaryInfo: React.FC<ApiaryInfoProps> = ({ label, value, image, isActive =
 
 const styles = StyleSheet.create({
   apiaryDataContainer: {
-    width: '50%',
     flexDirection: 'row',
     alignItems: 'center',
   },

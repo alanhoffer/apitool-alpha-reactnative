@@ -54,6 +54,7 @@ export async function createApiary(profileImage: any, ApiaryData: any) {
   data.append('tComment', ApiaryData.tComment);
   data.append('transhumance', ApiaryData.transhumance);
   data.append('settings', JSON.stringify(ApiaryData.settings));
+  console.log(data)
 
 
   const token = await getToken();
@@ -99,21 +100,45 @@ export const deleteApiary = async (apiaryId: number) => {
   }
 };
 
-export const updateApiary = async (apiaryId: number, ApiaryData: any) => {
+export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: any) => {
   try {
+    const data = new FormData();
+
+    // Añade la imagen solo si está presente
+    if (profileImage) {
+      const selectedImage: any = {
+        uri: profileImage.uri,
+        name: 'UpdatedImageName.jpg',
+        type: 'image/jpg',
+      };
+      data.append("file", selectedImage);
+    }
+
+    // Añade los datos del apiario al FormData
+    Object.keys(ApiaryData).forEach(key => {
+      if (ApiaryData[key] !== undefined && ApiaryData[key] !== null) {
+        data.append(key, ApiaryData[key]);
+      }
+    });
+
+
     const token = await getToken();
-    const response = await axios.put(`${BASE_URL}apiarys/${apiaryId}`, ApiaryData, {
+
+    // Realiza la solicitud PUT con FormData
+    const response = await axios.put(`${BASE_URL}apiarys/${apiaryId}`, data, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'multipart/form-data',  // Importante para enviar archivos
       },
     });
+
     return response.status === 200;
   } catch (error) {
     console.error('Error updating apiary:', error);
     return false;
   }
 };
+
 
 export const updateSettings = async (settingsData: any) => {
   try {

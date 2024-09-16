@@ -56,19 +56,21 @@ export default function ApiarySlider(props: Props) {
 const styles = StyleSheet.create({
 
     apiaryInfoContainer:{
-        flexDirection:'row',
+        width: '80%',
+        justifyContent: 'center',
+        alignItems:'center',
+        flexDirection: 'row',
         marginVertical: 5,
-        maxWidth: '80%',
     },
 
     apiaryInfoItem: {
         width: '80%',
     },
     apiaryIcon: {
-        height: 50,
+        height: 40,
+        width: 40,
+        marginRight: 10,
         tintColor: colors.YELLOW,
-        width: 50,
-        marginRight: 5,
         resizeMode: 'contain',
     },
     apiaryInfoItemData: {

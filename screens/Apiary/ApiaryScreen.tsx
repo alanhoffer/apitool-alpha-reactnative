@@ -26,7 +26,6 @@ function ApiaryScreen({ route, navigation }: any) {
         for (let i = 0; i < items.length; i += 2) {
             rows.push(items.slice(i, i + 2));
         }
-        console.log(rows)
         return (
             <View style={styles.apiaryInfoContainer}>
                 {rows.map((row, rowIndex) => (
@@ -141,6 +140,7 @@ const styles = StyleSheet.create({
     },
     apiaryDataContainer: {
         flexDirection: 'row',
+        width: '55%'
     },
     apiaryCommentContainer: {
         width: wp('80%'),
