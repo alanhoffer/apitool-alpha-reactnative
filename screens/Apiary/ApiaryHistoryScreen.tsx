@@ -11,6 +11,7 @@ export default function ApiaryHistoryScreen({ route, navigation }: any) {
 
     const [historyByDate, setHistoryByDate] = useState({});
 
+
     async function dateFilter() {
         const arreglo = await getHistory(apiaryData.id);
 
@@ -28,6 +29,7 @@ export default function ApiaryHistoryScreen({ route, navigation }: any) {
             }
             temporalHistory[dateTime].push(obj);
         });
+        console.log(arreglo)
 
         setHistoryByDate(temporalHistory);
     }

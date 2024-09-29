@@ -24,6 +24,21 @@ export const getApiarys = async () => {
   }
 };
 
+export const getApiaryAndHivesCount = async () => {
+  try {
+    const token = await getToken();
+    const response = await axios.get(`${BASE_URL}apiarys/all/count`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching apiarys:', error);
+    return null;
+  }
+};
+
 export async function createApiary(profileImage: any, ApiaryData: any) {
 
   const data = new FormData();

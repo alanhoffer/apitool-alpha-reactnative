@@ -9,6 +9,7 @@ type IAuthProvider = {
     sessionInfo?: Object
     accessToken?: string | null
     Register?: Function
+    isLoggedIn?: Function
     Login: Function
     Logout?: Function
 };
@@ -67,9 +68,8 @@ export const AuthProvider = ({ children }: any) => {
             AsyncStorage.getItem('access_token').then(token => {
                 if (token !== null) {
                     setAccessToken(token)
-                    console.log("token", token)
                     setLoading(false);
-                    return true
+                    return token
                 }
                 setAccessToken('')
                 setLoading(false);
@@ -112,6 +112,7 @@ export const AuthProvider = ({ children }: any) => {
             Register,
             Login,
             Logout,
+            isLoggedIn,
         }}>
             {children}
         </AuthContext.Provider>

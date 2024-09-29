@@ -133,7 +133,7 @@ const ApiaryListScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    padding: 20,
     paddingTop: 0,
     backgroundColor: 'white',
   },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   startHarvestingIcon: {
     position: 'absolute',
-    bottom: '5%',
+    bottom: '15%',
     right: '10%',
     padding: 5,
     borderRadius: 100,

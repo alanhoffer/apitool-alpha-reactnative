@@ -1,8 +1,13 @@
 import { IApiarySettings } from './IApiarySettings';
 
-export interface IApiary {
+export interface IApiary extends IApiaryData {
     id: number;
     userId: number;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface IApiaryData {
     name: string;
     image: string;
     hives: number;
@@ -19,7 +24,5 @@ export interface IApiary {
     tFence: number;
     transhumance: number;
     tComment: string;
-    createdAt: Date;
-    updatedAt: Date;
     settings: IApiarySettings;
 }

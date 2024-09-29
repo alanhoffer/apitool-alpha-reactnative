@@ -26,12 +26,14 @@ import colors from "../../constants/colors";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
+import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
+import { getApiaryStatusLabel } from "../../helpers/Apiary/getApiaryStatusLabel";
 
 function ApiaryAddScreen({ route, navigation }: any) {
 
     const apiarySettings = route.params.apiarySettings;
     const [apiaryStatus, setApiaryStatus] = useState(0)
-    const [apiaryData, setApiaryData] = useState<any>({
+    const [apiaryData, setApiaryData] = useState<IApiaryData>({
         name: '',
         image: '',
         hives: 12,
@@ -84,7 +86,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
                             <Pressable key={index} onPress={() => toggleTreatmentDays(item.key)}>
                                 <ApiaryInfo
                                     label={item.title}
-                                    value={apiaryData[item.key]}
+                                    value={apiaryData[item.key as keyof IApiaryData]}
                                     image={item.image}
                                     isVisible={item.isVisible}
                                     isActive={apiaryTreatment[item.key]}
@@ -103,7 +105,7 @@ function ApiaryAddScreen({ route, navigation }: any) {
         setApiaryTreatment({
             ...apiaryTreatment, [treatment]: true
         });
-        switch (apiaryData[treatment]) {
+        switch (apiaryData[treatment as keyof IApiaryData]) {
             case 0:
                 handleChangeData(15, treatment)
                 break;
@@ -125,32 +127,19 @@ function ApiaryAddScreen({ route, navigation }: any) {
         }
     }
 
+
     const handleApiaryStatus = (value: number) => {
-        setApiaryStatus(value)
-        switch (value) {
-            case 0:
-                handleChangeData('Malo', 'status');
-                break;
-            case 1:
-                handleChangeData('Medio', 'status');
-                break;
-            case 2:
-                handleChangeData('Bueno', 'status');
-                break;
-            case 3:
-                handleChangeData('Excelente', 'status');
-                break;
-        }
-    }
-
-
-    const handleChangeData = (value: number | string, campo: string) => {
-        setApiaryData({
-            ...apiaryData,
-            [campo]: value
-        });
+        setApiaryStatus(value);
+        const statusLabel = getApiaryStatusLabel(value);
+        handleChangeData(statusLabel, 'status');
     };
 
+    const handleChangeData = (value: string | number, field: keyof IApiaryData) => {
+        setApiaryData((prevState) => ({
+            ...prevState,
+            [field]: value
+        }));
+    };
 
 
     const handleSubmit = async () => {
@@ -184,10 +173,10 @@ function ApiaryAddScreen({ route, navigation }: any) {
             headerRight: () =>
                 <HeaderNoIconButton
                     text='Finalizar'
-                    move={() => handleSubmit()}
+                    move={handleSubmit}
                 />,
         })
-    }, [apiaryData])
+    }, [apiaryData, navigation])
 
 
     return (

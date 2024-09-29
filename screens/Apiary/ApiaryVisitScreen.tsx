@@ -175,8 +175,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         })
     }, [apiaryData])
 
-
-
     return (
         <ScrollView style={styles.scrollContainer}>
 

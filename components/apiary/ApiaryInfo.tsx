@@ -1,10 +1,12 @@
 import React from "react";
 import { StyleSheet, View, Image, Text, ImageSourcePropType } from "react-native";
 import colors from "../../constants/colors";
+import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
+import { IApiarySettings } from "../../constants/interfaces/Apiary/IApiarySettings";
 
 interface ApiaryInfoProps {
   label: string;
-  value: string;
+  value: any;
   image: ImageSourcePropType;
   isActive: boolean;
   isVisible?: boolean; // Propiedad opcional para controlar la visibilidad
