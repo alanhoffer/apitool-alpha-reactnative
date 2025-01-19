@@ -17,11 +17,11 @@ import colors from '../../constants/colors';
 export const ApiaryCard = ({ apiaryInfo }: any) => {
 
   const isTreatmentsActive = () => {
-    return apiaryInfo.tAmitraz || apiaryInfo.tOxalic || apiaryInfo.tFlumetrine >= 1;
+    return apiaryInfo.tAmitraz || apiaryInfo.tOxalic || apiaryInfo.tFlumetrine <= 1;
   }
 
   const isFoodActive = () => {
-    return apiaryInfo.honey || apiaryInfo.sugar || apiaryInfo.levudex >= 1;
+    return apiaryInfo.honey || apiaryInfo.sugar || apiaryInfo.levudex <= 1;
   }
 
   return (
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     resizeMode: 'contain',
-    tintColor: colors.YELLOW,
+    tintColor: colors.RED_LIGHT,
     marginRight: 5,
   },
   apiaryHivesText: {

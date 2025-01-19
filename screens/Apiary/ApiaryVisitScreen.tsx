@@ -339,7 +339,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                     <View style={styles.apiaryCommentContainer}>
                         <TextInput
                             style={styles.apiaryInfoComment}
-                            value={apiaryData.tComment}
                             onChangeText={(text) => handleChangeData(text, 'tComment')}
                             placeholder='Escribe un comentario aqui'
                             placeholderTextColor='#BCBDC5'

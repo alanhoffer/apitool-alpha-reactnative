@@ -2,13 +2,9 @@ import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-nat
 import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, TouchableOpacity, ToastAndroid, Pressable } from 'react-native';
 import { Slider } from '@rneui/themed';
 import ApiarySlider from '../../components/apiary/apiarySlider';
-import ApiaryTreatment from "../../components/apiary/ApiaryTreatment";
 import { useEffect, useState } from 'react';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
-import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
-import { statusToText } from "../../modules/Apiary/ApiaryStatus";
-import { fenceToDays } from "../../modules/Apiary/ApiaryFence"
 import ImagePick from "../../components/imagePicker";
 
 
@@ -188,13 +184,11 @@ function ApiaryAddScreen({ route, navigation }: any) {
                 </View>
             </View>
             <View style={styles.apiaryInfo}>
-
-                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={'../assets/images/apiary-default.png'} />
+                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={require('../../assets/images/apiary-default.png')} />
 
                 <View style={styles.apiaryNameContainer}>
                     <TextInput
                         style={styles.apiaryInfoName}
-                        value={apiaryData.name}
                         maxLength={20}
                         onChangeText={(value) => handleChangeData(value, 'name')}
                         placeholder='Apiary Name'
@@ -405,7 +399,7 @@ const styles = StyleSheet.create({
     apiaryStatusContainer: {
         width: '80%',
         justifyContent: 'center',
-        alignItems:'center',
+        alignItems: 'center',
         flexDirection: 'row',
         marginVertical: 5,
     },

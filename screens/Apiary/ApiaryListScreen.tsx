@@ -29,15 +29,21 @@ const ApiaryListScreen = ({ navigation }: any) => {
   async function loadApiarys() {
     const apiaryData = await getApiarys();
     if (apiaryData != null) {
-      setApiaryList(apiaryData);
+      // Ordenar por fecha de actualización más reciente
+      const sortedApiaryData = apiaryData.sort((a: IApiary, b: IApiary) => {
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+      setApiaryList(sortedApiaryData);
       setApiarysLoaded(true);
     }
   }
+
 
   const handleToggleHarvest = async () => {
     try {
       await toggleHarvestAll(!harvesting);
       setHarvesting(prev => !prev);
+      onRefresh();
     } catch (error) {
       console.error('Error toggling harvest all:', error);
     }
@@ -123,7 +129,7 @@ const ApiaryListScreen = ({ navigation }: any) => {
         <Icon
           name="rose-outline"
           size={26}
-          color={harvesting ? colors.YELLOW : colors.BLACK_LIGHT} 
+          color={harvesting ? colors.YELLOW : colors.BLACK_LIGHT}
         />
       </TouchableOpacity>
     </View>

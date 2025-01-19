@@ -149,6 +149,12 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ flexGrow: 1, height: '100%' }}
                 ListHeaderComponent={ListHeader}
+                ListFooterComponent={ListFooter}
+                ListEmptyComponent={ // Agregamos el componente cuando no hay elementos
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyText}>No hay tambores escaneados</Text>
+                    </View>
+                }
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -168,7 +174,6 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
             />
-            <ListFooter />
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.button} onPress={handleRemoveAll}>
                     <View style={styles.buttonContent}>
@@ -245,6 +250,15 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#ffffff',
         fontSize: 16,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 18,
+        color: '#888',
     },
 });
 
