@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useState } from 'react';
 import getTheme from '../../constants/themes';
@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = ({ route, navigation }: any) => {
 
-    const { Login } = useContext(AuthContext)
+    const { Login, isLoading } = useContext(AuthContext) // Added isLoading
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,38 +17,41 @@ const LoginScreen = ({ route, navigation }: any) => {
 
     const handleRemember = () => {
         setRemember(!remember)
-        if(!remember){
-            ToastAndroid.show('Email guardado!' , ToastAndroid.SHORT);
+        if (!remember) {
+            ToastAndroid.show('Email guardado!', ToastAndroid.SHORT);
             return AsyncStorage.setItem('email', email);
         }
         return AsyncStorage.removeItem('email')
     }
 
     const handleLogin = () => {
-        Login(email, password)
-        .then((loginSuccessful: boolean) => {
-            if (loginSuccessful) {
-                ToastAndroid.show('Inicio de sesión exitoso' , ToastAndroid.SHORT);
-            } else {
-                ToastAndroid.show('No se pudo iniciar sesión', ToastAndroid.SHORT);
-            }
-        })
-        .catch((error: Error) => {
-            ToastAndroid.show('Ocurrió un error al hacer la petición:' + error, ToastAndroid.SHORT);
+        if (!email || !password) {
+             ToastAndroid.show('Por favor completa todos los campos', ToastAndroid.SHORT);
+             return;
+        }
 
-        });
+        Login(email, password)
+            .then((loginSuccessful: boolean) => {
+                if (loginSuccessful) {
+                    ToastAndroid.show('Inicio de sesión exitoso', ToastAndroid.SHORT);
+                } else {
+                    ToastAndroid.show('No se pudo iniciar sesión. Verifica tus credenciales.', ToastAndroid.SHORT);
+                }
+            })
+            .catch((error: Error) => {
+                ToastAndroid.show('Ocurrió un error al hacer la petición.', ToastAndroid.SHORT);
+            });
     }
 
     useEffect(() => {
-        
         AsyncStorage.getItem('email')
-        .then((response:any) => {
-            if (response){
-                setEmail(response)
-                setRemember(true);
-            }
-        })
-    })
+            .then((response: any) => {
+                if (response) {
+                    setEmail(response)
+                    setRemember(true);
+                }
+            })
+    }, []) // Added dependency array
 
     return (
         <View style={styles.container}>
@@ -66,6 +69,8 @@ const LoginScreen = ({ route, navigation }: any) => {
                     placeholder="Email"
                     onChangeText={text => setEmail(text)}
                     value={email}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
                 />
                 <TextInput
                     style={styles.input}
@@ -89,8 +94,16 @@ const LoginScreen = ({ route, navigation }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>LOG IN</Text>
+            <TouchableOpacity 
+                style={[styles.button, isLoading && styles.buttonDisabled]} 
+                onPress={handleLogin}
+                disabled={isLoading}
+            >
+                {isLoading ? (
+                     <ActivityIndicator color={getTheme().text} />
+                ) : (
+                    <Text style={styles.buttonText}>LOG IN</Text>
+                )}
             </TouchableOpacity>
         </View>
     );
@@ -181,6 +194,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 48,
         paddingVertical: 12,
         borderRadius: 8,
+        minWidth: 150,
+        alignItems: 'center',
+    },
+    buttonDisabled: {
+        opacity: 0.7,
     },
     buttonText: {
         fontSize: 14,

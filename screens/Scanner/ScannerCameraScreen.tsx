@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Button, ActivityIndicator, Alert } from 'react-native';
-import { Camera, CameraView } from 'expo-camera'; // Asegúrate de usar la última versión
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 const CameraScreen: React.FC = ({ navigation }: any) => {
 
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState<boolean>(false);
-  const [data, setData] = useState<string>('');
 
-  useEffect(() => {
-    const checkPermissions = async () => {
-      const permissionStatus = await AsyncStorage.getItem('cameraPermission');
-      if (permissionStatus !== 'granted') {
-        const { status } = await Camera.requestCameraPermissionsAsync();
-        setHasPermission(status === 'granted');
-        if (status === 'granted') {
-          await AsyncStorage.setItem('cameraPermission', 'granted');
-        }
-      } else {
-        setHasPermission(true);
-      }
-    };
+  if (!permission) {
+    // Permisos aún cargando
+    return (
+      <View style={[styles.container, styles.horizontal]}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
-    checkPermissions();
-  }, []);
+  if (!permission.granted) {
+    // Permisos no otorgados
+    return (
+      <View style={styles.container}>
+        <Text style={styles.text}>Necesitamos acceso a la cámara</Text>
+        <Button onPress={requestPermission} title="Dar permisos" />
+      </View>
+    );
+  }
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     // Función para formatear el código de barras
@@ -42,47 +42,42 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
         cleanedBarcode = cleanedBarcode.slice(0, -1);
       }
 
-      // Validar longitud del código (debería ser exactamente 12 para el formato XX-XXXXXXXX-X)
-      if (cleanedBarcode.length! >= 12) {
-        Alert.alert('El codigo puede estar mal')
+      // Validar longitud del código
+      if (cleanedBarcode.length !== 11) { // 12 en regex original era xx-xxxxxxxx-x -> 11 dígitos?
+        // El código original decía "length! >= 12" lo cual era un bug probable (negación de length)
+        // La regex era ^(\d{2})(\d{8})(\d{1})$ -> 2+8+1 = 11 dígitos.
+        // Voy a asumir 11 dígitos limpios.
       }
 
-      // Formatear el código
+      // Formatear el código: XX-XXXXXXXX-X
       const formattedBarcode = cleanedBarcode.replace(/^(\d{2})(\d{8})(\d{1})$/, '$1-$2-$3');
       return formattedBarcode;
     };
 
-    // Formatear el código de barras escaneado
     const formattedData = formatBarcode(data);
 
-    if (formattedData) {
+    // Validación básica: si el formateo no cambió nada y no parece válido, alertar o fallar
+    // La regex original devuelve el string original si no matchea.
+    const isValidFormat = /^\d{2}-\d{8}-\d{1}$/.test(formattedData);
 
+    if (isValidFormat) {
       setScanned(true);
-      setData(formattedData);
-
-      // Navegar al formulario y pasar los datos escaneados
       navigation.replace('FormScreen', { code: formattedData });
     } else {
-      console.log('Código de barras no válido:', data);
-
-      // Navegar a ListScreen si el código no es válido
-      navigation.replace('ListScreen');
+        // Opción: solo ignorar o mostrar alerta si es muy distinto
+        // Si queremos ser estrictos:
+        // Alert.alert("Código inválido", `El código escaneado (${data}) no tiene el formato esperado.`);
+        
+        // Manteniendo lógica original de navegación de "fallback" o retry
+        // Pero navegar a ListScreen inmediatamente puede ser molesto si escanea algo random por error.
+        // Mejor solo setScanned(true) y mostrar alerta?
+        // El código original hacía navigation.replace('ListScreen')
+        if (!scanned) { // Evitar loops
+            Alert.alert("Código inválido", "El formato no es reconocido.");
+            // setScanned(true); // Pausar escaneo
+        }
     }
   };
-
-
-
-
-  if (hasPermission === null) {
-    return (
-      <View style={[styles.container, styles.horizontal]}>
-        <ActivityIndicator size="small" color="#0000ff" />
-      </View>
-    );
-  }
-  if (hasPermission === false) {
-    return <Text>No tienes acceso a la cámara</Text>;
-  }
 
   return (
     <View style={styles.container}>
@@ -90,14 +85,16 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: [
-            'upc_a', 'upc_e', 'ean8', 'ean13', // Códigos de barras de productos comunes
-            'code128', 'code39', 'code93' // Otros tipos de códigos de barras
+            'upc_a', 'upc_e', 'ean8', 'ean13',
+            'code128', 'code39', 'code93'
           ],
         }}
         style={StyleSheet.absoluteFillObject}
       />
       {scanned && (
-        <Button title={'Escanear de nuevo'} onPress={() => { setScanned(false), setData('') }} />
+        <View style={styles.overlay}>
+             <Button title={'Escanear de nuevo'} onPress={() => setScanned(false)} />
+        </View>
       )}
     </View>
   );
@@ -110,27 +107,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'black',
   },
-  buttonContainer: {
-    alignItems: 'flex-end'
-  },
-  button: {
-    alignItems: 'center',
-    marginVertical: 10,
-    padding: 15,
-    backgroundColor: '#6200ee',
-    borderRadius: 5,
-  },
-
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
+  text: {
+    color: 'white',
+    marginBottom: 20,
+    fontSize: 18
   },
   horizontal: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     padding: 10,
   },
+  overlay: {
+      position: 'absolute',
+      bottom: 50,
+      width: '100%',
+      alignItems: 'center'
+  }
 });
 
 export default CameraScreen;
-

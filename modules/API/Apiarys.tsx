@@ -1,22 +1,11 @@
-import axios from "axios";
-import { BASE_URL } from "../../constants/api";
-import { getToken as getSecureToken } from '../../helpers/storage';
-import { Alert, ToastAndroid } from "react-native";
+import apiClient from './client';
+import { IApiary, IApiaryData } from '../../constants/interfaces/Apiary/IApiary';
+import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
+import { ToastAndroid } from "react-native";
 
-const getToken = async () => {
-  const token = await getSecureToken();
-  if (!token) throw new Error('No token found');
-  return token;
-};
-
-export const getApiarys = async () => {
+export const getApiarys = async (): Promise<IApiary[] | null> => {
   try {
-    const token = await getToken();
-    const response = await axios.get(`${BASE_URL}apiarys`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await apiClient.get<IApiary[]>('apiarys');
     return response.data;
   } catch (error) {
     console.error('Error fetching apiarys:', error);
@@ -26,12 +15,7 @@ export const getApiarys = async () => {
 
 export const getApiaryAndHivesCount = async () => {
   try {
-    const token = await getToken();
-    const response = await axios.get(`${BASE_URL}apiarys/all/count`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await apiClient.get('apiarys/all/count');
     return response.data;
   } catch (error) {
     console.error('Error fetching apiarys:', error);
@@ -39,7 +23,7 @@ export const getApiaryAndHivesCount = async () => {
   }
 };
 
-export async function createApiary(profileImage: any, ApiaryData: any) {
+export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
 
   const data = new FormData();
   if (profileImage) {
@@ -54,60 +38,40 @@ export async function createApiary(profileImage: any, ApiaryData: any) {
 
   data.append("image", ApiaryData.image);
   data.append('name', ApiaryData.name);
-  data.append('hives', ApiaryData.hives);
+  data.append('hives', String(ApiaryData.hives));
   data.append('status', ApiaryData.status);
-  data.append('honey', ApiaryData.honey);
-  data.append('levudex', ApiaryData.levudex);
-  data.append('sugar', ApiaryData.sugar);
-  data.append('box', ApiaryData.box);
-  data.append('boxMedium', ApiaryData.boxMedium);
-  data.append('boxSmall', ApiaryData.boxSmall);
-  data.append('tOxalic', ApiaryData.tOxalic);
-  data.append('tAmitraz', ApiaryData.tAmitraz);
-  data.append('tFlumetrine', ApiaryData.tFlumetrine);
-  data.append('tFence', ApiaryData.tFence);
+  data.append('honey', String(ApiaryData.honey));
+  data.append('levudex', String(ApiaryData.levudex));
+  data.append('sugar', String(ApiaryData.sugar));
+  data.append('box', String(ApiaryData.box));
+  data.append('boxMedium', String(ApiaryData.boxMedium));
+  data.append('boxSmall', String(ApiaryData.boxSmall));
+  data.append('tOxalic', String(ApiaryData.tOxalic));
+  data.append('tAmitraz', String(ApiaryData.tAmitraz));
+  data.append('tFlumetrine', String(ApiaryData.tFlumetrine));
+  data.append('tFence', String(ApiaryData.tFence));
   data.append('tComment', ApiaryData.tComment);
-  data.append('transhumance', ApiaryData.transhumance);
+  data.append('transhumance', String(ApiaryData.transhumance));
+  if (ApiaryData.latitude) data.append('latitude', String(ApiaryData.latitude));
+  if (ApiaryData.longitude) data.append('longitude', String(ApiaryData.longitude));
   data.append('settings', JSON.stringify(ApiaryData.settings));
-  console.log(data)
 
-
-  const token = await getToken();
-
-
-  return new Promise(async (resolve, reject) => {
-    fetch(`${BASE_URL}apiarys`, {
-      method: "POST",
+  try {
+    const response = await apiClient.post('apiarys', data, {
       headers: {
-        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
       },
-      body: data,
-    })
-      .then(response => {
-        if (response.status == 201) {
-          resolve(response) // peticion aceptada apiario creado
-        }
-        else {
-          resolve(false) // peticion denegada apiario no creado
-        }
-      })
-      .catch((error: Error) => {
-        reject(error) // error en la peticion
-      })
-
-  })
-
+    });
+    return response;
+  } catch (error) {
+    console.error('Error creating apiary:', error);
+    throw error;
+  }
 }
 
 export const deleteApiary = async (apiaryId: number) => {
   try {
-    const token = await getToken();
-    const response = await axios.delete(`${BASE_URL}apiarys/${apiaryId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await apiClient.delete(`apiarys/${apiaryId}`);
     return response.status === 200;
   } catch (error) {
     console.error('Error deleting apiary:', error);
@@ -115,7 +79,7 @@ export const deleteApiary = async (apiaryId: number) => {
   }
 };
 
-export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: any) => {
+export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
   try {
     const data = new FormData();
 
@@ -130,20 +94,23 @@ export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryDa
     }
 
     // Añade los datos del apiario al FormData
-    Object.keys(ApiaryData).forEach(key => {
-      if (ApiaryData[key] !== undefined && ApiaryData[key] !== null) {
-        data.append(key, ApiaryData[key]);
+    // Nota: Iteramos sobre las keys, pero para FormData necesitamos strings.
+    // Además, ApiaryData ahora es Partial, puede tener undefined.
+    const keys = Object.keys(ApiaryData) as Array<keyof IApiaryData>;
+    keys.forEach(key => {
+      const value = ApiaryData[key];
+      if (value !== undefined && value !== null) {
+          if (key === 'settings') {
+             data.append(key, JSON.stringify(value));
+          } else {
+             data.append(key, String(value));
+          }
       }
     });
 
-
-    const token = await getToken();
-
-    // Realiza la solicitud PUT con FormData
-    const response = await axios.put(`${BASE_URL}apiarys/${apiaryId}`, data, {
+    const response = await apiClient.put(`apiarys/${apiaryId}`, data, {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data',  // Importante para enviar archivos
+        'Content-Type': 'multipart/form-data',
       },
     });
 
@@ -155,15 +122,9 @@ export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryDa
 };
 
 
-export const updateSettings = async (settingsData: any) => {
+export const updateSettings = async (settingsData: IApiarySettings) => {
   try {
-    const token = await getToken();
-    const response = await axios.put(`${BASE_URL}apiarys/settings/${settingsData.id}`, settingsData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await apiClient.put(`apiarys/settings/${settingsData.id}`, settingsData);
     return response.status === 200;
   } catch (error) {
     console.error('Error updating settings:', error);
@@ -173,18 +134,7 @@ export const updateSettings = async (settingsData: any) => {
 
 export const toggleHarvestAll = async (harvesting: boolean) => {
   try {
-    const token = await getToken();
-
-    const response = await axios.put(
-      `${BASE_URL}apiarys/harvest/all`,
-      { harvesting }, // Envía el valor de harvesting en el cuerpo de la solicitud
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await apiClient.put('apiarys/harvest/all', { harvesting });
 
     if (response.status === 200) {
       ToastAndroid.show(`${harvesting ? 'Apiarios en cosecha' : 'Apiarios fuera de cosecha'}.`, ToastAndroid.SHORT);
@@ -199,12 +149,7 @@ export const toggleHarvestAll = async (harvesting: boolean) => {
 
 export const getHistory = async (apiaryId: number) => {
   try {
-    const token = await getToken();
-    const response = await axios.get(`${BASE_URL}apiarys/history/${apiaryId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.get(`apiarys/history/${apiaryId}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching history:', error);

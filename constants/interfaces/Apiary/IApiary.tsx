@@ -25,4 +25,6 @@ export interface IApiaryData {
     transhumance: number;
     tComment: string;
     settings: IApiarySettings;
+    latitude?: number;
+    longitude?: number;
 }

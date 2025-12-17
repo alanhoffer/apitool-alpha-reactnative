@@ -1,11 +1,13 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, TouchableOpacity, ToastAndroid, Pressable } from 'react-native';
+import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, TouchableOpacity, ToastAndroid, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { Slider } from '@rneui/themed';
 import ApiarySlider from '../../components/apiary/apiarySlider';
 import { useEffect, useState } from 'react';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
 import ImagePick from "../../components/imagePicker";
+import * as Location from 'expo-location';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 
 
@@ -46,8 +48,37 @@ function ApiaryAddScreen({ route, navigation }: any) {
         transhumance: 0,
         tFence: 0,
         settings: apiarySettings,
-        tComment: ''
+        tComment: '',
+        latitude: 0,
+        longitude: 0
     })
+
+    const [loadingLocation, setLoadingLocation] = useState(false);
+
+    const handleGetLocation = async () => {
+        setLoadingLocation(true);
+        try {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación');
+                setLoadingLocation(false);
+                return;
+            }
+
+            let location = await Location.getCurrentPositionAsync({});
+            setApiaryData(prev => ({
+                ...prev,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+            }));
+            ToastAndroid.show('Ubicación capturada', ToastAndroid.SHORT);
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo obtener la ubicación');
+            console.error(error);
+        } finally {
+            setLoadingLocation(false);
+        }
+    };
 
     const [apiaryImage, setApiaryImage] = useState()
 
@@ -195,6 +226,26 @@ function ApiaryAddScreen({ route, navigation }: any) {
                         placeholderTextColor='#BCBDC5'
                     />
                 </View>
+
+                {/* UBICACION GPS */}
+                <TouchableOpacity style={styles.locationButton} onPress={handleGetLocation} disabled={loadingLocation}>
+                    {loadingLocation ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <View style={styles.locationButtonContent}>
+                            <Icon name="location-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
+                            <Text style={styles.locationButtonText}>
+                                {apiaryData.latitude ? 'Actualizar Ubicación' : 'Capturar Ubicación'}
+                            </Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+                {apiaryData.latitude ? (
+                    <Text style={styles.locationText}>
+                        Lat: {apiaryData.latitude.toFixed(4)}, Long: {apiaryData.longitude.toFixed(4)}
+                    </Text>
+                ) : null}
+
 
                 {/* CANTIDAD DE COLMENAS */}
                 <ApiarySlider

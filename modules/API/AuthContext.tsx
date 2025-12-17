@@ -1,7 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { getToken, setToken, removeToken } from '../../helpers/storage';
-import axios from 'axios';
-import { BASE_URL } from '../../constants/api';
+import apiClient from './client';
 
 
 type IAuthProvider = {
@@ -25,7 +24,7 @@ export const AuthProvider = ({ children }: any) => {
 
     const Login = (email: string, password: string): Promise<boolean> => {
         return new Promise((resolve, reject) => {
-          axios.post(`${BASE_URL}auth/login`, { email, password })
+          apiClient.post('auth/login', { email, password })
             .then(async response => {
               const accessToken = response.data['access_token'];
               if (accessToken) {
@@ -45,7 +44,7 @@ export const AuthProvider = ({ children }: any) => {
       
 
       const Register = (email: string, password: string) => {
-        return axios.post(`${BASE_URL}auth/register`, { email, password })
+        return apiClient.post('auth/register', { email, password })
           .then(async response => {
             let accessToken = response.data['access_token'];
             if (accessToken) {
