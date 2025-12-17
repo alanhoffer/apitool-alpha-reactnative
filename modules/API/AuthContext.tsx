@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken, setToken, removeToken } from '../../helpers/storage';
 import axios from 'axios';
 import { BASE_URL } from '../../constants/api';
 
@@ -26,11 +26,11 @@ export const AuthProvider = ({ children }: any) => {
     const Login = (email: string, password: string): Promise<boolean> => {
         return new Promise((resolve, reject) => {
           axios.post(`${BASE_URL}auth/login`, { email, password })
-            .then(response => {
+            .then(async response => {
               const accessToken = response.data['access_token'];
               if (accessToken) {
                 setAccessToken(accessToken);
-                AsyncStorage.setItem('access_token', accessToken);
+                await setToken(accessToken);
                 resolve(true); // inicio de sesión exitoso
               } else {
                 resolve(false); // no se encontró un token de acceso válido
@@ -46,11 +46,11 @@ export const AuthProvider = ({ children }: any) => {
 
       const Register = (email: string, password: string) => {
         return axios.post(`${BASE_URL}auth/register`, { email, password })
-          .then(response => {
+          .then(async response => {
             let accessToken = response.data['access_token'];
             if (accessToken) {
               setAccessToken(accessToken);
-              AsyncStorage.setItem('access_token', accessToken);
+              await setToken(accessToken);
             }
             setLoading(false);
             return true; // registro exitoso
@@ -62,36 +62,31 @@ export const AuthProvider = ({ children }: any) => {
           });
       };
 
-    const isLoggedIn = () => {
+    const isLoggedIn = async () => {
         try {
             setLoading(true);
-            AsyncStorage.getItem('access_token').then(token => {
-                if (token !== null) {
-                    setAccessToken(token)
-                    setLoading(false);
-                    return token
-                }
-                setAccessToken('')
+            const token = await getToken();
+            if (token !== null) {
+                setAccessToken(token)
                 setLoading(false);
-                return false
-            })
+                return token
+            }
+            setAccessToken('')
+            setLoading(false);
+            return false
 
         } catch (e) {
+            setLoading(false);
             return null
         }
     }
 
     const Logout = (): Promise<boolean> => {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
           try {
-            AsyncStorage.removeItem('access_token')
-              .then(() => {
-                resolve(true); // cierre de sesión exitoso
-              })
-              .catch(error => {
-                console.log(error);
-                resolve(false); // no se pudo remover el token de acceso
-              });
+            await removeToken();
+            setAccessToken(null);
+            resolve(true); // cierre de sesión exitoso
           } catch (error) {
             console.log(error);
             reject(error); // ocurrió un error al hacer la operación de eliminación

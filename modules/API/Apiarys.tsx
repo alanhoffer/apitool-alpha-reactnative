@@ -1,10 +1,10 @@
 import axios from "axios";
 import { BASE_URL } from "../../constants/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getToken as getSecureToken } from '../../helpers/storage';
 import { Alert, ToastAndroid } from "react-native";
 
 const getToken = async () => {
-  const token = await AsyncStorage.getItem('access_token');
+  const token = await getSecureToken();
   if (!token) throw new Error('No token found');
   return token;
 };

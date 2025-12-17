@@ -14,12 +14,15 @@
     "@react-navigation/native-stack": "^6.11.0",
     "@rneui/themed": "^4.0.0-rc.8",
     "axios": "^1.7.7",
-    "expo": "^51.0.0",
+    "expo": "~51.0.39",
     "expo-build-properties": "~0.12.5",
     "expo-camera": "^15.0.16",
-    "expo-image-picker": "~15.0.7",
+    "expo-image-picker": "~15.1.0",
+    "expo-location": "~17.0.1",
+    "expo-secure-store": "~13.0.2",
     "expo-sharing": "^12.0.1",
     "expo-status-bar": "~1.12.1",
+    "expo-updates": "~0.25.28",
     "react": "18.2.0",
     "react-native": "0.74.5",
     "react-native-responsive-screen": "^1.4.2",
@@ -28,9 +31,7 @@
     "react-native-swiper": "^1.6.0",
     "react-native-vector-icons": "^10.1.0",
     "rn-fetch-blob": "^0.12.0",
-    "xlsx": "^0.18.5",
-    "expo-location": "~17.0.1",
-    "expo-updates": "~0.25.25"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
