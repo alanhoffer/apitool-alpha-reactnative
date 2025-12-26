@@ -31,6 +31,7 @@ import FormScreen from '../screens/Scanner/ScannerFormScreen';
 import StatisticsScreen from '../screens/Statistics/StatisticsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import NotificationScreen from '../screens/Home/NotificationsScreen';
+import AIChatScreen from '../screens/AI/AIChatScreen';
 
 const Stack = createNativeStackNavigator();
 const ApiaryStack = createNativeStackNavigator();
@@ -98,6 +99,7 @@ export default function Navigation() {
                     <>
                         <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={(navigation) => ApiaryHeader(navigation)}  />
+                        <Stack.Screen name="AIChatScreen" component={AIChatScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Apiary" component={ApiaryNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Scanner" component={ScannerNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Statistics" component={StatisticsNavigator} options={{ headerShown: false }} />

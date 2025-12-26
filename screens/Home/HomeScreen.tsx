@@ -11,6 +11,7 @@ import { capitalizeFirstLetter } from '../../helpers/Apiary/capitalizeFirstLette
 import { getGreetingMessage } from '../../helpers/Home/getGreetingMessage';
 import * as Location from 'expo-location';
 import { BASE_URL } from '../../constants/api';
+import { NotificationBell } from '../../components/notifications/NotificationBell';
 
 const HomeScreen = ({ navigation }: any) => {
   const [profile, setProfile] = useState<any>(null);
@@ -73,7 +74,7 @@ const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.usernameText}>{profile && `${capitalizeFirstLetter(profile.name)} ${capitalizeFirstLetter(profile.surname)}`}</Text>
         </View>
 
-        <Feather name="bell" size={24} color="black" style={styles.notificationIcon} onPress={() => navigation.navigate('NotificationScreen')} />
+        <NotificationBell onPress={() => navigation.navigate('NotificationScreen')} />
       </View>
 
       <View style={styles.statsContainer}>
@@ -105,7 +106,7 @@ const HomeScreen = ({ navigation }: any) => {
         {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
       </View>
 
-      <Text style={styles.title}>Accesos Directo</Text>
+      <Text style={styles.title}>Accesos Directos</Text>
       <View style={styles.quickAccessContainer}>
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}>
           <MaterialIcons name="hive" size={36} color={colors.BLACK} />
@@ -113,19 +114,39 @@ const HomeScreen = ({ navigation }: any) => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
-          <MaterialCommunityIcons name="barcode-scan" size={36} color={colors.BLACK} />
-          <Text style={styles.quickAccessText}>Escanear Tambor</Text>
+          <MaterialCommunityIcons name="clipboard-list" size={36} color={colors.BLACK} />
+          <Text style={styles.quickAccessText}>Inventario</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })}>
           <Ionicons name="stats-chart" size={36} color={colors.BLACK} />
-          <Text style={styles.quickAccessText}>Estadisticas</Text>
+          <Text style={styles.quickAccessText}>Estadísticas</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })}>
           <Ionicons name="settings" size={36} color={colors.BLACK} />
-          <Text style={styles.quickAccessText}>Configuracion</Text>
+          <Text style={styles.quickAccessText}>Configuración</Text>
         </TouchableOpacity>
+
+        <View style={styles.aiPromoButton}>
+          <View style={styles.aiPromoContent}>
+            <View style={styles.aiPromoIconContainer}>
+              <Ionicons name="sparkles" size={40} color={colors.YELLOW} />
+            </View>
+            <View style={styles.aiPromoTextContainer}>
+              <Text style={styles.aiPromoTitle}>Prueba nuestra nueva Inteligencia Artificial</Text>
+              <Text style={styles.aiPromoSubtitle}>Obtén respuestas instantáneas sobre apicultura, colmenas y más</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.aiChatButton}
+            onPress={() => navigation.navigate('AIChatScreen')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chatbubble-ellipses" size={20} color={colors.BLACK} />
+            <Text style={styles.aiChatButtonText}>Chatea aquí</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -214,10 +235,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 10,
   },
-  notificationIcon: {
-    backgroundColor: '#F9F9F9',
-    padding: 10,
-    borderRadius: 100,
+  aiPromoButton: {
+    backgroundColor: colors.WHITE,
+    width: '100%',
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.GREY_LIGHT,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  aiPromoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  aiPromoIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.YELLOW + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  aiPromoTextContainer: {
+    flex: 1,
+  },
+  aiPromoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.BLACK,
+    marginBottom: 6,
+  },
+  aiPromoSubtitle: {
+    fontSize: 14,
+    color: colors.BLACK_TRANSPARENT,
+    lineHeight: 20,
+  },
+  aiChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.YELLOW,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    gap: 8,
+  },
+  aiChatButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.BLACK,
   },
   userStatsSub: {},
 });
