@@ -1,6 +1,9 @@
 export interface ScannedDataItem {
-    id: string;
+    id: number | string; // Puede ser number del backend o string temporal
     code: string;
-    tare: string | number; // Cambia esto a número si es necesario
-    weight: string | number; // Cambia esto a número si es necesario
+    tare: number;
+    weight: number;
+    sold?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }

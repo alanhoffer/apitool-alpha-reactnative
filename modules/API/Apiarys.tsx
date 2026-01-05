@@ -2,13 +2,46 @@ import apiClient from './client';
 import { IApiary, IApiaryData } from '../../constants/interfaces/Apiary/IApiary';
 import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
 import { ToastAndroid } from "react-native";
+import { transformSnakeToCamel } from '../../helpers/Apiary/snakeToCamel';
 
 export const getApiarys = async (): Promise<IApiary[] | null> => {
   try {
-    const response = await apiClient.get<IApiary[]>('apiarys');
-    return response.data;
+    console.log('[getApiarys] Haciendo petición a: apiarys');
+    const response = await apiClient.get<any>('apiarys');
+    console.log('[getApiarys] Status de respuesta:', response.status);
+    console.log('[getApiarys] Tipo de respuesta.data:', typeof response.data);
+    console.log('[getApiarys] Es array?:', Array.isArray(response.data));
+    console.log('[getApiarys] Keys del objeto (si no es array):', response.data && typeof response.data === 'object' && !Array.isArray(response.data) ? Object.keys(response.data) : 'N/A');
+    console.log('[getApiarys] Data recibida (raw):', JSON.stringify(response.data, null, 2));
+    
+    // Verificar si la respuesta viene envuelta en un objeto (ej: { data: [...] })
+    let apiaryData: any[] = [];
+    if (Array.isArray(response.data)) {
+      apiaryData = response.data;
+    } else if (response.data && typeof response.data === 'object') {
+      // Intentar diferentes posibles estructuras
+      apiaryData = response.data.data || response.data.apiarys || response.data.items || [];
+      if (apiaryData.length === 0) {
+        console.warn('[getApiarys] No se encontró array en la respuesta. Estructura:', Object.keys(response.data));
+      }
+    }
+    
+    console.log('[getApiarys] Apiarios extraídos:', apiaryData.length);
+    if (apiaryData.length > 0) {
+      console.log('[getApiarys] Primer apiario (raw):', JSON.stringify(apiaryData[0], null, 2));
+      console.log('[getApiarys] Keys del primer apiario:', Object.keys(apiaryData[0]));
+    }
+    
+    // Transformar de snake_case a camelCase
+    const transformedData = transformSnakeToCamel<IApiary[]>(apiaryData);
+    console.log('[getApiarys] Data transformada:', JSON.stringify(transformedData, null, 2));
+    if (transformedData.length > 0) {
+      console.log('[getApiarys] Keys del primer apiario transformado:', Object.keys(transformedData[0]));
+    }
+    
+    return transformedData;
   } catch (error) {
-    console.error('Error fetching apiarys:', error);
+    console.error('[getApiarys] Error fetching apiarys:', error);
     return null;
   }
 };

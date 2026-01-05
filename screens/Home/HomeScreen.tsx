@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../../constants/colors';
 import Feather from '@expo/vector-icons/Feather';
@@ -14,6 +15,7 @@ import { BASE_URL } from '../../constants/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 
 const HomeScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<any>(null);
   const [hives, setHives] = useState(0);
   const [apiaries, setApiaries] = useState(0);
@@ -67,7 +69,10 @@ const HomeScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+    >
       <View style={[styles.userContainer, styles.navigation]}>
         <View>
           <Text style={styles.welcomeText}>{getGreetingMessage()}</Text>
@@ -105,7 +110,6 @@ const HomeScreen = ({ navigation }: any) => {
         )}
         {errorMsg && <Text style={styles.errorText}>{errorMsg}</Text>}
       </View>
-
       <Text style={styles.title}>Accesos Directos</Text>
       <View style={styles.quickAccessContainer}>
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}>
@@ -114,8 +118,11 @@ const HomeScreen = ({ navigation }: any) => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
-          <MaterialCommunityIcons name="clipboard-list" size={36} color={colors.BLACK} />
-          <Text style={styles.quickAccessText}>Inventario</Text>
+          <Image
+            source={require('../../assets/images/icons/camera.png')}
+            style={styles.apiScannerIcon}
+          />
+          <Text style={styles.quickAccessText}>ApiScanner</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })}>
@@ -234,6 +241,11 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 16,
     marginTop: 10,
+  },
+  apiScannerIcon: {
+    width: 36,
+    height: 36,
+    tintColor: colors.BLACK,
   },
   aiPromoButton: {
     backgroundColor: colors.WHITE,

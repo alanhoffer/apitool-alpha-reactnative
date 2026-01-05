@@ -1,7 +1,8 @@
 // Modules
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
 
 
 // Headers
@@ -30,6 +31,7 @@ import CameraScreen from '../screens/Scanner/ScannerCameraScreen';
 import FormScreen from '../screens/Scanner/ScannerFormScreen';
 import StatisticsScreen from '../screens/Statistics/StatisticsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+import DevicesScreen from '../screens/Profile/DevicesScreen';
 import NotificationScreen from '../screens/Home/NotificationsScreen';
 import AIChatScreen from '../screens/AI/AIChatScreen';
 
@@ -78,6 +80,7 @@ function ProfileNavigator() {
     return (
         <ProfileStack.Navigator>
             <ProfileStack.Screen component={ProfileScreen} name="ProfileScreen" options={(navigation) => ApiaryHeader(navigation)} />
+            <ProfileStack.Screen component={DevicesScreen} name="DevicesScreen" options={(navigation) => ApiaryHeader(navigation)} />
         </ProfileStack.Navigator>
     );
 }
@@ -85,11 +88,18 @@ function ProfileNavigator() {
 
 
 
+// Componente interno para manejar navegación de notificaciones
+function NotificationHandler({ isAuthenticated }: { isAuthenticated: boolean }) {
+    useNotificationNavigation(isAuthenticated);
+    return null;
+}
+
 export default function Navigation() {
     const { accessToken, isLoading } = useContext(AuthContext);
 
     return (
         <NavigationContainer>
+            <NotificationHandler isAuthenticated={!!accessToken} />
             <Stack.Navigator>
                 {isLoading ? (
                     // Splash Screen if loading or checking user login status

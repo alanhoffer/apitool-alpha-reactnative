@@ -1,109 +1,126 @@
 // src/screens/InstructionsScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import Swiper from 'react-native-swiper';
-
-
-
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
+import colors from '../../constants/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const InstructionsScreen: React.FC = ({ navigation }: any) => {
+  const tips = [
+    'Mantén el código de barras a una distancia de 15-30 cm de la cámara para un escaneo óptimo.',
+    'Asegúrate de tener buena iluminación al escanear para evitar errores en la lectura.',
+    'Verifica que el código de barras esté limpio y sin daños antes de escanear.',
+    'Los códigos duplicados se resaltan automáticamente en la lista para facilitar su identificación.',
+  ];
 
   return (
-    <Swiper
-      showsPagination={true}
-      paginationStyle={styles.pagination}
-      activeDotColor='#53bce9'
-      dotColor="#ccc"
-    >
-      {/* <View style={styles.slide}>
-        <Text style={styles.title}>Bienvenido a ApiScanner</Text>
-        <Image
-          style={styles.image}
-          source={require('../../assets/images/logos/icon-white-yellow.png')} // Asegúrate de tener esta imagen en tu proyecto
-        />
-        <Text style={styles.text}>
-          Con nuestra aplicación, podrás escanear códigos de barras en los tambores,
-          registrar información detallada y mantener un control preciso de tus inventarios.
-        </Text>
-      </View> */}
-
-      <View style={styles.slide}>
-        <Text style={styles.title}>¿Cómo usar la aplicación?</Text>
-        <Image
-          style={styles.icon}
-          source={require('../../assets/images/icons/camera.png')} // Asegúrate de tener esta imagen en tu proyecto
-        />
-        <Text style={styles.text}>
-          Usa la cámara para escanear códigos de barras. La app detectará automáticamente cada tambor y abrirá un formulario de entrada.
-        </Text>
-        <Image
-          style={styles.icon}
-          source={require('../../assets/images/icons/drum.png')} // Asegúrate de tener esta imagen en tu proyecto
-        />
-        <Text style={styles.text}>
-          Ingresa el código, la tara y el peso del tambor para un seguimiento preciso.
-        </Text>
-        <Image
-          style={styles.icon}
-          source={require('../../assets/images/icons/paper-plane.png')} // Asegúrate de tener esta imagen en tu proyecto
-        />
-        <Text style={styles.text}>
-          Guarda los datos, visualiza la lista de tambores, y destaca los repetidos con un color específico. Exporta o comparte la información en Excel o texto plano.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('ListScreen')}>
-          <View >
-            <Text style={styles.buttonText}>Empezar</Text>
-          </View>
-        </TouchableOpacity>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <View style={styles.iconContainer}>
+          <Image
+            style={styles.logoIcon}
+            source={require('../../assets/images/icons/camera.png')}
+          />
+        </View>
+        <Text style={styles.title}>ApiScanner</Text>
       </View>
-    </Swiper>
+
+      <View style={styles.tipsContainer}>
+        {tips.map((tip, index) => (
+          <View key={index} style={styles.tipItem}>
+            <Icon name="checkmark-circle" size={20} color={colors.BLUE} style={styles.tipIcon} />
+            <Text style={styles.tipText}>{tip}</Text>
+          </View>
+        ))}
+      </View>
+
+      <TouchableOpacity 
+        style={styles.button} 
+        onPress={() => navigation.navigate('ListScreen')}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.buttonText}>Empezar a Escanear</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  slide: {
+  container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 20,
+    backgroundColor: colors.WHITE,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  contentContainer: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  header: {
+    alignItems: 'center',
     marginBottom: 40,
   },
-  text: {
-    fontSize: 16,
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.BLUE + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoIcon: {
+    width: 60,
+    height: 60,
+    tintColor: colors.BLUE,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.BLACK,
     textAlign: 'center',
-    marginBottom: 20,
   },
-  image: {
-    resizeMode: 'contain',
-    width: 150,
-    height: 200,
-    marginBottom: 20,
+  tipsContainer: {
+    marginBottom: 32,
+    paddingHorizontal: 8,
   },
-  icon: {
-    width: 40,
-    height: 40,
-    marginVertical: 10,
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  tipIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.BLACK_TRANSPARENT,
+    lineHeight: 24,
   },
   button: {
+    backgroundColor: colors.BLUE,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 50,
-    padding: 10,
-    width: '100%',
-    fontSize: 16,
-    color: 'white',
-    backgroundColor: '#53bce9',
-    borderRadius: 5,
+    marginTop: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   buttonText: {
-    color: 'white',
-  },
-  pagination: {
-    bottom: 10,
+    color: colors.WHITE,
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

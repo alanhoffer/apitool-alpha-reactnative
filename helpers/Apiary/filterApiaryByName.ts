@@ -1,5 +1,14 @@
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 
 export function filterApiaryByName(apiaryList: IApiary[], searchValue: string) {
-    return apiaryList.filter(apiary => apiary.name.toLowerCase().startsWith(searchValue.toLowerCase()))
-  }
+    if (!searchValue || searchValue.trim() === '') {
+        return apiaryList;
+    }
+    
+    return apiaryList.filter(apiary => {
+        if (!apiary || !apiary.name) {
+            return false;
+        }
+        return apiary.name.toLowerCase().startsWith(searchValue.toLowerCase());
+    });
+}

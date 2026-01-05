@@ -1,17 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Platform, Animated } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import colors from '../../constants/colors';
 
 const CameraScreen: React.FC = ({ navigation }: any) => {
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState<boolean>(false);
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Animación de línea de escaneo
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLineAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLineAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [scanLineAnim]);
 
   if (!permission) {
     // Permisos aún cargando
     return (
-      <View style={[styles.container, styles.horizontal]}>
-        <ActivityIndicator size="large" color="#0000ff" />
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.BLUE} />
+        <Text style={styles.loadingText}>Cargando cámara...</Text>
       </View>
     );
   }
@@ -19,9 +40,16 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
   if (!permission.granted) {
     // Permisos no otorgados
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Necesitamos acceso a la cámara</Text>
-        <Button onPress={requestPermission} title="Dar permisos" />
+      <View style={[styles.container, styles.centerContent]}>
+        <View style={styles.permissionContainer}>
+          <Text style={styles.permissionTitle}>Acceso a la Cámara</Text>
+          <Text style={styles.permissionText}>
+            Necesitamos acceso a tu cámara para escanear los códigos de barras de los tambores.
+          </Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -91,9 +119,49 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
         }}
         style={StyleSheet.absoluteFillObject}
       />
+      
+      {/* Overlay con marco de escaneo */}
+      <View style={styles.overlay}>
+        <View style={styles.scanArea}>
+          <View style={[styles.corner, styles.topLeft]} />
+          <View style={[styles.corner, styles.topRight]} />
+          <View style={[styles.corner, styles.bottomLeft]} />
+          <View style={[styles.corner, styles.bottomRight]} />
+          
+          {/* Línea de escaneo animada */}
+          <Animated.View
+            style={[
+              styles.scanLine,
+              {
+                transform: [{
+                  translateY: scanLineAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 170],
+                  }),
+                }],
+              },
+            ]}
+          />
+        </View>
+        
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsText}>
+            Coloca el código de barras dentro del marco
+          </Text>
+        </View>
+      </View>
+
       {scanned && (
-        <View style={styles.overlay}>
-             <Button title={'Escanear de nuevo'} onPress={() => setScanned(false)} />
+        <View style={styles.scannedOverlay}>
+          <View style={styles.scannedCard}>
+            <Text style={styles.scannedText}>Código escaneado</Text>
+            <TouchableOpacity 
+              style={styles.rescanButton} 
+              onPress={() => setScanned(false)}
+            >
+              <Text style={styles.rescanButtonText}>Escanear de nuevo</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -103,26 +171,231 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: 'black',
   },
-  text: {
-    color: 'white',
-    marginBottom: 20,
-    fontSize: 18
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: colors.WHITE_DARK,
   },
-  horizontal: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 10,
+  loadingText: {
+    color: colors.BLACK,
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  permissionContainer: {
+    backgroundColor: colors.WHITE,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    maxWidth: 340,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  permissionTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: colors.BLACK,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  permissionText: {
+    fontSize: 17,
+    color: colors.BLACK_TRANSPARENT,
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 26,
+  },
+  permissionButton: {
+    backgroundColor: colors.BLUE,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 14,
+    minWidth: 220,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.BLUE,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  permissionButtonText: {
+    color: colors.WHITE,
+    fontSize: 17,
+    fontWeight: 'bold',
   },
   overlay: {
-      position: 'absolute',
-      bottom: 50,
-      width: '100%',
-      alignItems: 'center'
-  }
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  scanArea: {
+    width: 300,
+    height: 180,
+    position: 'relative',
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  scanLine: {
+    position: 'absolute',
+    width: '100%',
+    height: 3,
+    backgroundColor: colors.YELLOW,
+    top: 0,
+    left: 0,
+    shadowColor: colors.YELLOW,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+  },
+  corner: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderColor: colors.YELLOW,
+    borderWidth: 5,
+  },
+  topLeft: {
+    top: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 20,
+  },
+  topRight: {
+    top: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderTopRightRadius: 20,
+  },
+  bottomLeft: {
+    bottom: -2,
+    left: -2,
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 20,
+  },
+  bottomRight: {
+    bottom: -2,
+    right: -2,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderBottomRightRadius: 20,
+  },
+  instructionsContainer: {
+    position: 'absolute',
+    bottom: 120,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  instructionsText: {
+    color: colors.WHITE,
+    fontSize: 17,
+    fontWeight: '600',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  scannedOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scannedCard: {
+    backgroundColor: colors.WHITE,
+    borderRadius: 24,
+    padding: 32,
+    alignItems: 'center',
+    minWidth: 300,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  scannedText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.BLACK,
+    marginBottom: 24,
+  },
+  rescanButton: {
+    backgroundColor: colors.BLUE,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    minWidth: 220,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.BLUE,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  rescanButtonText: {
+    color: colors.WHITE,
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
 });
 
 export default CameraScreen;

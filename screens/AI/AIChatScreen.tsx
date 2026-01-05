@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { sendAIMessage, AIChatMessage } from '../../modules/API/AIChat';
 import colors from '../../constants/colors';
@@ -20,6 +21,7 @@ const CHAT_ID_STORAGE_KEY = 'ai_chat_id';
 const CHAT_HISTORY_STORAGE_KEY = 'ai_chat_history';
 
 const AIChatScreen = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -214,7 +216,7 @@ const AIChatScreen = ({ navigation }: any) => {
       <ScrollView
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
         showsVerticalScrollIndicator={false}
       >
         {messages.length === 0 ? (
@@ -290,7 +292,7 @@ const AIChatScreen = ({ navigation }: any) => {
         )}
       </ScrollView>
 
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
@@ -502,7 +504,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
     backgroundColor: colors.WHITE,
     borderTopWidth: 1,
     borderTopColor: colors.GREY_LIGHT,

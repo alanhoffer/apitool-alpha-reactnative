@@ -3,6 +3,7 @@ import React from 'react';
 import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, ToastAndroid, RefreshControl, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 1 API
 import { deleteApiary, getApiarys, toggleHarvestAll } from '../../modules/API/Apiarys';
@@ -11,13 +12,13 @@ import { deleteApiary, getApiarys, toggleHarvestAll } from '../../modules/API/Ap
 
 // Assets Imports //  
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import colors from '../../constants/colors';
 import { filterApiaryByName } from '../../helpers/Apiary/filterApiaryByName';
 import { ApiaryCard } from '../../components/apiary/ApiaryCard';
 
 const ApiaryListScreen = ({ navigation }: any) => {
-
+  const insets = useSafeAreaInsets();
   const [apiarysLoaded, setApiarysLoaded] = useState<boolean>(false);
   const [apiaryList, setApiaryList] = useState<IApiary[]>([]);
   const [refresh, setRefresh] = useState<boolean>(false);
@@ -27,14 +28,51 @@ const ApiaryListScreen = ({ navigation }: any) => {
   const isFocused = useIsFocused();
 
   async function loadApiarys() {
-    const apiaryData = await getApiarys();
-    if (apiaryData != null) {
-      // Ordenar por fecha de actualización más reciente
-      const sortedApiaryData = apiaryData.sort((a: IApiary, b: IApiary) => {
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      });
-      setApiaryList(sortedApiaryData);
+    console.log('[ApiaryListScreen] Cargando apiarios...');
+    try {
+      const apiaryData = await getApiarys();
+      console.log('[ApiaryListScreen] Respuesta del backend:', JSON.stringify(apiaryData, null, 2));
+      
+      if (apiaryData != null && Array.isArray(apiaryData)) {
+        console.log('[ApiaryListScreen] Cantidad de apiarios:', apiaryData.length);
+        
+        // Log del primer apiario para ver su estructura
+        if (apiaryData.length > 0) {
+          console.log('[ApiaryListScreen] Primer apiario:', JSON.stringify(apiaryData[0], null, 2));
+        }
+        
+        // Ordenar por fecha de actualización más reciente
+        // Manejar tanto camelCase como snake_case como respaldo
+        const sortedApiaryData = apiaryData.sort((a: any, b: any) => {
+          const dateA = (a.updatedAt || a.updated_at) ? new Date(a.updatedAt || a.updated_at).getTime() : 0;
+          const dateB = (b.updatedAt || b.updated_at) ? new Date(b.updatedAt || b.updated_at).getTime() : 0;
+          return dateB - dateA;
+        });
+        setApiaryList(sortedApiaryData);
+        setApiarysLoaded(true);
+        
+        // Verificar si hay algún apiario en cosecha después de cargar los datos
+        // Manejar tanto camelCase como snake_case
+        const hasHarvesting = sortedApiaryData.some((apiary: any) => {
+          if (!apiary.settings) return false;
+          return apiary.settings.harvesting === true || apiary.settings.harvesting === 'true';
+        });
+        if (hasHarvesting) {
+          setHarvesting(true);
+        } else {
+          setHarvesting(false);
+        }
+      } else {
+        console.log('[ApiaryListScreen] No se recibieron datos del backend o no es un array');
+        setApiaryList([]);
+        setApiarysLoaded(true);
+        setHarvesting(false);
+      }
+    } catch (error) {
+      console.error('[ApiaryListScreen] Error al cargar apiarios:', error);
+      setApiaryList([]);
       setApiarysLoaded(true);
+      setHarvesting(false);
     }
   }
 
@@ -87,10 +125,8 @@ const ApiaryListScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
-    loadApiarys();
-    const hasHarvesting = apiaryList.some((apiary: IApiary) => apiary.settings.harvesting);
-    if (hasHarvesting) {
-      setHarvesting(true);
+    if (isFocused) {
+      loadApiarys();
     }
   }, [isFocused]);
 
@@ -101,22 +137,34 @@ const ApiaryListScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.apiaryList}>
-        {apiaryList.length < 1 ?
+        {!apiarysLoaded ? (
+          <View style={styles.apiaryListEmpty}>
+            <Text style={styles.apiaryListEmptyText}>Cargando apiarios...</Text>
+          </View>
+        ) : apiaryList.length < 1 ? (
           <View style={styles.apiaryListEmpty}>
             <Text style={styles.apiaryListEmptyText}> No tienes ningún apiario </Text>
             <Text style={styles.apiaryListEmptyText}> Presiona en + Añadir </Text>
           </View>
-          :
-          <ScrollView style={styles.apiaryListScroll} showsVerticalScrollIndicator={false} refreshControl={
-            <RefreshControl refreshing={refresh} onRefresh={onRefresh} />
-          }>
-            {filterApiaryByName(apiaryList, searchValue).map((apiary, index) => (
-              <TouchableOpacity key={index} onLongPress={() => handleDeleteApiary(apiary)} onPress={() => navigation.navigate('ApiaryScreen', { apiaryInfo: apiary })}>
-                <ApiaryCard apiaryInfo={apiary} />
-              </TouchableOpacity>
-            ))}
+        ) : (
+          <ScrollView 
+            style={styles.apiaryListScroll} 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+            refreshControl={
+              <RefreshControl refreshing={refresh} onRefresh={onRefresh} />
+            }>
+            {(() => {
+              const filteredApiaries = filterApiaryByName(apiaryList, searchValue);
+              console.log('[ApiaryListScreen] Apiarios filtrados:', filteredApiaries.length, 'de', apiaryList.length);
+              return filteredApiaries.map((apiary) => (
+                <TouchableOpacity key={apiary.id} onLongPress={() => handleDeleteApiary(apiary)} onPress={() => navigation.navigate('ApiaryScreen', { apiaryInfo: apiary })}>
+                  <ApiaryCard apiaryInfo={apiary} />
+                </TouchableOpacity>
+              ));
+            })()}
           </ScrollView>
-        }
+        )}
       </View>
 
       <TouchableOpacity
@@ -126,7 +174,7 @@ const ApiaryListScreen = ({ navigation }: any) => {
         ]}
         onPress={handleToggleHarvest}
       >
-        <Icon
+        <Ionicons
           name="rose-outline"
           size={26}
           color={harvesting ? colors.YELLOW : colors.BLACK_LIGHT}
@@ -168,7 +216,7 @@ const styles = StyleSheet.create({
   },
   startHarvestingIcon: {
     position: 'absolute',
-    bottom: '15%',
+    bottom: 20,
     right: '10%',
     padding: 5,
     borderRadius: 100,

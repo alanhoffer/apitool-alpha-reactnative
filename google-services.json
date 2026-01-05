@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "543682516134",
+    "project_id": "apitool-f47c7",
+    "storage_bucket": "apitool-f47c7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543682516134:android:26be0df8c11365d91a1067",
+        "android_client_info": {
+          "package_name": "com.hoffer.apitool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWr1L3gCbetL1RN6VYNAi1adRyw3SDa-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

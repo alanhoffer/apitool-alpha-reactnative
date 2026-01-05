@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons'; // Asegúrate de tener react-native-vector-icons instalado
 import colors from '../../constants/colors';
 
@@ -11,6 +12,7 @@ const notifications = [
 ];
 
 const NotificationScreen = () => {
+  const insets = useSafeAreaInsets();
   const renderNotification = ({ item }: { item: { message: string; date: string } }) => (
     <View style={styles.notificationContainer}>
       {/* Icono de notificación */}
@@ -35,7 +37,7 @@ const NotificationScreen = () => {
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
       />
     </View>
   );

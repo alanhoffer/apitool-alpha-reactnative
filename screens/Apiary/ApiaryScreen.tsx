@@ -4,7 +4,7 @@ import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 
 import BlankImage from '../../assets/images/blank-image.jpg'
 import Capitalize from "../../modules/Capitalize";
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { APIARY_IMG_URL } from "../../constants/api";
 import colors from "../../constants/colors";
@@ -74,11 +74,11 @@ function ApiaryScreen({ route, navigation }: any) {
                 {/* Botones de menu del apiario */}
                 <View style={styles.apiaryMenu}>
                     <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo })}>
-                        <Icon name="file-tray-full-outline" size={22}  />
+                        <Ionicons name="file-tray-full-outline" size={22} color={colors.BLACK} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfo.settings })}>
-                        <Icon name="settings-outline" size={22}  />
+                        <Ionicons name="settings-outline" size={22} color={colors.BLACK} />
                     </TouchableOpacity>
                 </View>
 
