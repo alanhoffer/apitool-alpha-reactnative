@@ -4,9 +4,10 @@ import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-nat
 import { useState, useEffect } from 'react';
 import { valueToPretty, variableToPretty } from "../../modules/Apiary/ApiaryVariable";
 import colors from "../../constants/colors";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ApiaryHistoryScreen({ route, navigation }: any) {
-
+    const insets = useSafeAreaInsets();
     const apiaryData = route.params.apiaryInfo;
 
     const [historyByDate, setHistoryByDate] = useState({});
@@ -39,7 +40,10 @@ export default function ApiaryHistoryScreen({ route, navigation }: any) {
     }, []);
 
     return (
-        <ScrollView style={styles.historyScrollContainer}>
+        <ScrollView 
+            style={styles.historyScrollContainer}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+        >
             <View style={styles.historyContainer}>
                 <View style={styles.addApiaryTitle}>
                     <Text style={styles.addApiaryTitleText}>Historial</Text>

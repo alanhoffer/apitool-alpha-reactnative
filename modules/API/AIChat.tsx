@@ -23,8 +23,12 @@ export interface AIChatResponse {
  */
 export const sendAIMessage = async (
   message: string,
-  chatId?: string
+  chatId?: string,
+  retryCount: number = 0
 ): Promise<AIChatResponse> => {
+  const MAX_RETRIES = 2;
+  const RETRY_DELAY = 1000; // 1 segundo
+
   try {
     let payload: Array<{ key: string; value: string }>;
     
@@ -53,6 +57,8 @@ export const sendAIMessage = async (
     }
 
     console.log('[AIChat API] Payload:', JSON.stringify(payload, null, 2));
+    console.log('[AIChat API] URL:', AI_API_URL);
+    console.log('[AIChat API] Intento:', retryCount + 1, 'de', MAX_RETRIES + 1);
 
     const response = await axios.post(
       AI_API_URL,
@@ -61,8 +67,10 @@ export const sendAIMessage = async (
         headers: {
           'Content-Type': 'application/json',
           'X-API-KEY': AI_API_KEY,
+          'Accept': 'application/json',
         },
         timeout: 30000, // 30 segundos para respuestas de IA
+        validateStatus: (status) => status < 500, // Aceptar errores 4xx para manejarlos mejor
       }
     );
 
@@ -170,17 +178,36 @@ export const sendAIMessage = async (
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
+      code: error.code, // Código de error de axios (ECONNABORTED, ENOTFOUND, etc.)
       config: {
         url: error.config?.url,
         method: error.config?.method,
         data: error.config?.data,
+        headers: error.config?.headers,
       }
     });
     
     // Extraer mensaje de error más específico
     let errorMessage = 'Error al comunicarse con la IA';
     
-    if (error.response?.data) {
+    // Manejar diferentes tipos de errores de red
+    if (error.code === 'ECONNABORTED') {
+      errorMessage = 'La solicitud tardó demasiado. Por favor, intenta de nuevo.';
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    } else if (error.message === 'Network Error') {
+      errorMessage = 'Error de red. Verifica tu conexión a internet o intenta más tarde.';
+    } else if (error.response?.status === 401) {
+      errorMessage = 'API Key inválida o expirada.';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'Acceso denegado. Verifica tus permisos.';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'El endpoint de la API no fue encontrado.';
+    } else if (error.response?.status === 429) {
+      errorMessage = 'Demasiadas solicitudes. Por favor, espera un momento.';
+    } else if (error.response?.status >= 500) {
+      errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+    } else if (error.response?.data) {
       const errorData = error.response.data;
       if (typeof errorData === 'string') {
         errorMessage = errorData;
@@ -196,6 +223,16 @@ export const sendAIMessage = async (
       }
     } else if (error.message) {
       errorMessage = error.message;
+    }
+    
+    // Retry automático para errores de red
+    if (
+      (error.code === 'ERR_NETWORK' || error.message === 'Network Error') &&
+      retryCount < MAX_RETRIES
+    ) {
+      console.log(`[AIChat API] Reintentando en ${RETRY_DELAY}ms... (intento ${retryCount + 1}/${MAX_RETRIES})`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (retryCount + 1))); // Backoff exponencial
+      return sendAIMessage(message, chatId, retryCount + 1);
     }
     
     throw new Error(errorMessage);

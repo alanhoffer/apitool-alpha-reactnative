@@ -170,7 +170,10 @@ const ApiaryListScreen = ({ navigation }: any) => {
       <TouchableOpacity
         style={[
           styles.startHarvestingIcon,
-          { borderColor: harvesting ? colors.YELLOW : colors.BLACK_LIGHT }
+          { 
+            borderColor: harvesting ? colors.YELLOW : colors.BLACK_LIGHT,
+            bottom: 20 + insets.bottom 
+          }
         ]}
         onPress={handleToggleHarvest}
       >

@@ -4,8 +4,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platfo
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../../constants/colors';
 import { createDrum } from '../../modules/API/Drums';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const FormScreen = ({ navigation, route }: any) => {
+  const insets = useSafeAreaInsets();
   const { code } = route.params;
 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -72,7 +74,13 @@ const FormScreen = ({ navigation, route }: any) => {
   const netWeight = tare && weight ? (parseFloat(weight) - parseFloat(tare)).toFixed(2) : '0.00';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={[
+        styles.contentContainer,
+        { paddingBottom: 24 + insets.bottom }
+      ]}
+    >
       <View style={styles.codeCard}>
         <Text style={styles.codeLabel}>Código Escaneado</Text>
         <Text style={styles.code}>{code}</Text>

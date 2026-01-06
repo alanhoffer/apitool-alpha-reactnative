@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Platform, Animated } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import colors from '../../constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CameraScreen: React.FC = ({ navigation }: any) => {
-
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState<boolean>(false);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
@@ -144,7 +145,7 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
           />
         </View>
         
-        <View style={styles.instructionsContainer}>
+        <View style={[styles.instructionsContainer, { bottom: 120 + insets.bottom }]}>
           <Text style={styles.instructionsText}>
             Coloca el código de barras dentro del marco
           </Text>
@@ -310,7 +311,6 @@ const styles = StyleSheet.create({
   },
   instructionsContainer: {
     position: 'absolute',
-    bottom: 120,
     left: 0,
     right: 0,
     alignItems: 'center',

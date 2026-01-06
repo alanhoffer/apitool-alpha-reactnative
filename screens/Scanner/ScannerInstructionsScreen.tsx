@@ -3,8 +3,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
 import colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const InstructionsScreen: React.FC = ({ navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const tips = [
     'Mantén el código de barras a una distancia de 15-30 cm de la cámara para un escaneo óptimo.',
     'Asegúrate de tener buena iluminación al escanear para evitar errores en la lectura.',
@@ -13,7 +15,14 @@ const InstructionsScreen: React.FC = ({ navigation }: any) => {
   ];
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={[
+        styles.contentContainer, 
+        { paddingBottom: 40 + insets.bottom }
+      ]} 
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <View style={styles.iconContainer}>
           <Image
@@ -52,7 +61,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 20,
     paddingTop: 60,
-    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',

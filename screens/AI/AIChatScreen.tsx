@@ -206,7 +206,7 @@ const AIChatScreen = ({ navigation }: any) => {
           <View style={styles.headerIconContainer}>
             <Ionicons name="sparkles" size={20} color={colors.WHITE} />
           </View>
-          <Text style={styles.headerTitle}>Asistente IA</Text>
+          <Text style={styles.headerTitle}>Robertaso</Text>
         </View>
         <TouchableOpacity onPress={handleClearChat} style={styles.clearButton}>
           <Ionicons name="trash-outline" size={22} color={colors.BLACK} />
@@ -224,12 +224,9 @@ const AIChatScreen = ({ navigation }: any) => {
             <View style={styles.emptyIconContainer}>
               <Ionicons name="chatbubbles" size={80} color={colors.YELLOW} />
             </View>
-            <Text style={styles.emptyTitle}>¡Hola! 👋</Text>
+            <Text style={styles.emptyTitle}>Robertaso</Text>
             <Text style={styles.emptyText}>
-              Soy tu asistente de IA especializado en apicultura
-            </Text>
-            <Text style={styles.emptySubtext}>
-              Puedo ayudarte con preguntas sobre tus apiarios, colmenas, tratamientos y más. ¿En qué puedo ayudarte?
+              ¡Hola! Soy Robertaso, tu experto en apicultura. ¿En qué puedo ayudarte hoy? 🐝
             </Text>
           </View>
         ) : (
@@ -292,7 +289,7 @@ const AIChatScreen = ({ navigation }: any) => {
         )}
       </ScrollView>
 
-      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
         <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
@@ -341,16 +338,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    position: 'relative',
   },
   backButton: {
     padding: 8,
     borderRadius: 20,
+    width: 40,
+    zIndex: 1,
   },
   headerCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     justifyContent: 'center',
+    zIndex: 0,
   },
   headerIconContainer: {
     width: 32,
@@ -369,6 +372,8 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 8,
     borderRadius: 20,
+    width: 40,
+    zIndex: 1,
   },
   messagesContainer: {
     flex: 1,

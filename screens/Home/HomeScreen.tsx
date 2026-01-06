@@ -71,7 +71,7 @@ const HomeScreen = ({ navigation }: any) => {
   return (
     <ScrollView 
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }}
     >
       <View style={[styles.userContainer, styles.navigation]}>
         <View>
@@ -115,6 +115,11 @@ const HomeScreen = ({ navigation }: any) => {
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}>
           <MaterialIcons name="hive" size={36} color={colors.BLACK} />
           <Text style={styles.quickAccessText}>Mis Apiarios</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryMapScreen' })}>
+          <MaterialCommunityIcons name="map-marker-radius" size={36} color={colors.BLACK} />
+          <Text style={styles.quickAccessText}>Mapa</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
@@ -163,7 +168,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    padding: 40,
+    paddingHorizontal: 40,
+    paddingTop: 40,
   },
   userContainer: {
     backgroundColor: 'white',

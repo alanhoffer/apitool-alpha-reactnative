@@ -385,7 +385,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                     );
                 }}
             />
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, { bottom: 24 + insets.bottom }]}>
                 <TouchableOpacity 
                     style={styles.scanButton} 
                     onPress={() => navigation.navigate('CameraScreen')}

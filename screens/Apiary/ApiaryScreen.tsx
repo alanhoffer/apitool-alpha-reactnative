@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Text, View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BlankImage from '../../assets/images/blank-image.jpg'
 import Capitalize from "../../modules/Capitalize";
@@ -13,6 +14,7 @@ import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 
 function ApiaryScreen({ route, navigation }: any) {
+    const insets = useSafeAreaInsets();
     const { apiaryInfo }: { apiaryInfo: IApiary } = route.params;
 
     const totalBoxes = (box: number, boxMedium: number, boxSmall: number): number => {
@@ -60,7 +62,10 @@ function ApiaryScreen({ route, navigation }: any) {
     }, [apiaryInfo]);
 
     return (
-        <ScrollView style={styles.scrollContainer}>
+        <ScrollView 
+            style={styles.scrollContainer}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+        >
             <View style={styles.container}>
                 {/* Imagen del apiario */}
                 <View>
@@ -103,7 +108,7 @@ const styles = StyleSheet.create({
     },
     container: {
         alignItems: 'center',
-        paddingBottom: 50,
+        paddingBottom: 20,
     },
     apiaryInfoContainer: {
         width: '80%',
