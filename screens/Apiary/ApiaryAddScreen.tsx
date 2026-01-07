@@ -3,10 +3,10 @@ import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, T
 import { Slider } from '@rneui/themed';
 import ApiarySlider from '../../components/apiary/apiarySlider';
 import { useEffect, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
 import ImagePick from "../../components/imagePicker";
-import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 
@@ -53,31 +53,38 @@ function ApiaryAddScreen({ route, navigation }: any) {
         longitude: 0
     })
 
-    const [loadingLocation, setLoadingLocation] = useState(false);
+    const isFocused = useIsFocused();
 
-    const handleGetLocation = async () => {
-        setLoadingLocation(true);
-        try {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación');
-                setLoadingLocation(false);
-                return;
+    useEffect(() => {
+        // Verificar si hay una ubicación seleccionada cuando la pantalla recibe foco
+        if (isFocused) {
+            const selectedLocation = route.params?.selectedLocation;
+            if (selectedLocation) {
+                console.log('[ApiaryAddScreen] Ubicación seleccionada:', selectedLocation);
+                setApiaryData(prev => {
+                    const updated = {
+                        ...prev,
+                        latitude: selectedLocation.latitude,
+                        longitude: selectedLocation.longitude
+                    };
+                    console.log('[ApiaryAddScreen] Estado actualizado con coordenadas:', updated.latitude, updated.longitude);
+                    return updated;
+                });
+                ToastAndroid.show('Ubicación seleccionada', ToastAndroid.SHORT);
+                // Limpiar el parámetro para evitar procesarlo de nuevo
+                navigation.setParams({ selectedLocation: undefined });
             }
-
-            let location = await Location.getCurrentPositionAsync({});
-            setApiaryData(prev => ({
-                ...prev,
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude
-            }));
-            ToastAndroid.show('Ubicación capturada', ToastAndroid.SHORT);
-        } catch (error) {
-            Alert.alert('Error', 'No se pudo obtener la ubicación');
-            console.error(error);
-        } finally {
-            setLoadingLocation(false);
         }
+    }, [isFocused, route.params?.selectedLocation]);
+
+    const handleOpenMapSelection = () => {
+        navigation.navigate('MapSelectionScreen', {
+            initialLocation: apiaryData.latitude && apiaryData.longitude ? {
+                latitude: apiaryData.latitude,
+                longitude: apiaryData.longitude
+            } : null,
+            returnScreen: 'ApiaryAddScreen'
+        });
     };
 
     const [apiaryImage, setApiaryImage] = useState()
@@ -179,6 +186,13 @@ function ApiaryAddScreen({ route, navigation }: any) {
             ToastAndroid.show(`Nombre muy largo`, ToastAndroid.SHORT);
             return
         }
+        console.log('[ApiaryAddScreen] Enviando apiaryData:', {
+            name: apiaryData.name,
+            latitude: apiaryData.latitude,
+            longitude: apiaryData.longitude,
+            hasLatitude: apiaryData.latitude !== undefined && apiaryData.latitude !== null && apiaryData.latitude !== 0,
+            hasLongitude: apiaryData.longitude !== undefined && apiaryData.longitude !== null && apiaryData.longitude !== 0
+        });
         createApiary(apiaryImage, apiaryData).then(createdSuccessful => {
             if (true) {
 
@@ -228,19 +242,17 @@ function ApiaryAddScreen({ route, navigation }: any) {
                 </View>
 
                 {/* UBICACION GPS */}
-                <TouchableOpacity style={styles.locationButton} onPress={handleGetLocation} disabled={loadingLocation}>
-                    {loadingLocation ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <View style={styles.locationButtonContent}>
-                            <Icon name="location-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
-                            <Text style={styles.locationButtonText}>
-                                {apiaryData.latitude ? 'Actualizar Ubicación' : 'Capturar Ubicación'}
-                            </Text>
-                        </View>
-                    )}
+                <TouchableOpacity style={styles.locationButton} onPress={handleOpenMapSelection}>
+                    <View style={styles.locationButtonContent}>
+                        <Icon name="map-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
+                        <Text style={styles.locationButtonText}>
+                            {apiaryData.latitude ? 'Actualizar Ubicación' : 'Seleccionar Ubicación'}
+                        </Text>
+                    </View>
                 </TouchableOpacity>
-                {apiaryData.latitude ? (
+                {apiaryData.latitude && apiaryData.longitude && 
+                 typeof apiaryData.latitude === 'number' && 
+                 typeof apiaryData.longitude === 'number' ? (
                     <Text style={styles.locationText}>
                         Lat: {apiaryData.latitude.toFixed(4)}, Long: {apiaryData.longitude.toFixed(4)}
                     </Text>
@@ -532,6 +544,32 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 5,
 
+    },
+    locationButton: {
+        backgroundColor: colors.YELLOW,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: wp('80%'),
+        marginVertical: 10,
+    },
+    locationButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    locationButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    locationText: {
+        marginTop: 5,
+        color: '#CFCFD7',
+        fontSize: 12,
+        textAlign: 'center',
     },
 
 

@@ -57,6 +57,13 @@ export const getApiaryAndHivesCount = async () => {
 };
 
 export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
+  console.log('[createApiary] Recibido ApiaryData:', {
+    name: ApiaryData.name,
+    latitude: ApiaryData.latitude,
+    longitude: ApiaryData.longitude,
+    latitudeType: typeof ApiaryData.latitude,
+    longitudeType: typeof ApiaryData.longitude
+  });
 
   const data = new FormData();
   if (profileImage) {
@@ -85,9 +92,45 @@ export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
   data.append('tFence', String(ApiaryData.tFence));
   data.append('tComment', ApiaryData.tComment);
   data.append('transhumance', String(ApiaryData.transhumance));
-  if (ApiaryData.latitude) data.append('latitude', String(ApiaryData.latitude));
-  if (ApiaryData.longitude) data.append('longitude', String(ApiaryData.longitude));
+  
+  // Verificar y enviar coordenadas
+  console.log('[createApiary] Verificando coordenadas:', {
+    latitude: ApiaryData.latitude,
+    longitude: ApiaryData.longitude,
+    latUndefined: ApiaryData.latitude === undefined,
+    latNull: ApiaryData.latitude === null,
+    latZero: ApiaryData.latitude === 0,
+    lonUndefined: ApiaryData.longitude === undefined,
+    lonNull: ApiaryData.longitude === null,
+    lonZero: ApiaryData.longitude === 0
+  });
+  
+  if (ApiaryData.latitude !== undefined && ApiaryData.latitude !== null && ApiaryData.latitude !== 0) {
+    data.append('latitude', String(ApiaryData.latitude));
+    console.log('[createApiary] ✅ Enviando latitude:', ApiaryData.latitude);
+  } else {
+    console.log('[createApiary] ❌ NO se envía latitude porque:', {
+      isUndefined: ApiaryData.latitude === undefined,
+      isNull: ApiaryData.latitude === null,
+      isZero: ApiaryData.latitude === 0
+    });
+  }
+  
+  if (ApiaryData.longitude !== undefined && ApiaryData.longitude !== null && ApiaryData.longitude !== 0) {
+    data.append('longitude', String(ApiaryData.longitude));
+    console.log('[createApiary] ✅ Enviando longitude:', ApiaryData.longitude);
+  } else {
+    console.log('[createApiary] ❌ NO se envía longitude porque:', {
+      isUndefined: ApiaryData.longitude === undefined,
+      isNull: ApiaryData.longitude === null,
+      isZero: ApiaryData.longitude === 0
+    });
+  }
+  
   data.append('settings', JSON.stringify(ApiaryData.settings));
+  
+  // Log final del FormData (solo para verificar qué se está enviando)
+  console.log('[createApiary] FormData preparado. Verificando coordenadas en data...');
 
   try {
     const response = await apiClient.post('apiarys', data, {
@@ -135,6 +178,12 @@ export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryDa
       if (value !== undefined && value !== null) {
           if (key === 'settings') {
              data.append(key, JSON.stringify(value));
+          } else if (key === 'latitude' || key === 'longitude') {
+             // Solo enviar coordenadas si son valores válidos (no 0)
+             if (value !== 0) {
+               data.append(key, String(value));
+               console.log(`[updateApiary] Enviando ${key}:`, value);
+             }
           } else {
              data.append(key, String(value));
           }

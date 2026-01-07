@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -198,13 +199,17 @@ const AIChatScreen = ({ navigation }: any) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.BLACK} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <View style={styles.headerIconContainer}>
-            <Ionicons name="sparkles" size={20} color={colors.WHITE} />
+            <Image 
+              source={require('../../assets/images/ia/logo.png')} 
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.headerTitle}>Robertaso</Text>
         </View>
@@ -222,7 +227,11 @@ const AIChatScreen = ({ navigation }: any) => {
         {messages.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="chatbubbles" size={80} color={colors.YELLOW} />
+              <Image 
+                source={require('../../assets/images/ia/logo.png')} 
+                style={styles.emptyLogo}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.emptyTitle}>Robertaso</Text>
             <Text style={styles.emptyText}>
@@ -241,7 +250,11 @@ const AIChatScreen = ({ navigation }: any) => {
               {message.role === 'assistant' && (
                 <View style={styles.avatarContainer}>
                   <View style={styles.avatar}>
-                    <Ionicons name="sparkles" size={16} color={colors.WHITE} />
+                    <Image 
+                      source={require('../../assets/images/ia/logo.png')} 
+                      style={styles.avatarLogo}
+                      resizeMode="contain"
+                    />
                   </View>
                 </View>
               )}
@@ -278,7 +291,11 @@ const AIChatScreen = ({ navigation }: any) => {
           <View style={[styles.messageWrapper, styles.assistantWrapper]}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Ionicons name="sparkles" size={16} color={colors.WHITE} />
+                <Image 
+                  source={require('../../assets/images/ia/logo.png')} 
+                  style={styles.avatarLogo}
+                  resizeMode="contain"
+                />
               </View>
             </View>
             <View style={[styles.messageBubble, styles.assistantMessage, styles.typingBubble]}>
@@ -328,8 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
+    paddingBottom: 12,
     backgroundColor: colors.WHITE,
     borderBottomWidth: 1,
     borderBottomColor: colors.GREY_LIGHT,
@@ -339,6 +355,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     position: 'relative',
+    minHeight: 56,
+    alignContent: 'center',
   },
   backButton: {
     padding: 8,
@@ -347,9 +365,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   headerCenter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -358,11 +374,14 @@ const styles = StyleSheet.create({
   headerIconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.YELLOW,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   headerTitle: {
     fontSize: 20,
@@ -440,6 +459,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.YELLOW,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  emptyLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   userAvatarContainer: {
     marginLeft: 8,

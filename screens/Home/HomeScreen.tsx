@@ -143,7 +143,11 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={styles.aiPromoButton}>
           <View style={styles.aiPromoContent}>
             <View style={styles.aiPromoIconContainer}>
-              <Ionicons name="sparkles" size={40} color={colors.YELLOW} />
+              <Image 
+                source={require('../../assets/images/ia/logo.png')} 
+                style={styles.aiPromoLogo}
+                resizeMode="contain"
+              />
             </View>
             <View style={styles.aiPromoTextContainer}>
               <Text style={styles.aiPromoTitle}>Prueba nuestra nueva Inteligencia Artificial</Text>
@@ -281,6 +285,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  aiPromoLogo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   aiPromoTextContainer: {
     flex: 1,

@@ -1,28 +1,102 @@
-import { useEffect } from "react";
-import { Text, View, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from "react";
+import { Text, View, StyleSheet, Image, ScrollView, TouchableOpacity, ToastAndroid } from 'react-native';
 import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 
 import BlankImage from '../../assets/images/blank-image.jpg'
 import Capitalize from "../../modules/Capitalize";
 import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { APIARY_IMG_URL } from "../../constants/api";
 import colors from "../../constants/colors";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
+import { updateApiary } from "../../modules/API/Apiarys";
 
 function ApiaryScreen({ route, navigation }: any) {
     const insets = useSafeAreaInsets();
+    const isFocused = useIsFocused();
     const { apiaryInfo }: { apiaryInfo: IApiary } = route.params;
+    
+    // Asegurar que las coordenadas sean números si existen
+    const normalizedApiaryInfo = {
+        ...apiaryInfo,
+        latitude: apiaryInfo.latitude !== undefined && apiaryInfo.latitude !== null 
+            ? Number(apiaryInfo.latitude) 
+            : undefined,
+        longitude: apiaryInfo.longitude !== undefined && apiaryInfo.longitude !== null 
+            ? Number(apiaryInfo.longitude) 
+            : undefined
+    };
+    
+    const [apiaryInfoState, setApiaryInfoState] = useState<IApiary>(normalizedApiaryInfo);
 
     const totalBoxes = (box: number, boxMedium: number, boxSmall: number): number => {
         return box + (boxMedium * 0.75) + (boxSmall * 0.5);
     };
 
+    useEffect(() => {
+        // Verificar si hay una ubicación seleccionada cuando la pantalla recibe foco
+        // Esto se ejecuta cuando regresamos del MapSelectionScreen
+        if (isFocused && route.params?.selectedLocation && route.params?.confirmed) {
+            const selectedLocation = route.params.selectedLocation;
+            (async () => {
+                try {
+                    const updated = await updateApiary(null, apiaryInfoState.id, {
+                        latitude: selectedLocation.latitude,
+                        longitude: selectedLocation.longitude
+                    });
+                    if (updated) {
+                        setApiaryInfoState(prev => ({
+                            ...prev,
+                            latitude: selectedLocation.latitude,
+                            longitude: selectedLocation.longitude
+                        }));
+                        ToastAndroid.show('Ubicación actualizada', ToastAndroid.SHORT);
+                    } else {
+                        ToastAndroid.show('Error al actualizar ubicación', ToastAndroid.SHORT);
+                    }
+                } catch (error) {
+                    ToastAndroid.show('Error al actualizar ubicación', ToastAndroid.SHORT);
+                    console.error(error);
+                }
+            })();
+            // Limpiar los parámetros para evitar procesarlos de nuevo
+            navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
+        }
+    }, [isFocused, route.params?.selectedLocation, route.params?.confirmed]);
+
+    const handleOpenMapSelection = () => {
+        try {
+            // Asegurar que las coordenadas sean números válidos
+            const lat = apiaryInfoState.latitude;
+            const lon = apiaryInfoState.longitude;
+            
+            const hasValidCoordinates = lat !== undefined && 
+                                       lat !== null && 
+                                       !isNaN(Number(lat)) &&
+                                       lon !== undefined && 
+                                       lon !== null && 
+                                       !isNaN(Number(lon));
+            
+            navigation.navigate('MapSelectionScreen', {
+                initialLocation: hasValidCoordinates ? {
+                    latitude: Number(lat),
+                    longitude: Number(lon)
+                } : null,
+                returnScreen: 'ApiaryScreen'
+            });
+        } catch (error) {
+            console.error('Error navegando a MapSelectionScreen:', error);
+            ToastAndroid.show('Error al abrir el mapa', ToastAndroid.SHORT);
+        }
+    };
+
     const renderApiaryInfo = () => {
-        const items = apiaryItems(apiaryInfo).filter(item => item.isVisible === true);
+        const items = apiaryItems(apiaryInfoState).filter(item => item.isVisible === true);
 
         const rows = [];
         for (let i = 0; i < items.length; i += 2) {
@@ -56,10 +130,10 @@ function ApiaryScreen({ route, navigation }: any) {
             headerRight: () =>
                 <HeaderNoIconButton
                     text='Visitar'
-                    move={() => navigation.navigate('ApiaryVisitScreen', { apiaryNavData: apiaryInfo })}
+                    move={() => navigation.navigate('ApiaryVisitScreen', { apiaryNavData: apiaryInfoState })}
                 />,
         });
-    }, [apiaryInfo]);
+    }, [apiaryInfoState]);
 
     return (
         <ScrollView 
@@ -71,19 +145,23 @@ function ApiaryScreen({ route, navigation }: any) {
                 <View>
                     <Image
                         style={styles.apiaryImage}
-                        source={apiaryInfo.image ? { uri: `${APIARY_IMG_URL}${apiaryInfo.image}` } : BlankImage}
+                        source={apiaryInfoState.image ? { uri: `${APIARY_IMG_URL}${apiaryInfoState.image}` } : BlankImage}
                     />
                 </View>
-                <Text style={styles.apiaryName}>{Capitalize(apiaryInfo.name)}</Text>
+                <Text style={styles.apiaryName}>{Capitalize(apiaryInfoState.name)}</Text>
 
                 {/* Botones de menu del apiario */}
                 <View style={styles.apiaryMenu}>
-                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo })}>
-                        <Ionicons name="file-tray-full-outline" size={22} color={colors.BLACK} />
+                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={handleOpenMapSelection}>
+                        <Icon name="map-outline" size={22} color="#fff" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfo.settings })}>
-                        <Ionicons name="settings-outline" size={22} color={colors.BLACK} />
+                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}>
+                        <Ionicons name="file-tray-full-outline" size={22} color="#fff" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfoState.settings })}>
+                        <Ionicons name="settings-outline" size={22} color="#fff" />
                     </TouchableOpacity>
                 </View>
 
@@ -91,10 +169,10 @@ function ApiaryScreen({ route, navigation }: any) {
                     {renderApiaryInfo()}
 
                 {/* Comentarios del apiario */}
-                {apiaryInfo.settings?.tComment && apiaryInfo.tComment.length > 1 && (
+                {apiaryInfoState.settings?.tComment && apiaryInfoState.tComment.length > 1 && (
                     <View style={styles.apiaryCommentContainer}>
                         <Text style={styles.apiaryCommentTitle}>Comentario</Text>
-                        <Text style={styles.apiaryCommentText}>{apiaryInfo.tComment}</Text>
+                        <Text style={styles.apiaryCommentText}>{apiaryInfoState.tComment}</Text>
                     </View>
                 )}
             </View>
@@ -128,6 +206,13 @@ const styles = StyleSheet.create({
     ApiaryMenuItem: {
         flexDirection: 'row',
         alignItems:'center',
+        backgroundColor: colors.YELLOW,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        width: 48,
+        height: 48,
+        justifyContent: 'center',
     },
     apiaryName: {
         fontSize: 24,
@@ -160,6 +245,12 @@ const styles = StyleSheet.create({
     apiaryCommentText: {
         color: colors.BLACK_LIGHT,
         fontSize: 16,
+    },
+    locationText: {
+        marginTop: 5,
+        color: colors.BLACK_LIGHT,
+        fontSize: 12,
+        textAlign: 'center',
     },
 });
 

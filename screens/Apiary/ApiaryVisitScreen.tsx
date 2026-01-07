@@ -122,6 +122,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         });
     };
 
+
     const handleApiaryQuantity = (key: string) => {
         // Si la propiedad del objeto existe o es igual a 0 retornar la infomacion del useState
         if (apiaryData[key] || apiaryData[key] == 0) {
@@ -194,8 +195,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         {Capitalize(apiaryNavData.name)}
                     </Text>
                 </View>
-
-
 
                 {/* CANTIDAD DE COLMENAS */}
                 <ApiarySlider

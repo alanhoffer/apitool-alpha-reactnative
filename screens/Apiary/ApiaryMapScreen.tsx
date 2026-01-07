@@ -71,37 +71,43 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                 // 2. Fetch Apiaries Data
                 try {
                     let data = await getApiarys();
-                    
-                    // Si no hay datos (o array vacío), creamos datos mockeados para probar
-                    if (!data || data.length === 0) {
-                        data = [
-                            { id: 101, name: "La Tranquera", hives: 45, image: "", status: "active", userId: 1, createdAt: new Date(), updatedAt: new Date(), settings: {} as any, honey: 0, sugar: 0, levudex: 0, box: 0, boxMedium: 0, boxSmall: 0, tOxalic: 0, tAmitraz: 0, tFlumetrine: 0, tFence: 0, transhumance: 0, tComment: "" },
-                            { id: 102, name: "El Monte", hives: 28, image: "", status: "active", userId: 1, createdAt: new Date(), updatedAt: new Date(), settings: {} as any, honey: 0, sugar: 0, levudex: 0, box: 0, boxMedium: 0, boxSmall: 0, tOxalic: 0, tAmitraz: 0, tFlumetrine: 0, tFence: 0, transhumance: 0, tComment: "" },
-                            { id: 103, name: "Los Pinos", hives: 62, image: "", status: "active", userId: 1, createdAt: new Date(), updatedAt: new Date(), settings: {} as any, honey: 0, sugar: 0, levudex: 0, box: 0, boxMedium: 0, boxSmall: 0, tOxalic: 0, tAmitraz: 0, tFlumetrine: 0, tFence: 0, transhumance: 0, tComment: "" },
-                            { id: 104, name: "Costa Esmeralda", hives: 15, image: "", status: "active", userId: 1, createdAt: new Date(), updatedAt: new Date(), settings: {} as any, honey: 0, sugar: 0, levudex: 0, box: 0, boxMedium: 0, boxSmall: 0, tOxalic: 0, tAmitraz: 0, tFlumetrine: 0, tFence: 0, transhumance: 0, tComment: "" },
-                        ];
-                    }
 
                     if (data && Array.isArray(data)) {
-                        // Mockear ubicaciones si no existen y asegurar datos de muestra
-                        const mockedApiaries = data.map((apiary: IApiary, index: number) => {
-                            // Generar offset aleatorio entre -0.05 y 0.05 (aprox 5km) si no tiene ubicación
-                            const latOffset = (Math.random() - 0.5) * 0.04;
-                            const lonOffset = (Math.random() - 0.5) * 0.04;
-                            
-                            const finalLat = (apiary.latitude && apiary.latitude !== 0) ? apiary.latitude : userLat + latOffset;
-                            const finalLon = (apiary.longitude && apiary.longitude !== 0) ? apiary.longitude : userLon + lonOffset;
-
-                            return {
-                                ...apiary,
-                                name: apiary.name || `Apiario Mock ${index + 1}`,
-                                hives: apiary.hives || Math.floor(Math.random() * 50) + 10,
-                                latitude: finalLat,
-                                longitude: finalLon,
-                            };
-                        });
+                        // Procesar solo apiarios que tengan coordenadas válidas
+                        const processedApiaries = data
+                            .map((apiary: IApiary) => {
+                                // Normalizar coordenadas existentes
+                                let finalLat = apiary.latitude;
+                                let finalLon = apiary.longitude;
+                                
+                                // Convertir a número si son strings
+                                if (finalLat !== undefined && finalLat !== null) {
+                                    finalLat = Number(finalLat);
+                                }
+                                if (finalLon !== undefined && finalLon !== null) {
+                                    finalLon = Number(finalLon);
+                                }
+                                
+                                // Solo incluir apiarios con coordenadas válidas (no 0, no NaN, no undefined, no null)
+                                if (finalLat && finalLat !== 0 && !isNaN(finalLat) && 
+                                    finalLon && finalLon !== 0 && !isNaN(finalLon)) {
+                                    return {
+                                        ...apiary,
+                                        latitude: finalLat,
+                                        longitude: finalLon,
+                                    };
+                                }
+                                
+                                // Retornar null para apiarios sin coordenadas válidas
+                                return null;
+                            })
+                            .filter((apiary): apiary is IApiary => apiary !== null); // Filtrar los null
                         
-                        setApiaries(mockedApiaries);
+                        console.log(`[ApiaryMapScreen] Mostrando ${processedApiaries.length} apiarios con coordenadas válidas de ${data.length} totales`);
+                        setApiaries(processedApiaries);
+                    } else {
+                        console.log('[ApiaryMapScreen] No se recibieron datos de apiarios o no es un array');
+                        setApiaries([]);
                     }
                 } catch (apiError) {
                     console.error("Error fetching apiaries for map:", apiError);
@@ -145,7 +151,12 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                     }}
                 >
 
-                    {apiaries.map((apiary, index) => (
+                    {apiaries.filter(apiary => {
+                        // Filtrar solo apiarios con coordenadas válidas
+                        const lat = Number(apiary.latitude);
+                        const lon = Number(apiary.longitude);
+                        return !isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0;
+                    }).map((apiary, index) => (
                         <Marker
                             key={`apiary-${apiary.id}-${index}`}
                             coordinate={{

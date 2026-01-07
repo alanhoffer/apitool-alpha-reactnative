@@ -22,6 +22,7 @@ import AuthContext from '../modules/API/AuthContext';
 import ApiaryVisitScreen from '../screens/Apiary/ApiaryVisitScreen';
 import ApiaryHistoryScreen from '../screens/Apiary/ApiaryHistoryScreen';
 import ApiaryMapScreen from '../screens/Apiary/ApiaryMapScreen';
+import MapSelectionScreen from '../screens/Apiary/MapSelectionScreen';
 
 
 import ApiarySettingsScreen from '../screens/Apiary/ApiarySettingsScreen';
@@ -54,6 +55,7 @@ function ApiaryNavigator() {
             <ApiaryStack.Screen name="ApiarySettingsScreen" component={ApiarySettingsScreen} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryAddSettingsScreen" component={ApiaryAddSettingsScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
+            <ApiaryStack.Screen name="MapSelectionScreen" component={MapSelectionScreen} options={{ title: 'Seleccionar Ubicación' }} />
         </ApiaryStack.Navigator>
     );
 }
