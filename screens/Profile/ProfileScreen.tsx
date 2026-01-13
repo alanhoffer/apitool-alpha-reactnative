@@ -1,24 +1,17 @@
-import { View, StyleSheet, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
-import { useState, useEffect } from "react";
+import { View, StyleSheet, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { useState, useEffect, useContext } from "react";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getApiarys, getApiaryAndHivesCount } from "../../modules/API/Apiarys";
 import getProfile from "../../modules/API/User";
 import { capitalizeFirstLetter } from "../../helpers/Apiary/capitalizeFirstLetter";
 import colors from "../../constants/colors";
 import Icon from 'react-native-vector-icons/Ionicons';
+import AuthContext from "../../modules/API/AuthContext";
 
 export default function ProfileScreen({ navigation }: any) {
     const insets = useSafeAreaInsets();
+    const { Logout } = useContext(AuthContext);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
-    const [stats, setStats] = useState({
-        totalApiaries: 0,
-        totalHives: 0,
-        totalHoney: 0,
-        totalSugar: 0,
-        totalLevudex: 0,
-        apiariesInHarvest: 0,
-    });
 
     useEffect(() => {
         loadData();
@@ -26,36 +19,41 @@ export default function ProfileScreen({ navigation }: any) {
 
     const loadData = async () => {
         try {
-            const [apiaryData, countData, profileData] = await Promise.all([
-                getApiarys(),
-                getApiaryAndHivesCount(),
-                getProfile()
-            ]);
-
+            const profileData = await getProfile();
             if (profileData) {
                 setProfile(profileData);
-            }
-
-            if (apiaryData && Array.isArray(apiaryData)) {
-                const totalHoney = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.honey) || 0), 0);
-                const totalSugar = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.sugar) || 0), 0);
-                const totalLevudex = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.levudex) || 0), 0);
-                const apiariesInHarvest = apiaryData.filter(apiary => apiary.settings?.harvesting === true).length;
-
-                setStats({
-                    totalApiaries: countData?.apiaryCount || apiaryData.length,
-                    totalHives: countData?.hiveCount || apiaryData.reduce((sum, apiary) => sum + (Number(apiary.hives) || 0), 0),
-                    totalHoney,
-                    totalSugar,
-                    totalLevudex,
-                    apiariesInHarvest,
-                });
             }
         } catch (error) {
             console.error('Error loading profile data:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            'Cerrar Sesión',
+            '¿Estás seguro de que deseas cerrar sesión?',
+            [
+                {
+                    text: 'Cancelar',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Cerrar Sesión',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await Logout();
+                            // La navegación se actualizará automáticamente cuando accessToken sea null
+                        } catch (error) {
+                            console.error('Error al cerrar sesión:', error);
+                            Alert.alert('Error', 'No se pudo cerrar sesión. Intenta nuevamente.');
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     if (loading) {
@@ -93,38 +91,6 @@ export default function ProfileScreen({ navigation }: any) {
                 </View>
             )}
 
-            <Text style={styles.statsTitle}>Resumen General</Text>
-            <View style={styles.statsContainer}>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.totalApiaries}</Text>
-                    <Text style={styles.statLabel}>Apiarios</Text>
-                </View>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.totalHives}</Text>
-                    <Text style={styles.statLabel}>Colmenas</Text>
-                </View>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.apiariesInHarvest}</Text>
-                    <Text style={styles.statLabel}>En Cosecha</Text>
-                </View>
-            </View>
-
-            <Text style={styles.statsTitle}>Alimentación Total</Text>
-            <View style={styles.statsContainer}>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.totalHoney.toFixed(1)}</Text>
-                    <Text style={styles.statLabel}>Miel (kg)</Text>
-                </View>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.totalSugar.toFixed(1)}</Text>
-                    <Text style={styles.statLabel}>Azúcar (kg)</Text>
-                </View>
-                <View style={styles.stat}>
-                    <Text style={styles.statValue}>{stats.totalLevudex.toFixed(1)}</Text>
-                    <Text style={styles.statLabel}>Levudex (kg)</Text>
-                </View>
-            </View>
-
             <TouchableOpacity 
                 style={styles.devicesButton}
                 onPress={() => navigation.navigate('DevicesScreen')}
@@ -134,6 +100,16 @@ export default function ProfileScreen({ navigation }: any) {
                     <Text style={styles.devicesButtonText}>Gestionar Dispositivos</Text>
                 </View>
                 <Icon name="chevron-forward" size={20} color={colors.BLACK_TRANSPARENT} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                style={styles.logoutButton}
+                onPress={handleLogout}
+            >
+                <View style={styles.logoutButtonContent}>
+                    <Icon name="log-out-outline" size={24} color={colors.WHITE} />
+                    <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+                </View>
             </TouchableOpacity>
         </ScrollView>
     )
@@ -232,5 +208,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: colors.BLACK,
+    },
+    logoutButton: {
+        backgroundColor: colors.RED_LIGHT || '#dc3545',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    logoutButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    logoutButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.WHITE,
     },
 })

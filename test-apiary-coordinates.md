@@ -60,3 +60,11 @@ Después de crear el apiario, verifica en el backend que:
 - El campo `longitude` tiene el valor correcto
 - Los valores no son `0`, `null` o `undefined`
 
+
+
+
+
+
+
+
+

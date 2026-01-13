@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, Platform, Alert, TouchableOpacity, Image, Dimensions } from 'react-native';
-import MapView, { Marker, Callout, UrlTile, MAP_TYPES, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, MAP_TYPES, PROVIDER_DEFAULT, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { getApiarys } from '../../modules/API/Apiarys';
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
@@ -18,6 +18,7 @@ const ApiaryMapScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(true);
     const [initialRegion, setInitialRegion] = useState<any>(null);
     const [selectedApiary, setSelectedApiary] = useState<IApiary | null>(null);
+    const [mapError, setMapError] = useState<string | null>(null);
     const isFocused = useIsFocused();
     const screenHeight = Dimensions.get('window').height;
 
@@ -61,12 +62,24 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                     }
                 }
 
-                setInitialRegion({
-                    latitude: userLat,
-                    longitude: userLon,
-                    latitudeDelta: 0.1, 
-                    longitudeDelta: 0.1,
-                });
+                // Validar que las coordenadas sean válidas antes de establecer la región
+                if (!isNaN(userLat) && !isNaN(userLon) && userLat !== 0 && userLon !== 0) {
+                    setInitialRegion({
+                        latitude: userLat,
+                        longitude: userLon,
+                        latitudeDelta: 0.1, 
+                        longitudeDelta: 0.1,
+                    });
+                } else {
+                    console.error('[ApiaryMapScreen] Coordenadas inválidas para initialRegion:', { userLat, userLon });
+                    // Usar coordenadas por defecto válidas
+                    setInitialRegion({
+                        latitude: -37.11108,
+                        longitude: -56.86523,
+                        latitudeDelta: 0.1,
+                        longitudeDelta: 0.1,
+                    });
+                }
 
                 // 2. Fetch Apiaries Data
                 try {
@@ -74,11 +87,12 @@ const ApiaryMapScreen = ({ navigation }: any) => {
 
                     if (data && Array.isArray(data)) {
                         // Procesar solo apiarios que tengan coordenadas válidas
-                        const processedApiaries = data
+                        const processedApiaries: IApiary[] = data
+                            .filter((apiary: IApiary) => apiary && apiary !== null && apiary !== undefined) // Filtrar apiarios nulos o undefined primero
                             .map((apiary: IApiary) => {
                                 // Normalizar coordenadas existentes
-                                let finalLat = apiary.latitude;
-                                let finalLon = apiary.longitude;
+                                let finalLat = apiary?.latitude;
+                                let finalLon = apiary?.longitude;
                                 
                                 // Convertir a número si son strings
                                 if (finalLat !== undefined && finalLat !== null) {
@@ -101,7 +115,7 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                                 // Retornar null para apiarios sin coordenadas válidas
                                 return null;
                             })
-                            .filter((apiary): apiary is IApiary => apiary !== null); // Filtrar los null
+                            .filter((apiary) => apiary !== null && apiary !== undefined) as IApiary[]; // Filtrar los null
                         
                         console.log(`[ApiaryMapScreen] Mostrando ${processedApiaries.length} apiarios con coordenadas válidas de ${data.length} totales`);
                         setApiaries(processedApiaries);
@@ -126,9 +140,47 @@ const ApiaryMapScreen = ({ navigation }: any) => {
         }
     }, [isFocused]);
 
+    // Validar que initialRegion sea válido antes de renderizar el mapa
+    const isValidRegion = initialRegion && 
+        initialRegion.latitude !== undefined && 
+        initialRegion.longitude !== undefined &&
+        !isNaN(initialRegion.latitude) && 
+        !isNaN(initialRegion.longitude) &&
+        initialRegion.latitude !== 0 && 
+        initialRegion.longitude !== 0;
+
+    // Si hay error del mapa, mostrar mensaje
+    if (mapError && !loading) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.errorContainer}>
+                    <MaterialIcons name="error-outline" size={48} color={colors.YELLOW} />
+                    <Text style={styles.errorText}>{mapError}</Text>
+                    <TouchableOpacity 
+                        style={styles.retryButton}
+                        onPress={() => {
+                            setMapError(null);
+                            setLoading(true);
+                            // Recargar la pantalla
+                            if (isFocused) {
+                                const fetchLocationAndApiaries = async () => {
+                                    // Recargar datos
+                                    setLoading(false);
+                                };
+                                fetchLocationAndApiaries();
+                            }
+                        }}
+                    >
+                        <Text style={styles.retryButtonText}>Reintentar</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
-            {loading || !initialRegion ? (
+            {loading || !isValidRegion ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={colors.YELLOW} />
                     <Text style={styles.loadingText}>Cargando mapa y apiarios...</Text>
@@ -139,10 +191,14 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                     style={styles.map}
                     initialRegion={initialRegion}
                     provider={PROVIDER_DEFAULT}
-                    mapType={MAP_TYPES.STANDARD}
                     showsUserLocation={true}
-                    showsMyLocationButton={true}
+                    showsMyLocationButton={Platform.OS === 'android'}
                     rotateEnabled={false}
+                    loadingEnabled={true}
+                    onMapReady={() => {
+                        console.log('[ApiaryMapScreen] Mapa listo');
+                        setMapError(null); // Limpiar error si el mapa se carga correctamente
+                    }}
                     mapPadding={{
                         top: 0,
                         right: 0,
@@ -150,52 +206,90 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                         left: 0,
                     }}
                 >
+                    {/* CartoDB Positron Tiles - 100% Gratuito, sin API key */}
+                    {/* Si el UrlTile causa problemas, el mapa seguirá funcionando con el provider por defecto */}
+                    {Platform.OS === 'android' ? (
+                        <UrlTile
+                            urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                            maximumZ={19}
+                            flipY={false}
+                            tileSize={256}
+                        />
+                    ) : null}
 
-                    {apiaries.filter(apiary => {
-                        // Filtrar solo apiarios con coordenadas válidas
-                        const lat = Number(apiary.latitude);
-                        const lon = Number(apiary.longitude);
-                        return !isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0;
-                    }).map((apiary, index) => (
-                        <Marker
-                            key={`apiary-${apiary.id}-${index}`}
-                            coordinate={{
-                                latitude: Number(apiary.latitude),
-                                longitude: Number(apiary.longitude),
-                            }}
-                            onPress={(e) => {
-                                e.stopPropagation(); // Evitar que el mapa capture el evento
-                                setSelectedApiary(apiary);
-                                
-                                // Centrar el mapa en el apiario - el padding inferior ajustará automáticamente la vista
-                                if (mapRef.current) {
-                                    // Calcular offset hacia arriba para que el marcador quede visible sobre la tarjeta
-                                    const cardHeight = 400;
-                                    const offsetLat = 0.015; // Offset hacia arriba en grados
-                                    
-                                    mapRef.current.animateToRegion({
-                                        latitude: Number(apiary.latitude) + offsetLat,
-                                        longitude: Number(apiary.longitude),
-                                        latitudeDelta: 0.05,
-                                        longitudeDelta: 0.05,
-                                    }, 300);
-                                }
-                            }}
-                        >
-                            <View style={styles.markerContainer}>
-                                <View style={[
-                                    styles.markerIconBackground,
-                                    selectedApiary?.id === apiary.id && styles.markerIconBackgroundSelected
-                                ]}>
-                                    <MaterialIcons 
-                                        name="hive" 
-                                        size={24} 
-                                        color={selectedApiary?.id === apiary.id ? colors.YELLOW : 'rgba(255, 204, 0, 0.9)'} 
-                                    />
-                                </View>
-                            </View>
-                        </Marker>
-                    ))}
+                    {apiaries
+                        .filter(apiary => {
+                            // Filtrar solo apiarios válidos con coordenadas válidas
+                            if (!apiary || apiary === null || apiary === undefined) {
+                                return false;
+                            }
+                            const lat = apiary.latitude ? Number(apiary.latitude) : NaN;
+                            const lon = apiary.longitude ? Number(apiary.longitude) : NaN;
+                            return !isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0;
+                        })
+                        .map((apiary, index) => {
+                            if (!apiary || !apiary.latitude || !apiary.longitude) {
+                                return null;
+                            }
+                            
+                            // Validar coordenadas antes de crear el marker
+                            const lat = Number(apiary.latitude);
+                            const lon = Number(apiary.longitude);
+                            
+                            if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
+                                console.warn(`[ApiaryMapScreen] Coordenadas inválidas para apiario ${apiary.id}:`, { lat, lon });
+                                return null;
+                            }
+                            
+                            // Validar que las coordenadas estén en rangos válidos
+                            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                                console.warn(`[ApiaryMapScreen] Coordenadas fuera de rango para apiario ${apiary.id}:`, { lat, lon });
+                                return null;
+                            }
+                            
+                            return (
+                                <Marker
+                                    key={`apiary-${apiary.id}-${index}`}
+                                    coordinate={{
+                                        latitude: lat,
+                                        longitude: lon,
+                                    }}
+                                    onPress={(e) => {
+                                        e.stopPropagation(); // Evitar que el mapa capture el evento
+                                        setSelectedApiary(apiary);
+                                        
+                                        // Centrar el mapa en el apiario - el padding inferior ajustará automáticamente la vista
+                                        if (mapRef.current && apiary.latitude && apiary.longitude) {
+                                            // Calcular offset hacia arriba para que el marcador quede visible sobre la tarjeta
+                                            const cardHeight = 400;
+                                            const offsetLat = 0.015; // Offset hacia arriba en grados
+                                            
+                                            mapRef.current.animateToRegion({
+                                                latitude: Number(apiary.latitude) + offsetLat,
+                                                longitude: Number(apiary.longitude),
+                                                latitudeDelta: 0.05,
+                                                longitudeDelta: 0.05,
+                                            }, 300);
+                                        }
+                                    }}
+                                >
+                                    <View style={styles.markerContainer}>
+                                        <View style={[
+                                            styles.markerIconBackground,
+                                            selectedApiary?.id === apiary.id && styles.markerIconBackgroundSelected
+                                        ]}>
+                                            <MaterialIcons 
+                                                name="hive" 
+                                                size={24} 
+                                                color={selectedApiary?.id === apiary.id ? colors.YELLOW : 'rgba(255, 204, 0, 0.9)'} 
+                                            />
+                                        </View>
+                                    </View>
+                                </Marker>
+                            );
+                        })
+                        .filter(marker => marker !== null)
+                    }
                 </MapView>
             )}
             
@@ -454,6 +548,31 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.4,
         shadowRadius: 6,
         elevation: 8,
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: 'white',
+    },
+    errorText: {
+        marginTop: 16,
+        marginBottom: 24,
+        fontSize: 16,
+        color: colors.BLACK,
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: colors.YELLOW,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: colors.BLACK,
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
 

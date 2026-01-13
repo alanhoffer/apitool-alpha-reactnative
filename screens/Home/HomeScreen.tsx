@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../../constants/colors';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+// import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'; // Comentado - solo se usaba para el botón de mapa
 import getProfile from '../../modules/API/User';
 import { getApiaryAndHivesCount } from '../../modules/API/Apiarys';
 import { capitalizeFirstLetter } from '../../helpers/Apiary/capitalizeFirstLetter';
@@ -13,56 +14,118 @@ import { getGreetingMessage } from '../../helpers/Home/getGreetingMessage';
 import * as Location from 'expo-location';
 import { BASE_URL } from '../../constants/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
+import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png';
 
 const HomeScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const [profile, setProfile] = useState<any>(null);
   const [hives, setHives] = useState(0);
   const [apiaries, setApiaries] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [weather, setWeather] = useState<any>(null);
-  const [weatherLoading, setWeatherLoading] = useState(true); // Para manejar el estado de carga del clima
+  const [weatherLoading, setWeatherLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return;
+  // Función para obtener el clima (solo requiere ubicación, no mapas)
+  const fetchWeather = useCallback(async () => {
+    try {
+      let currentLocation = location;
+      
+      // Si no hay ubicación guardada, obtenerla
+      if (!currentLocation) {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setWeatherLoading(false);
+          return;
+        }
+        currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation(currentLocation);
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
+      const { latitude: lat, longitude: lon } = currentLocation.coords;
 
-      const { latitude: lat, longitude: lon } = location.coords;
+      const response = await fetch(`${BASE_URL}weather?lat=${lat}&lon=${lon}`);
+      const data = await response.json();
+      setWeather(data);
+      setErrorMsg(null);
+    } catch (error) {
+      console.error('[HomeScreen] Error fetching weather:', error);
+      setErrorMsg('Error al obtener el clima.');
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, [location]);
 
-      try {
-        const response = await fetch(`${BASE_URL}weather?lat=${lat}&lon=${lon}`);
-        const data = await response.json();
-        setWeather(data);  // Guardar los datos del clima
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        setErrorMsg('Error al obtener el clima.');
-      } finally {
-        setWeatherLoading(false); // Finalizar el estado de carga del clima
-      }
-    };
-
-    const fetchUserInfo = async () => {
+  // Función para obtener información del usuario (apiarios, colmenas, perfil)
+  const fetchUserInfo = useCallback(async () => {
+    try {
       const countFetched = await getApiaryAndHivesCount();
       const profileFetched = await getProfile();
-      if (countFetched && profileFetched != null) {
+      
+      if (countFetched) {
         setHives(countFetched.hiveCount);
         setApiaries(countFetched.apiaryCount);
+      }
+      
+      if (profileFetched) {
         setProfile(profileFetched);
       }
+    } catch (error) {
+      console.error('[HomeScreen] Error fetching user info:', error);
+    } finally {
       setLoading(false);
-    };
-
-    fetchLocation();
-    fetchUserInfo();
+    }
   }, []);
+
+  // Función para cargar todos los datos
+  const loadData = useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) {
+      setRefreshing(true);
+    }
+    
+    await Promise.all([
+      fetchUserInfo(),
+      fetchWeather()
+    ]);
+    
+    if (showRefreshing) {
+      setRefreshing(false);
+    }
+  }, [fetchUserInfo, fetchWeather]);
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Actualizar cuando la pantalla recibe foco
+  useEffect(() => {
+    if (isFocused) {
+      console.log('[HomeScreen] Pantalla enfocada, actualizando datos...');
+      loadData();
+    }
+  }, [isFocused, loadData]);
+
+  // Actualizar periódicamente cada 30 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (isFocused) {
+        console.log('[HomeScreen] Actualización automática periódica...');
+        loadData();
+      }
+    }, 30000); // 30 segundos
+
+    return () => clearInterval(interval);
+  }, [isFocused, loadData]);
+
+  // Función para pull-to-refresh
+  const onRefresh = useCallback(() => {
+    console.log('[HomeScreen] Pull-to-refresh iniciado');
+    loadData(true);
+  }, [loadData]);
 
   if (loading) {
     return <ActivityIndicator size="large" color={colors.BLACK} />;
@@ -72,6 +135,14 @@ const HomeScreen = ({ navigation }: any) => {
     <ScrollView 
       style={styles.container}
       contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.YELLOW}
+          colors={[colors.YELLOW]}
+        />
+      }
     >
       <View style={[styles.userContainer, styles.navigation]}>
         <View>
@@ -85,12 +156,22 @@ const HomeScreen = ({ navigation }: any) => {
       <View style={styles.statsContainer}>
         <View style={styles.userStats}>
           <View style={styles.stat}>
-            <Text style={styles.userStatsTitle}>{apiaries}</Text>
-            <Text style={styles.userStatsSub}>Apiarios</Text>
+            <View style={styles.statWithIcon}>
+              <MaterialIcons name="hive" size={24} color={colors.BLACK} style={styles.statIcon} />
+              <View>
+                <Text style={styles.userStatsTitle}>{apiaries}</Text>
+                <Text style={styles.userStatsSub}>Apiarios</Text>
+              </View>
+            </View>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.userStatsTitle}>{hives}</Text>
-            <Text style={styles.userStatsSub}>Colmenas</Text>
+            <View style={styles.statWithIcon}>
+              <Image source={beehiveCollonySize} style={styles.statIconImage} />
+              <View>
+                <Text style={styles.userStatsTitle}>{hives}</Text>
+                <Text style={styles.userStatsSub}>Colmenas</Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -117,10 +198,11 @@ const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.quickAccessText}>Mis Apiarios</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryMapScreen' })}>
+        {/* Comentado - no se usa mapa por ahora */}
+        {/* <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryMapScreen' })}>
           <MaterialCommunityIcons name="map-marker-radius" size={36} color={colors.BLACK} />
           <Text style={styles.quickAccessText}>Mapa</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
           <Image
@@ -199,6 +281,20 @@ const styles = StyleSheet.create({
   },
   stat: {
     marginVertical: 5,
+  },
+  statWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statIcon: {
+    marginRight: 4,
+  },
+  statIconImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+    marginRight: 4,
   },
   weatherStats: {
     alignItems: 'center',

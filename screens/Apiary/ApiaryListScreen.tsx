@@ -28,19 +28,10 @@ const ApiaryListScreen = ({ navigation }: any) => {
   const isFocused = useIsFocused();
 
   async function loadApiarys() {
-    console.log('[ApiaryListScreen] Cargando apiarios...');
     try {
       const apiaryData = await getApiarys();
-      console.log('[ApiaryListScreen] Respuesta del backend:', JSON.stringify(apiaryData, null, 2));
       
       if (apiaryData != null && Array.isArray(apiaryData)) {
-        console.log('[ApiaryListScreen] Cantidad de apiarios:', apiaryData.length);
-        
-        // Log del primer apiario para ver su estructura
-        if (apiaryData.length > 0) {
-          console.log('[ApiaryListScreen] Primer apiario:', JSON.stringify(apiaryData[0], null, 2));
-        }
-        
         // Ordenar por fecha de actualización más reciente
         // Manejar tanto camelCase como snake_case como respaldo
         const sortedApiaryData = apiaryData.sort((a: any, b: any) => {
@@ -63,13 +54,11 @@ const ApiaryListScreen = ({ navigation }: any) => {
           setHarvesting(false);
         }
       } else {
-        console.log('[ApiaryListScreen] No se recibieron datos del backend o no es un array');
         setApiaryList([]);
         setApiarysLoaded(true);
         setHarvesting(false);
       }
     } catch (error) {
-      console.error('[ApiaryListScreen] Error al cargar apiarios:', error);
       setApiaryList([]);
       setApiarysLoaded(true);
       setHarvesting(false);
@@ -83,7 +72,7 @@ const ApiaryListScreen = ({ navigation }: any) => {
       setHarvesting(prev => !prev);
       onRefresh();
     } catch (error) {
-      console.error('Error toggling harvest all:', error);
+      // Error silencioso
     }
   };
 
@@ -156,7 +145,6 @@ const ApiaryListScreen = ({ navigation }: any) => {
             }>
             {(() => {
               const filteredApiaries = filterApiaryByName(apiaryList, searchValue);
-              console.log('[ApiaryListScreen] Apiarios filtrados:', filteredApiaries.length, 'de', apiaryList.length);
               return filteredApiaries.map((apiary) => (
                 <TouchableOpacity key={apiary.id} onLongPress={() => handleDeleteApiary(apiary)} onPress={() => navigation.navigate('ApiaryScreen', { apiaryInfo: apiary })}>
                   <ApiaryCard apiaryInfo={apiary} />

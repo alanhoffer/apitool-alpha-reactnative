@@ -238,3 +238,94 @@ export const getHistory = async (apiaryId: number) => {
     return null;
   }
 };
+
+export interface HarvestTotals {
+  name?: string; // Nombre del apiario (opcional, por si el endpoint lo incluye)
+  box: number;
+  boxMedium: number;
+  boxSmall: number;
+  total?: number; // Total calculado (opcional, por si el endpoint lo incluye)
+}
+
+export interface HarvestStats {
+  box: number;
+  boxMedium: number;
+  boxSmall: number;
+  total?: number; // Total calculado (opcional, por si el endpoint lo incluye)
+}
+
+export const getHarvestTotals = async (apiaryId: number): Promise<HarvestTotals | null> => {
+  try {
+    const response = await apiClient.get<HarvestTotals>(`apiarys/${apiaryId}/harvested`);
+    return response.data;
+  } catch (error: any) {
+    // Si es un 404, el endpoint aún no está implementado, manejar silenciosamente
+    if (error?.response?.status === 404) {
+      console.log(`[getHarvestTotals] Endpoint no disponible para apiario ${apiaryId} (404), usando valores actuales`);
+      return null;
+    }
+    // Para otros errores, mostrar el error pero no fallar
+    console.warn('[getHarvestTotals] Error obteniendo totales de cosecha:', error?.response?.status || error?.message);
+    return null;
+  }
+};
+
+export const getHarvestStats = async (): Promise<HarvestStats | null> => {
+  try {
+    const response = await apiClient.get<HarvestStats>('apiarys/harvested/stats');
+    return response.data;
+  } catch (error: any) {
+    // Si es un 404, el endpoint aún no está implementado, manejar silenciosamente
+    if (error?.response?.status === 404) {
+      console.log('[getHarvestStats] Endpoint no disponible (404)');
+      return null;
+    }
+    // Para otros errores, mostrar el error pero no fallar
+    console.warn('[getHarvestStats] Error obteniendo estadísticas de cosecha:', error?.response?.status || error?.message);
+    return null;
+  }
+};
+
+export const getHarvestingCount = async (): Promise<number | null> => {
+  try {
+    const response = await apiClient.get<{ harvestingCount: number }>('apiarys/harvesting/count');
+    return response.data?.harvestingCount || null;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      console.log('[getHarvestingCount] Endpoint no disponible (404)');
+      return null;
+    }
+    console.warn('[getHarvestingCount] Error obteniendo cantidad de apiarios en cosecha:', error?.response?.status || error?.message);
+    return null;
+  }
+};
+
+export const getHarvestedCount = async (): Promise<number | null> => {
+  try {
+    const response = await apiClient.get<any>('apiarys/harvested/count');
+    // El endpoint puede retornar diferentes estructuras:
+    // { count: number }, { harvestedBoxesCount: number }, o directamente un número
+    const data = response.data;
+    
+    if (typeof data === 'number') {
+      return data;
+    }
+    
+    if (data?.count !== undefined) {
+      return Number(data.count);
+    }
+    
+    if (data?.harvestedBoxesCount !== undefined) {
+      return Number(data.harvestedBoxesCount);
+    }
+    
+    return null;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      console.log('[getHarvestedCount] Endpoint no disponible (404)');
+      return null;
+    }
+    console.warn('[getHarvestedCount] Error obteniendo cantidad de apiarios con alzas cosechadas:', error?.response?.status || error?.message);
+    return null;
+  }
+};

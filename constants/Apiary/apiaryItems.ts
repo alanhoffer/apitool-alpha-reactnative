@@ -10,6 +10,11 @@ import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocar
 import beehiveTranshumance from '../../assets/images/icons/beehive-transhumance.png';
 import { ApiaryItemCategory } from '../Enums/ApiaryItemCategory';
 
+// Helper para normalizar valores booleanos (maneja tanto boolean como string)
+const isSettingActive = (value: any): boolean => {
+    return value === true || value === 'true' || value === 1 || value === '1';
+};
+
 export const apiaryItems = (apiaryInfo: any) => [
     { key: 'hives', title: 'Colmena(s)', value: apiaryInfo.hives, image: beehiveCollonySize, isVisible: true, category: ApiaryItemCategory.COLONY },
     { key: 'status', title: 'Estado', value: apiaryInfo.status, image: beehiveTreatmentGeneral, isVisible: true, category: ApiaryItemCategory.STATUS },
@@ -21,7 +26,7 @@ export const apiaryItems = (apiaryInfo: any) => [
     { key: 'tFlumetrine',  title: 'Flumetrina', value: `${apiaryInfo.tFlumetrine} Dias`, image: beehiveTreatmentFlumetrine, isVisible: apiaryInfo.settings?.tFlumetrine, category: ApiaryItemCategory.TREATMENT },
     { key: 'transhumance',  title: 'Transhumancia', value: `${apiaryInfo.transhumance} Colm`, image: beehiveTranshumance, isVisible: apiaryInfo.settings?.transhumance, category: ApiaryItemCategory.OTHER },
     { key: 'tFence',  title: 'Electrico', value: `${apiaryInfo.tFence} Dias`, image: beeHiveBateryNocarge, isVisible: apiaryInfo.settings?.tFence, category: ApiaryItemCategory.OTHER },
-    { key: 'box',  title: 'Alza', value: `${apiaryInfo.box}`, image: beehiveBoxGeneral, isVisible: (apiaryInfo.settings?.box && apiaryInfo.settings?.harvesting), category: ApiaryItemCategory.OTHER },
-    { key: 'boxMedium',  title: 'Alza 3/4', value: `${apiaryInfo.boxMedium}`, image: beehiveBoxGeneral, isVisible: (apiaryInfo.settings?.boxMedium && apiaryInfo.settings?.harvesting), category: ApiaryItemCategory.OTHER },
-    { key: 'boxSmall',  title: 'Alza 1/2', value: `${apiaryInfo.boxSmall}`, image: beehiveBoxGeneral, isVisible: (apiaryInfo.settings?.boxSmall && apiaryInfo.settings?.harvesting), category: ApiaryItemCategory.OTHER },
+    { key: 'box',  title: 'Alza', value: `${apiaryInfo.box}`, image: beehiveBoxGeneral, isVisible: (isSettingActive(apiaryInfo.settings?.box) && isSettingActive(apiaryInfo.settings?.harvesting)), category: ApiaryItemCategory.OTHER },
+    { key: 'boxMedium',  title: 'Alza 3/4', value: `${apiaryInfo.boxMedium}`, image: beehiveBoxGeneral, isVisible: (isSettingActive(apiaryInfo.settings?.boxMedium) && isSettingActive(apiaryInfo.settings?.harvesting)), category: ApiaryItemCategory.OTHER },
+    { key: 'boxSmall',  title: 'Alza 1/2', value: `${apiaryInfo.boxSmall}`, image: beehiveBoxGeneral, isVisible: (isSettingActive(apiaryInfo.settings?.boxSmall) && isSettingActive(apiaryInfo.settings?.harvesting)), category: ApiaryItemCategory.OTHER },
 ];

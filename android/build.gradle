@@ -2,13 +2,27 @@
 
 buildscript {
   repositories {
+    // Repositorios públicos primero (más confiables) - Gradle intentará estos primero
     google()
     mavenCentral()
+    maven { url 'https://repo1.maven.org/maven2' }
+    // Repositorio público de JFrog como alternativa
+    maven {
+      url 'https://releases.jfrog.io/artifactory/jfrog-jars'
+    }
+    // Repositorio interno de EAS Build al final (solo si los públicos fallan)
+    // Este es el repositorio original que funcionaba antes
+    maven {
+      url 'http://maven.production.caches.eas-build.internal/artifactory/libs-release'
+      allowInsecureProtocol = true
+    }
   }
   dependencies {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    // El plugin expo-root-project agregará automáticamente org.jfrog.buildinfo:build-info-extractor-gradle
+    // si está disponible en los repositorios configurados
   }
 }
 
@@ -17,8 +31,11 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
+    // Repositorio alternativo en caso de problemas con EAS Build
+    maven { url 'https://repo1.maven.org/maven2' }
   }
 }
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+

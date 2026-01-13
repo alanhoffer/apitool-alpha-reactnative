@@ -110,3 +110,11 @@ console.log('  2. Crea un apiario y selecciona ubicación en el mapa');
 console.log('  3. Busca los logs que empiezan con [createApiary]');
 console.log('  4. Deberías ver: ✅ Enviando latitude: y ✅ Enviando longitude:');
 
+
+
+
+
+
+
+
+

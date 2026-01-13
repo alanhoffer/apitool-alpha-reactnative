@@ -20,54 +20,6 @@ const ListScreen: React.FC = ({ navigation }: any) => {
     const [filter, setFilter] = useState<'all' | 'sold'>('all'); // Filtro: 'all' o 'sold'
     const isFocused = useIsFocused();
 
-    // Datos de prueba para visualizar el diseño
-    const getMockData = (): ScannedDataItem[] => [
-        {
-            id: 1,
-            code: '12-34567890-1',
-            tare: 15.5,
-            weight: 45.2,
-            sold: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        },
-        {
-            id: 2,
-            code: '23-45678901-2',
-            tare: 18.3,
-            weight: 52.7,
-            sold: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        },
-        {
-            id: 3,
-            code: '12-34567890-1', // Duplicado para probar el badge
-            tare: 16.0,
-            weight: 48.5,
-            sold: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        },
-        {
-            id: 4,
-            code: '34-56789012-3',
-            tare: 20.0,
-            weight: 60.3,
-            sold: true, // Vendido
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        },
-        {
-            id: 5,
-            code: '45-67890123-4',
-            tare: 17.8,
-            weight: 55.9,
-            sold: true, // Vendido
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        },
-    ];
 
     const loadScannedData = async (soldFilter?: boolean) => {
         try {
@@ -92,19 +44,17 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 setScannedData(filtered);
                 findDuplicates(filtered);
             } else {
-                // Datos de prueba
-                const mockData = getMockData();
-                setAllDrums(mockData);
-                setScannedData(mockData);
-                findDuplicates(mockData);
+                // No hay tambores, mostrar lista vacía
+                setAllDrums([]);
+                setScannedData([]);
+                setDuplicates(new Set());
             }
         } catch (error) {
             console.error('Error loading drums:', error);
-            // Mostrar datos de prueba cuando hay error o no hay conexión
-            const mockData = getMockData();
-            setAllDrums(mockData);
-            setScannedData(mockData);
-            findDuplicates(mockData);
+            // En caso de error, mostrar lista vacía
+            setAllDrums([]);
+            setScannedData([]);
+            setDuplicates(new Set());
         } finally {
             setLoading(false);
         }
@@ -132,17 +82,17 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 applyFilter(filter, drums);
                 findDuplicates(drums);
             } else {
-                const mockData = getMockData();
-                setAllDrums(mockData);
-                applyFilter(filter, mockData);
-                findDuplicates(mockData);
+                // No hay tambores, mostrar lista vacía
+                setAllDrums([]);
+                applyFilter(filter, []);
+                setDuplicates(new Set());
             }
         } catch (error) {
             console.error('Error loading all drums:', error);
-            const mockData = getMockData();
-            setAllDrums(mockData);
-            applyFilter(filter, mockData);
-            findDuplicates(mockData);
+            // En caso de error, mostrar lista vacía
+            setAllDrums([]);
+            applyFilter(filter, []);
+            setDuplicates(new Set());
         } finally {
             setLoading(false);
         }

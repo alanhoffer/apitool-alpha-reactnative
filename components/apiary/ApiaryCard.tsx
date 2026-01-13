@@ -18,25 +18,11 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
 
   // Manejar tanto camelCase como snake_case
   const updatedAt = apiaryInfo?.updatedAt || apiaryInfo?.updated_at;
-  
-  console.log('[ApiaryCard] Renderizando card con info:', {
-    name: apiaryInfo?.name,
-    image: apiaryInfo?.image,
-    hives: apiaryInfo?.hives,
-    status: apiaryInfo?.status,
-    updatedAt: updatedAt
-  });
 
   const isTreatmentsActive = () => {
     // Verificar si hay tratamientos activos: setting activo (indica que se está usando ese tratamiento)
     const settings = apiaryInfo.settings || {};
     const hasTreatment = settings.tAmitraz || settings.tOxalic || settings.tFlumetrine;
-    console.log('[ApiaryCard] Tratamientos activos:', {
-      tAmitraz: settings.tAmitraz,
-      tOxalic: settings.tOxalic,
-      tFlumetrine: settings.tFlumetrine,
-      hasTreatment
-    });
     return hasTreatment;
   }
 
@@ -44,12 +30,6 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
     // Verificar si hay comida activa: setting activo (indica que se está usando ese tipo de alimento)
     const settings = apiaryInfo.settings || {};
     const hasFood = settings.honey || settings.sugar || settings.levudex;
-    console.log('[ApiaryCard] Comida activa:', {
-      honey: settings.honey,
-      sugar: settings.sugar,
-      levudex: settings.levudex,
-      hasFood
-    });
     return hasFood;
   }
 

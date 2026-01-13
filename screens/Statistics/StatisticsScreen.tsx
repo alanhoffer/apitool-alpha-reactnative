@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getApiarys, getApiaryAndHivesCount } from '../../modules/API/Apiarys';
+import { getApiarys, getApiaryAndHivesCount, getHarvestStats, getHarvestingCount, getHarvestedCount } from '../../modules/API/Apiarys';
 import colors from '../../constants/colors';
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
 
@@ -18,6 +18,7 @@ const StatisticsScreen = ({ navigation }: any) => {
         totalBoxMedium: 0,
         totalBoxSmall: 0,
         apiariesInHarvest: 0,
+        apiariesWithHarvest: 0, // Apiarios con alzas cosechadas
         statusCounts: {} as Record<string, number>,
     });
 
@@ -27,19 +28,28 @@ const StatisticsScreen = ({ navigation }: any) => {
 
     const loadStatistics = async () => {
         try {
-            const [apiaryData, countData] = await Promise.all([
+            const [apiaryData, countData, harvestStats, harvestingCount, harvestedCount] = await Promise.all([
                 getApiarys(),
-                getApiaryAndHivesCount()
+                getApiaryAndHivesCount(),
+                getHarvestStats(), // Obtener estadísticas agregadas de alzas cosechadas
+                getHarvestingCount(), // Cantidad de apiarios en cosecha
+                getHarvestedCount() // Cantidad de apiarios con alzas cosechadas
             ]);
 
             if (apiaryData && Array.isArray(apiaryData)) {
                 const totalHoney = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.honey) || 0), 0);
                 const totalSugar = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.sugar) || 0), 0);
                 const totalLevudex = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.levudex) || 0), 0);
-                const totalBoxes = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.box) || 0), 0);
-                const totalBoxMedium = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.boxMedium) || 0), 0);
-                const totalBoxSmall = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.boxSmall) || 0), 0);
-                const apiariesInHarvest = apiaryData.filter(apiary => apiary.settings?.harvesting === true).length;
+                
+                // Usar el endpoint si está disponible, sino calcular desde los datos
+                const apiariesInHarvest = harvestingCount !== null 
+                    ? harvestingCount 
+                    : apiaryData.filter(apiary => apiary.settings?.harvesting === true).length;
+                
+                // Cantidad de apiarios con alzas cosechadas
+                const apiariesWithHarvest = harvestedCount !== null 
+                    ? harvestedCount 
+                    : 0;
 
                 // Contar estados
                 const statusCounts: Record<string, number> = {};
@@ -47,6 +57,25 @@ const StatisticsScreen = ({ navigation }: any) => {
                     const status = apiary.status || 'Desconocido';
                     statusCounts[status] = (statusCounts[status] || 0) + 1;
                 });
+
+                // Usar estadísticas del endpoint si están disponibles, sino calcular desde los datos
+                let totalBoxes = 0;
+                let totalBoxMedium = 0;
+                let totalBoxSmall = 0;
+
+                if (harvestStats) {
+                    // Usar datos del endpoint de estadísticas agregadas (totales acumulados)
+                    totalBoxes = harvestStats.box || 0;
+                    totalBoxMedium = harvestStats.boxMedium || 0;
+                    totalBoxSmall = harvestStats.boxSmall || 0;
+                    console.log('[StatisticsScreen] Usando estadísticas del endpoint:', harvestStats);
+                } else {
+                    // Fallback: calcular desde los datos individuales de apiarios
+                    totalBoxes = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.box) || 0), 0);
+                    totalBoxMedium = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.boxMedium) || 0), 0);
+                    totalBoxSmall = apiaryData.reduce((sum, apiary) => sum + (Number(apiary.boxSmall) || 0), 0);
+                    console.log('[StatisticsScreen] Calculando desde datos individuales (fallback)');
+                }
 
                 setStats({
                     totalApiaries: countData?.apiaryCount || apiaryData.length,
@@ -58,11 +87,12 @@ const StatisticsScreen = ({ navigation }: any) => {
                     totalBoxMedium,
                     totalBoxSmall,
                     apiariesInHarvest,
+                    apiariesWithHarvest,
                     statusCounts,
                 });
             }
         } catch (error) {
-            console.error('Error loading statistics:', error);
+            console.error('[StatisticsScreen] Error loading statistics:', error);
         } finally {
             setLoading(false);
         }
@@ -73,8 +103,6 @@ const StatisticsScreen = ({ navigation }: any) => {
         if (entries.length === 0) return 'N/A';
         return entries.sort((a, b) => b[1] - a[1])[0][0];
     };
-
-    const totalAlzas = stats.totalBoxes + (stats.totalBoxMedium * 0.75) + (stats.totalBoxSmall * 0.5);
 
     if (loading) {
         return (
@@ -128,16 +156,24 @@ const StatisticsScreen = ({ navigation }: any) => {
             <Text style={styles.userStatsTitle}>Cosecha</Text>
             <View style={styles.statsContainer}>
                 <View style={styles.stat}>
-                    <Text style={styles.userStat}>{Math.round(totalAlzas)}</Text>
-                    <Text style={styles.userStatDescription}>Alzas Totales</Text>
+                    <Text style={styles.userStat}>{stats.totalBoxes}</Text>
+                    <Text style={styles.userStatDescription}>Alza</Text>
                 </View>
                 <View style={styles.stat}>
-                    <Text style={styles.userStat}>{stats.totalBoxes}</Text>
-                    <Text style={styles.userStatDescription}>Alzas Completas</Text>
+                    <Text style={styles.userStat}>{stats.totalBoxMedium}</Text>
+                    <Text style={styles.userStatDescription}>Alza 3/4</Text>
+                </View>
+                <View style={styles.stat}>
+                    <Text style={styles.userStat}>{stats.totalBoxSmall}</Text>
+                    <Text style={styles.userStatDescription}>Alza 1/2</Text>
                 </View>
                 <View style={styles.stat}>
                     <Text style={styles.userStat}>{stats.apiariesInHarvest}</Text>
-                    <Text style={styles.userStatDescription}>En Cosecha</Text>
+                    <Text style={styles.userStatDescription}>Apiarios</Text>
+                </View>
+                <View style={styles.stat}>
+                    <Text style={styles.userStat}>{stats.apiariesWithHarvest}</Text>
+                    <Text style={styles.userStatDescription}>Cosechados</Text>
                 </View>
             </View>
         </ScrollView>

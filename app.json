@@ -20,6 +20,12 @@
           }
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir a $(PRODUCT_NAME) usar tu ubicación."
+        }
+      ],
       "expo-secure-store",
       [
         "expo-notifications",

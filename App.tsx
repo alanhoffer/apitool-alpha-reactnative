@@ -5,13 +5,13 @@ import Navigation from "./navigation/Navigation";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
 function AppContent() {
-  const { expoPushToken, notification } = usePushNotifications();
+  const { fcmToken, notification } = usePushNotifications();
 
   useEffect(() => {
-    if (expoPushToken) {
-      console.log('Token de push notifications registrado:', expoPushToken);
+    if (fcmToken) {
+      console.log('[App] Token FCM registrado:', fcmToken);
     }
-  }, [expoPushToken]);
+  }, [fcmToken]);
 
   useEffect(() => {
     if (notification) {
