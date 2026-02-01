@@ -15,8 +15,11 @@ import * as Location from 'expo-location';
 import { BASE_URL } from '../../constants/api';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png';
+import logger from '../../helpers/logger';
+import { HomeScreenProps } from '../../types/navigation';
+import FlyingBees from '../../components/animations/FlyingBees';
 
-const HomeScreen = ({ navigation }: any) => {
+const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const [profile, setProfile] = useState<any>(null);
@@ -52,7 +55,7 @@ const HomeScreen = ({ navigation }: any) => {
       setWeather(data);
       setErrorMsg(null);
     } catch (error) {
-      console.error('[HomeScreen] Error fetching weather:', error);
+      logger.error('[HomeScreen] Error fetching weather:', error);
       setErrorMsg('Error al obtener el clima.');
     } finally {
       setWeatherLoading(false);
@@ -74,7 +77,7 @@ const HomeScreen = ({ navigation }: any) => {
         setProfile(profileFetched);
       }
     } catch (error) {
-      console.error('[HomeScreen] Error fetching user info:', error);
+      logger.error('[HomeScreen] Error fetching user info:', error);
     } finally {
       setLoading(false);
     }
@@ -104,7 +107,7 @@ const HomeScreen = ({ navigation }: any) => {
   // Actualizar cuando la pantalla recibe foco
   useEffect(() => {
     if (isFocused) {
-      console.log('[HomeScreen] Pantalla enfocada, actualizando datos...');
+      logger.debug('[HomeScreen] Pantalla enfocada, actualizando datos...');
       loadData();
     }
   }, [isFocused, loadData]);
@@ -113,7 +116,7 @@ const HomeScreen = ({ navigation }: any) => {
   useEffect(() => {
     const interval = setInterval(() => {
       if (isFocused) {
-        console.log('[HomeScreen] Actualización automática periódica...');
+        logger.debug('[HomeScreen] Actualización automática periódica...');
         loadData();
       }
     }, 30000); // 30 segundos
@@ -123,7 +126,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Función para pull-to-refresh
   const onRefresh = useCallback(() => {
-    console.log('[HomeScreen] Pull-to-refresh iniciado');
+    logger.debug('[HomeScreen] Pull-to-refresh iniciado');
     loadData(true);
   }, [loadData]);
 
@@ -132,19 +135,21 @@ const HomeScreen = ({ navigation }: any) => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.YELLOW}
-          colors={[colors.YELLOW]}
-        />
-      }
-    >
-      <View style={[styles.userContainer, styles.navigation]}>
+    <View style={styles.wrapper}>
+      <FlyingBees beeCount={6} />
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.YELLOW}
+            colors={[colors.YELLOW]}
+          />
+        }
+      >
+        <View style={[styles.userContainer, styles.navigation]}>
         <View>
           <Text style={styles.welcomeText}>{getGreetingMessage()}</Text>
           <Text style={styles.usernameText}>{profile && `${capitalizeFirstLetter(profile.name)} ${capitalizeFirstLetter(profile.surname)}`}</Text>
@@ -246,21 +251,32 @@ const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#FFFBF0', // Fondo cálido crema
+  },
   container: {
     flex: 1,
-    backgroundColor: 'white',
     paddingHorizontal: 40,
     paddingTop: 40,
+    zIndex: 1,
   },
   userContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: colors.WHITE,
+    borderRadius: 15,
     marginBottom: 15,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   navigation: {
     flexDirection: 'row',
@@ -270,11 +286,18 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.WHITE,
     paddingVertical: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     marginVertical: 20,
     justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.YELLOW + '30',
   },
   userStats: {    
     justifyContent: 'center'
@@ -307,24 +330,35 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 18,
     color: colors.BLACK_TRANSPARENT,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   usernameText: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: colors.BLACK,
+    marginTop: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     marginVertical: 20,
     fontWeight: 'bold',
+    color: colors.BLACK,
   },
   userStatsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: colors.BLACK,
+  },
+  userStatsSub: {
+    fontSize: 14,
+    color: colors.BLACK_TRANSPARENT,
+    marginTop: 2,
   },
   info: {
     fontSize: 16,
     marginBottom: 5,
+    color: colors.BLACK,
+    fontWeight: '500',
   },
   errorText: {
     color: 'red',
@@ -335,18 +369,26 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   quickAccessButton: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: colors.WHITE,
     width: '45%',
     height: 120,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 15,
     marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.YELLOW + '20',
   },
   quickAccessText: {
-    color: 'black',
-    fontSize: 16,
+    color: colors.BLACK,
+    fontSize: 14,
     marginTop: 10,
+    fontWeight: '600',
   },
   apiScannerIcon: {
     width: 36,
@@ -356,17 +398,17 @@ const styles = StyleSheet.create({
   aiPromoButton: {
     backgroundColor: colors.WHITE,
     width: '100%',
-    borderRadius: 12,
+    borderRadius: 15,
     marginTop: 10,
     marginBottom: 20,
     padding: 20,
-    borderWidth: 1,
-    borderColor: colors.GREY_LIGHT,
-    shadowColor: '#000',
+    borderWidth: 2,
+    borderColor: colors.YELLOW + '40',
+    shadowColor: colors.YELLOW,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 4,
   },
   aiPromoContent: {
     flexDirection: 'row',
@@ -417,7 +459,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.BLACK,
   },
-  userStatsSub: {},
 });
 
 export default HomeScreen;

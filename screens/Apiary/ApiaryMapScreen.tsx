@@ -10,8 +10,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { APIARY_IMG_URL } from '../../constants/api';
 import BlankImage from '../../assets/images/blank-image.jpg';
+import logger from '../../helpers/logger';
+import { ApiaryMapScreenProps } from '../../types/navigation';
 
-const ApiaryMapScreen = ({ navigation }: any) => {
+const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
     const [apiaries, setApiaries] = useState<IApiary[]>([]);
@@ -47,10 +49,10 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                         */
                        
                        // Para probar con las coordenadas que pediste, usamos las fijas por ahora:
-                       console.log("Using fixed mock location for testing:", userLat, userLon);
+                       logger.debug("[ApiaryMapScreen] Using fixed mock location for testing");
                     }
                 } catch (locError) {
-                    console.log("Could not get current location, trying last known or default:", locError);
+                    logger.debug("[ApiaryMapScreen] Could not get current location, trying last known or default");
                     try {
                         const lastKnown = await Location.getLastKnownPositionAsync();
                         if (lastKnown) {
@@ -58,7 +60,7 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                             userLon = lastKnown.coords.longitude;
                         }
                     } catch (e) {
-                        console.log("No last known location");
+                        logger.debug("[ApiaryMapScreen] No last known location");
                     }
                 }
 
@@ -71,7 +73,7 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                         longitudeDelta: 0.1,
                     });
                 } else {
-                    console.error('[ApiaryMapScreen] Coordenadas inválidas para initialRegion:', { userLat, userLon });
+                    logger.warn('[ApiaryMapScreen] Coordenadas inválidas para initialRegion, usando por defecto');
                     // Usar coordenadas por defecto válidas
                     setInitialRegion({
                         latitude: -37.11108,
@@ -117,19 +119,19 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                             })
                             .filter((apiary) => apiary !== null && apiary !== undefined) as IApiary[]; // Filtrar los null
                         
-                        console.log(`[ApiaryMapScreen] Mostrando ${processedApiaries.length} apiarios con coordenadas válidas de ${data.length} totales`);
+                        logger.debug(`[ApiaryMapScreen] Mostrando ${processedApiaries.length} apiarios con coordenadas válidas de ${data.length} totales`);
                         setApiaries(processedApiaries);
                     } else {
-                        console.log('[ApiaryMapScreen] No se recibieron datos de apiarios o no es un array');
+                        logger.warn('[ApiaryMapScreen] No se recibieron datos de apiarios o no es un array');
                         setApiaries([]);
                     }
                 } catch (apiError) {
-                    console.error("Error fetching apiaries for map:", apiError);
+                    logger.error("Error fetching apiaries for map:", apiError);
                     Alert.alert("Error", "No se pudieron cargar los apiarios");
                 }
 
             } catch (error) {
-                console.error("Error loading map data:", error);
+                logger.error("Error loading map data:", error);
             } finally {
                 setLoading(false);
             }
@@ -196,7 +198,7 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                     rotateEnabled={false}
                     loadingEnabled={true}
                     onMapReady={() => {
-                        console.log('[ApiaryMapScreen] Mapa listo');
+                        logger.debug('[ApiaryMapScreen] Mapa listo');
                         setMapError(null); // Limpiar error si el mapa se carga correctamente
                     }}
                     mapPadding={{
@@ -237,13 +239,13 @@ const ApiaryMapScreen = ({ navigation }: any) => {
                             const lon = Number(apiary.longitude);
                             
                             if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
-                                console.warn(`[ApiaryMapScreen] Coordenadas inválidas para apiario ${apiary.id}:`, { lat, lon });
+                                logger.warn(`[ApiaryMapScreen] Coordenadas inválidas para apiario ${apiary.id}`);
                                 return null;
                             }
                             
                             // Validar que las coordenadas estén en rangos válidos
                             if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                                console.warn(`[ApiaryMapScreen] Coordenadas fuera de rango para apiario ${apiary.id}:`, { lat, lon });
+                                logger.warn(`[ApiaryMapScreen] Coordenadas fuera de rango para apiario ${apiary.id}`);
                                 return null;
                             }
                             

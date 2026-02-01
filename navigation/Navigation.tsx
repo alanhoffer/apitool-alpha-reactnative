@@ -18,6 +18,10 @@ import ApiarySettingsHeader from '../components/headers/ApiarySettingsHeader';
 import ApiaryAddScreen from '../screens/Apiary/ApiaryAddScreen';
 import ApiaryAddHeader from '../components/headers/ApiaryAddHeader';
 import LoginScreen from '../screens/Auth/LoginScreen';
+import RegisterScreen from '../screens/Auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen';
+import EditProfileScreen from '../screens/Profile/EditProfileScreen';
+import ChangePasswordScreen from '../screens/Profile/ChangePasswordScreen';
 import AuthContext from '../modules/API/AuthContext';
 import ApiaryVisitScreen from '../screens/Apiary/ApiaryVisitScreen';
 import ApiaryHistoryScreen from '../screens/Apiary/ApiaryHistoryScreen';
@@ -84,6 +88,8 @@ function ProfileNavigator() {
     return (
         <ProfileStack.Navigator>
             <ProfileStack.Screen component={ProfileScreen} name="ProfileScreen" options={(navigation) => ApiaryHeader(navigation)} />
+            <ProfileStack.Screen component={EditProfileScreen} name="EditProfileScreen" options={(navigation) => ApiaryHeader(navigation)} />
+            <ProfileStack.Screen component={ChangePasswordScreen} name="ChangePasswordScreen" options={(navigation) => ApiaryHeader(navigation)} />
             <ProfileStack.Screen component={DevicesScreen} name="DevicesScreen" options={(navigation) => ApiaryHeader(navigation)} />
         </ProfileStack.Navigator>
     );
@@ -120,8 +126,12 @@ export default function Navigation() {
                         <Stack.Screen name="Profile" component={ProfileNavigator} options={{ headerShown: false }} />
                     </>
                 ) : (
-                    // Login flow if user is not logged in
-                    <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
+                    // Auth flow if user is not logged in
+                    <>
+                        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="RegisterScreen" component={RegisterScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+                    </>
                 )}
             </Stack.Navigator>
         </NavigationContainer >

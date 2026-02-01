@@ -6,24 +6,23 @@ import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 1 API
-import { deleteApiary, getApiarys, toggleHarvestAll } from '../../modules/API/Apiarys';
+import { deleteApiary, getApiarys } from '../../modules/API/Apiarys';
 
 // 2 Visuals
 
 // Assets Imports //  
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
-import { Ionicons } from '@expo/vector-icons';
-import colors from '../../constants/colors';
 import { filterApiaryByName } from '../../helpers/Apiary/filterApiaryByName';
 import { ApiaryCard } from '../../components/apiary/ApiaryCard';
+import { ApiaryListScreenProps } from '../../types/navigation';
+import ApiaryCardSkeleton from '../../components/skeletons/ApiaryCardSkeleton';
 
-const ApiaryListScreen = ({ navigation }: any) => {
+const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
   const insets = useSafeAreaInsets();
   const [apiarysLoaded, setApiarysLoaded] = useState<boolean>(false);
   const [apiaryList, setApiaryList] = useState<IApiary[]>([]);
   const [refresh, setRefresh] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState('');
-  const [harvesting, setHarvesting] = useState<boolean>(false);
 
   const isFocused = useIsFocused();
 
@@ -41,40 +40,16 @@ const ApiaryListScreen = ({ navigation }: any) => {
         });
         setApiaryList(sortedApiaryData);
         setApiarysLoaded(true);
-        
-        // Verificar si hay algún apiario en cosecha después de cargar los datos
-        // Manejar tanto camelCase como snake_case
-        const hasHarvesting = sortedApiaryData.some((apiary: any) => {
-          if (!apiary.settings) return false;
-          return apiary.settings.harvesting === true || apiary.settings.harvesting === 'true';
-        });
-        if (hasHarvesting) {
-          setHarvesting(true);
-        } else {
-          setHarvesting(false);
-        }
       } else {
         setApiaryList([]);
         setApiarysLoaded(true);
-        setHarvesting(false);
       }
     } catch (error) {
       setApiaryList([]);
       setApiarysLoaded(true);
-      setHarvesting(false);
     }
   }
 
-
-  const handleToggleHarvest = async () => {
-    try {
-      await toggleHarvestAll(!harvesting);
-      setHarvesting(prev => !prev);
-      onRefresh();
-    } catch (error) {
-      // Error silencioso
-    }
-  };
 
   async function handleDeleteApiary(apiary: any) {
     ToastAndroid.show('Confirmar borrado...', ToastAndroid.SHORT);
@@ -127,9 +102,11 @@ const ApiaryListScreen = ({ navigation }: any) => {
 
       <View style={styles.apiaryList}>
         {!apiarysLoaded ? (
-          <View style={styles.apiaryListEmpty}>
-            <Text style={styles.apiaryListEmptyText}>Cargando apiarios...</Text>
-          </View>
+          <ScrollView style={styles.apiaryListScroll}>
+            {[1, 2, 3, 4].map((item) => (
+              <ApiaryCardSkeleton key={item} />
+            ))}
+          </ScrollView>
         ) : apiaryList.length < 1 ? (
           <View style={styles.apiaryListEmpty}>
             <Text style={styles.apiaryListEmptyText}> No tienes ningún apiario </Text>
@@ -154,23 +131,6 @@ const ApiaryListScreen = ({ navigation }: any) => {
           </ScrollView>
         )}
       </View>
-
-      <TouchableOpacity
-        style={[
-          styles.startHarvestingIcon,
-          { 
-            borderColor: harvesting ? colors.YELLOW : colors.BLACK_LIGHT,
-            bottom: 20 + insets.bottom 
-          }
-        ]}
-        onPress={handleToggleHarvest}
-      >
-        <Ionicons
-          name="rose-outline"
-          size={26}
-          color={harvesting ? colors.YELLOW : colors.BLACK_LIGHT}
-        />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -204,14 +164,6 @@ const styles = StyleSheet.create({
   },
   apiaryListScroll: {
     flex: 1,
-  },
-  startHarvestingIcon: {
-    position: 'absolute',
-    bottom: 20,
-    right: '10%',
-    padding: 5,
-    borderRadius: 100,
-    borderWidth: 2
   },
 });
 

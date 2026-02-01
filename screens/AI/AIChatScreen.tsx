@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { sendAIMessage, AIChatMessage } from '../../modules/API/AIChat';
 import colors from '../../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import logger from '../../helpers/logger';
 
 const CHAT_ID_STORAGE_KEY = 'ai_chat_id';
 const CHAT_HISTORY_STORAGE_KEY = 'ai_chat_history';
@@ -51,7 +52,7 @@ const AIChatScreen = ({ navigation }: any) => {
         setChatId(savedChatId);
       } else if (savedChatId && savedChatId.startsWith('chat_')) {
         // Si es un chatId generado por nosotros, limpiarlo
-        console.log('[AIChatScreen] ChatId inválido detectado, limpiando...');
+        logger.debug('[AIChatScreen] ChatId inválido detectado, limpiando...');
         await AsyncStorage.removeItem(CHAT_ID_STORAGE_KEY);
         setChatId(null);
       }
@@ -61,7 +62,7 @@ const AIChatScreen = ({ navigation }: any) => {
         setMessages(history);
       }
     } catch (error) {
-      console.error('[AIChatScreen] Error cargando historial:', error);
+      logger.error('[AIChatScreen] Error cargando historial:', error);
     }
   };
 
@@ -70,7 +71,7 @@ const AIChatScreen = ({ navigation }: any) => {
       await AsyncStorage.setItem(CHAT_ID_STORAGE_KEY, currentChatId);
       await AsyncStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(newMessages));
     } catch (error) {
-      console.error('[AIChatScreen] Error guardando historial:', error);
+      logger.error('[AIChatScreen] Error guardando historial:', error);
     }
   };
 
@@ -94,12 +95,12 @@ const AIChatScreen = ({ navigation }: any) => {
       // Si el chatId empieza con "chat_", significa que lo generamos nosotros y no es válido
       let currentChatId = chatId;
       if (currentChatId && currentChatId.startsWith('chat_')) {
-        console.log('[AIChatScreen] ChatId inválido detectado, iniciando nueva conversación');
+        logger.debug('[AIChatScreen] ChatId inválido detectado, iniciando nueva conversación');
         currentChatId = undefined; // Forzar nuevo inicio
         setChatId(null);
       }
 
-      console.log('[AIChatScreen] Enviando mensaje. Tiene chatId válido:', !!currentChatId);
+      logger.debug('[AIChatScreen] Enviando mensaje. Tiene chatId válido:', !!currentChatId);
       const response = await sendAIMessage(messageToSend, currentChatId);
       
       const assistantMessage: AIChatMessage = {
@@ -113,7 +114,7 @@ const AIChatScreen = ({ navigation }: any) => {
       
       // Guardar el chatId SOLO si viene de la API (no empieza con "chat_")
       if (response.chatId && !response.chatId.startsWith('chat_')) {
-        console.log('[AIChatScreen] Guardando chatId válido de la API:', response.chatId);
+        logger.debug('[AIChatScreen] Guardando chatId válido de la API');
         setChatId(response.chatId);
         await saveChatHistory(updatedMessages, response.chatId);
       } else if (response.chatId) {
@@ -125,11 +126,11 @@ const AIChatScreen = ({ navigation }: any) => {
         await saveChatHistory(updatedMessages, '');
       }
     } catch (error: any) {
-      console.error('[AIChatScreen] Error completo:', error);
+      logger.error('[AIChatScreen] Error completo:', error);
       
       // Si el error es de chatId inválido, limpiar y reintentar
       if (error.message?.includes('ChatId') || error.message?.includes('chat_id')) {
-        console.log('[AIChatScreen] Error de chatId inválido, limpiando y reintentando...');
+        logger.debug('[AIChatScreen] Error de chatId inválido, limpiando y reintentando...');
         setChatId(null);
         await AsyncStorage.removeItem(CHAT_ID_STORAGE_KEY);
         
@@ -175,12 +176,12 @@ const AIChatScreen = ({ navigation }: any) => {
         const savedChatId = await AsyncStorage.getItem(CHAT_ID_STORAGE_KEY);
         // Si el chatId empieza con "chat_", fue generado por nosotros y no es válido
         if (savedChatId && savedChatId.startsWith('chat_')) {
-          console.log('[AIChatScreen] Limpiando chatId inválido:', savedChatId);
+          logger.debug('[AIChatScreen] Limpiando chatId inválido');
           await AsyncStorage.removeItem(CHAT_ID_STORAGE_KEY);
           setChatId(null);
         }
       } catch (error) {
-        console.error('[AIChatScreen] Error limpiando chatId:', error);
+        logger.error('[AIChatScreen] Error limpiando chatId:', error);
       }
     };
     cleanupInvalidChatId();

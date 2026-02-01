@@ -5,8 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import colors from '../../constants/colors';
 import { createDrum } from '../../modules/API/Drums';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import logger from '../../helpers/logger';
+import { ScannerFormScreenProps } from '../../types/navigation';
 
-const FormScreen = ({ navigation, route }: any) => {
+const FormScreen = ({ navigation, route }: ScannerFormScreenProps) => {
   const insets = useSafeAreaInsets();
   const { code } = route.params;
 
@@ -22,7 +24,7 @@ const FormScreen = ({ navigation, route }: any) => {
         if (latestTare)
           setTare(latestTare);
       } catch (error) {
-        console.error(error);
+        logger.error('[ScannerFormScreen] Error fetching tare:', error);
       }
     };
 
@@ -61,7 +63,7 @@ const FormScreen = ({ navigation, route }: any) => {
       
       navigation.navigate('ListScreen');
     } catch (error) {
-      console.error('Error saving drum:', error);
+      logger.error('[ScannerFormScreen] Error saving drum:', error);
       Alert.alert(
         'Error',
         'No se pudo guardar el tambor. Verifica tu conexión e intenta nuevamente.'

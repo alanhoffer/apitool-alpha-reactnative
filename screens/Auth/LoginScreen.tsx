@@ -5,9 +5,10 @@ import { useState } from 'react';
 import getTheme from '../../constants/themes';
 import AuthContext from '../../modules/API/AuthContext';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isValidEmail } from '../../helpers/validation';
+import { LoginScreenProps } from '../../types/navigation';
 
-
-const LoginScreen = ({ route, navigation }: any) => {
+const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
 
     const { Login, isLoading } = useContext(AuthContext) // Added isLoading
 
@@ -24,23 +25,28 @@ const LoginScreen = ({ route, navigation }: any) => {
         return AsyncStorage.removeItem('email')
     }
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (!email || !password) {
              ToastAndroid.show('Por favor completa todos los campos', ToastAndroid.SHORT);
              return;
         }
 
-        Login(email, password)
-            .then((loginSuccessful: boolean) => {
-                if (loginSuccessful) {
-                    ToastAndroid.show('Inicio de sesión exitoso', ToastAndroid.SHORT);
-                } else {
-                    ToastAndroid.show('No se pudo iniciar sesión. Verifica tus credenciales.', ToastAndroid.SHORT);
-                }
-            })
-            .catch((error: Error) => {
-                ToastAndroid.show('Ocurrió un error al hacer la petición.', ToastAndroid.SHORT);
-            });
+        if (!isValidEmail(email)) {
+            ToastAndroid.show('Por favor ingresa un email válido', ToastAndroid.SHORT);
+            return;
+        }
+
+        try {
+            const loginSuccessful = await Login(email, password);
+            if (loginSuccessful) {
+                ToastAndroid.show('Inicio de sesión exitoso', ToastAndroid.SHORT);
+            } else {
+                ToastAndroid.show('No se pudo iniciar sesión. Verifica tus credenciales.', ToastAndroid.SHORT);
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || 'Ocurrió un error al hacer la petición';
+            ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
+        }
     }
 
     useEffect(() => {
@@ -62,8 +68,19 @@ const LoginScreen = ({ route, navigation }: any) => {
             <View style={styles.inputsContainer}>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>Login</Text>
-                    <Text style={styles.subtitle}>Don't have an account yet? Sign Up</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
+                        <Text style={styles.subtitle}>
+                            ¿No tienes una cuenta? <Text style={styles.subtitleLink}>Regístrate</Text>
+                        </Text>
+                    </TouchableOpacity>
                 </View>
+                
+                <TouchableOpacity 
+                    onPress={() => navigation.navigate('ForgotPasswordScreen', { email })}
+                    style={styles.forgotPasswordLink}
+                >
+                    <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+                </TouchableOpacity>
                 <TextInput
                     style={styles.input}
                     placeholder="Email"
@@ -139,6 +156,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 16,
         color: getTheme().text,
+    },
+    forgotPasswordLink: {
+        marginTop: 12,
+        marginBottom: 8,
+        alignSelf: 'flex-start',
+    },
+    forgotPasswordText: {
+        fontSize: 14,
+        color: getTheme().primary,
+        fontWeight: '500',
+        textDecorationLine: 'underline',
     },
     inputsContainer: {
         width: '100%',

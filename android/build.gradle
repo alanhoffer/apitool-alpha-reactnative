@@ -6,12 +6,15 @@ buildscript {
     google()
     mavenCentral()
     maven { url 'https://repo1.maven.org/maven2' }
+    // Repositorio de plugins de Gradle (puede tener el plugin de jfrog)
+    maven {
+      url 'https://plugins.gradle.org/m2/'
+    }
     // Repositorio público de JFrog como alternativa
     maven {
       url 'https://releases.jfrog.io/artifactory/jfrog-jars'
     }
     // Repositorio interno de EAS Build al final (solo si los públicos fallan)
-    // Este es el repositorio original que funcionaba antes
     maven {
       url 'http://maven.production.caches.eas-build.internal/artifactory/libs-release'
       allowInsecureProtocol = true
@@ -21,8 +24,9 @@ buildscript {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
-    // El plugin expo-root-project agregará automáticamente org.jfrog.buildinfo:build-info-extractor-gradle
-    // si está disponible en los repositorios configurados
+    // Agregar el plugin de jfrog explícitamente con versión más antigua disponible en Maven Central
+    // Esto puede satisfacer la dependencia de expo-root-project
+    classpath('org.jfrog.buildinfo:build-info-extractor-gradle:4.18.2')
   }
 }
 

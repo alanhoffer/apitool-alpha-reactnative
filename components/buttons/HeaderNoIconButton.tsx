@@ -2,10 +2,20 @@ import { Pressable, Text, StyleSheet} from "react-native";
 
 
 
-function HeaderNoIconButton(props:any):JSX.Element{
+interface HeaderNoIconButtonProps {
+    text: string;
+    move: () => void;
+    disabled?: boolean;
+}
+
+function HeaderNoIconButton(props: HeaderNoIconButtonProps): JSX.Element {
     return(
-        <Pressable style={style.container} onPress={ props.move}> 
-            <Text style={style.text}  > {props.text} </Text> 
+        <Pressable 
+            style={[style.container, props.disabled && style.containerDisabled]} 
+            onPress={props.move}
+            disabled={props.disabled}
+        > 
+            <Text style={[style.text, props.disabled && style.textDisabled]}> {props.text} </Text> 
         </Pressable>
     )
 }
@@ -22,9 +32,15 @@ const style = StyleSheet.create({
         borderColor: '#CFCFD7',
         borderRadius: 5,
     },
+    containerDisabled: {
+        opacity: 0.5,
+    },
     text:{
         color: '#3C4256',
         fontWeight: '500',
+    },
+    textDisabled: {
+        opacity: 0.6,
     }
   });
   

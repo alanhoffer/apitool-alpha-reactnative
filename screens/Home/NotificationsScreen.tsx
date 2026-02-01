@@ -65,7 +65,7 @@ const NotificationScreen = () => {
       try {
         await markAsRead(notification.id);
       } catch (error) {
-        console.error('Error marcando notificación como leída:', error);
+        logger.error('[NotificationsScreen] Error marcando notificación como leída:', error);
       }
     }
   };

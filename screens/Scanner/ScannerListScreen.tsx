@@ -8,6 +8,7 @@ import createAndShareText from '../../helpers/Scanner/createAndShareText';
 import { useIsFocused } from '@react-navigation/native';
 import colors from '../../constants/colors';
 import { getDrums, deleteAllDrums, Drum } from '../../modules/API/Drums';
+import logger from '../../helpers/logger';
 
 const ListScreen: React.FC = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -50,7 +51,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 setDuplicates(new Set());
             }
         } catch (error) {
-            console.error('Error loading drums:', error);
+            logger.error('[ScannerListScreen] Error loading drums:', error);
             // En caso de error, mostrar lista vacía
             setAllDrums([]);
             setScannedData([]);
@@ -88,7 +89,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 setDuplicates(new Set());
             }
         } catch (error) {
-            console.error('Error loading all drums:', error);
+            logger.error('[ScannerListScreen] Error loading all drums:', error);
             // En caso de error, mostrar lista vacía
             setAllDrums([]);
             applyFilter(filter, []);
@@ -150,7 +151,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                             setMenuVisible(false);
                             Alert.alert('Éxito', 'Todos los tambores escaneados han sido borrados.');
                         } catch (error) {
-                            console.error('Error deleting drums:', error);
+                            logger.error('[ScannerListScreen] Error deleting drums:', error);
                             Alert.alert('Error', 'No se pudo borrar los tambores escaneados.');
                         }
                     },
@@ -199,7 +200,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                                 findDuplicates(newData);
                             }
                         } catch (error) {
-                            console.error('Error deleting drum:', error);
+                            logger.error('[ScannerListScreen] Error deleting drum:', error);
                             Alert.alert('Error', 'No se pudo eliminar el tambor.');
                         }
                     },

@@ -13,8 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getDevices, removeDevice, Device } from '../../modules/API/Devices';
 import colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { DevicesScreenProps } from '../../types/navigation';
 
-export const DevicesScreen: React.FC = ({ navigation }: any) => {
+export const DevicesScreen: React.FC<DevicesScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ export const DevicesScreen: React.FC = ({ navigation }: any) => {
       const devicesList = await getDevices();
       setDevices(devicesList);
     } catch (error) {
-      console.error('Error obteniendo dispositivos:', error);
+      logger.error('[DevicesScreen] Error obteniendo dispositivos:', error);
       Alert.alert('Error', 'No se pudieron cargar los dispositivos');
     } finally {
       setLoading(false);

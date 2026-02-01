@@ -1,6 +1,9 @@
 import { createContext, useEffect, useState } from 'react';
 import { getToken, setToken, removeToken } from '../../helpers/storage';
 import apiClient from './client';
+import logger from '../../helpers/logger';
+import { getDeviceInfo } from '../../helpers/deviceInfo';
+import { registerDevice } from './Devices';
 
 
 type IAuthProvider = {
@@ -22,43 +25,73 @@ export const AuthProvider = ({ children }: any) => {
     const [isLoading, setLoading] = useState(false);
     const [accessToken, setAccessToken] = useState<null | string>();
 
-    const Login = (email: string, password: string): Promise<boolean> => {
-        return new Promise((resolve, reject) => {
-          apiClient.post('auth/login', { email, password })
-            .then(async response => {
-              const accessToken = response.data['access_token'];
-              if (accessToken) {
-                setAccessToken(accessToken);
-                await setToken(accessToken);
-                resolve(true); // inicio de sesión exitoso
-              } else {
-                resolve(false); // no se encontró un token de acceso válido
-              }
-            })
-            .catch(error => {
-              console.log(error);
-              reject(error); // ocurrió un error al hacer la petición
-            });
-        });
+    const Login = async (email: string, password: string): Promise<boolean> => {
+        try {
+          setLoading(true);
+          const response = await apiClient.post('auth/login', { email, password });
+          const accessToken = response.data['access_token'];
+          
+          if (accessToken) {
+            setAccessToken(accessToken);
+            await setToken(accessToken);
+            logger.info('[AuthContext] Login exitoso');
+            
+            // Registrar dispositivo automáticamente después del login exitoso
+            try {
+              const deviceInfo = await getDeviceInfo();
+              await registerDevice(deviceInfo);
+              logger.info('[AuthContext] Dispositivo registrado exitosamente');
+            } catch (deviceError) {
+              // No fallar el login si falla el registro del dispositivo
+              logger.warn('[AuthContext] Error registrando dispositivo (no crítico):', deviceError);
+            }
+            
+            return true;
+          } else {
+            logger.warn('[AuthContext] No se encontró token en la respuesta');
+            return false;
+          }
+        } catch (error: any) {
+          logger.error('[AuthContext] Error en login:', error);
+          throw error;
+        } finally {
+          setLoading(false);
+        }
       };
       
 
-      const Register = (email: string, password: string) => {
-        return apiClient.post('auth/register', { email, password })
-          .then(async response => {
-            let accessToken = response.data['access_token'];
-            if (accessToken) {
-              setAccessToken(accessToken);
-              await setToken(accessToken);
+      const Register = async (email: string, password: string): Promise<boolean> => {
+        try {
+          setLoading(true);
+          const response = await apiClient.post('auth/register', { email, password });
+          const accessToken = response.data['access_token'];
+          
+          if (accessToken) {
+            setAccessToken(accessToken);
+            await setToken(accessToken);
+            logger.info('[AuthContext] Registro exitoso');
+            
+            // Registrar dispositivo automáticamente después del registro exitoso
+            try {
+              const deviceInfo = await getDeviceInfo();
+              await registerDevice(deviceInfo);
+              logger.info('[AuthContext] Dispositivo registrado exitosamente');
+            } catch (deviceError) {
+              // No fallar el registro si falla el registro del dispositivo
+              logger.warn('[AuthContext] Error registrando dispositivo (no crítico):', deviceError);
             }
-            setLoading(false);
-            return true; // registro exitoso
-          })
-          .catch(error => {
-            console.log(error);
-            setLoading(false);
-            return false; // fallo en el registro
-          });
+            
+            return true;
+          } else {
+            logger.warn('[AuthContext] No se encontró token en la respuesta del registro');
+            return false;
+          }
+        } catch (error: any) {
+          logger.error('[AuthContext] Error en registro:', error);
+          return false;
+        } finally {
+          setLoading(false);
+        }
       };
 
     const isLoggedIn = async () => {
@@ -87,7 +120,7 @@ export const AuthProvider = ({ children }: any) => {
             setAccessToken(null);
             resolve(true); // cierre de sesión exitoso
           } catch (error) {
-            console.log(error);
+            logger.error('[AuthContext] Error en logout:', error);
             reject(error); // ocurrió un error al hacer la operación de eliminación
           }
         });

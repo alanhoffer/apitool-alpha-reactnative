@@ -5,8 +5,10 @@ import * as Location from 'expo-location';
 import colors from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import logger from '../../helpers/logger';
+import { MapSelectionScreenProps } from '../../types/navigation';
 
-const MapSelectionScreen = ({ navigation, route }: any) => {
+const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
     const initialLocation = route.params?.initialLocation; // { latitude, longitude } opcional
@@ -29,7 +31,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                 };
             }
         } catch (error) {
-            console.error('[MapSelectionScreen] Error normalizando initialLocation:', error);
+            logger.error('[MapSelectionScreen] Error normalizando initialLocation:', error);
             normalizedInitialLocation = null;
         }
     }
@@ -98,7 +100,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                             mapRef.current.animateToRegion(newRegion, 300);
                         }
                     } catch (timeoutError) {
-                        console.log("Timeout o error obteniendo ubicación, usando ubicación por defecto");
+                        logger.debug("[MapSelectionScreen] Timeout o error obteniendo ubicación, usando ubicación por defecto");
                         // Usar ubicación por defecto sin esperar más
                         setSelectedLocation({
                             latitude: region.latitude,
@@ -113,7 +115,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                     });
                 }
             } catch (e) {
-                console.log("Error getting initial map location", e);
+                logger.error("[MapSelectionScreen] Error getting initial map location", e);
                 // En caso de error, usar la ubicación por defecto
                 setSelectedLocation({
                     latitude: region.latitude,
@@ -151,15 +153,15 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                     }, 300);
                 }
             } else {
-                console.warn('[MapSelectionScreen] handleMapPress - Coordenadas inválidas:', { lat, lon });
+                logger.warn('[MapSelectionScreen] handleMapPress - Coordenadas inválidas');
             }
         } else {
-            console.warn('[MapSelectionScreen] handleMapPress - Coordinate inválido:', coordinate);
+            logger.warn('[MapSelectionScreen] handleMapPress - Coordinate inválido');
         }
     };
 
     const handleConfirm = () => {
-        console.log('[MapSelectionScreen] handleConfirm - selectedLocation:', selectedLocation);
+        logger.debug('[MapSelectionScreen] handleConfirm - confirmando ubicación');
         
         if (!selectedLocation) {
             Alert.alert('Error', 'Por favor selecciona una ubicación en el mapa');
@@ -171,7 +173,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
             selectedLocation.latitude === null ||
             selectedLocation.longitude === undefined || 
             selectedLocation.longitude === null) {
-            console.error('[MapSelectionScreen] selectedLocation tiene coordenadas inválidas:', selectedLocation);
+            logger.error('[MapSelectionScreen] selectedLocation tiene coordenadas inválidas');
             Alert.alert('Error', 'La ubicación seleccionada no es válida. Por favor selecciona otra ubicación.');
             return;
         }
@@ -181,7 +183,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
         const lon = Number(selectedLocation.longitude);
         
         if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
-            console.error('[MapSelectionScreen] Coordenadas no son números válidos:', { lat, lon });
+            logger.error('[MapSelectionScreen] Coordenadas no son números válidos');
             Alert.alert('Error', 'La ubicación seleccionada no es válida. Por favor selecciona otra ubicación.');
             return;
         }
@@ -190,7 +192,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
         const returnScreen = route.params?.returnScreen;
         const apiaryInfo = route.params?.apiaryInfo; // Obtener apiaryInfo si existe
         
-        console.log('[MapSelectionScreen] Navegando a:', returnScreen, 'con coordenadas:', { latitude: lat, longitude: lon });
+        logger.debug(`[MapSelectionScreen] Navegando a: ${returnScreen}`);
         
         if (returnScreen) {
             // Si hay apiaryInfo, preservarlo al navegar de vuelta
@@ -248,7 +250,7 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                 loadingEnabled={true}
                 loadingIndicatorColor={colors.YELLOW}
                 onMapReady={() => {
-                    console.log('[MapSelectionScreen] Mapa listo');
+                    logger.debug('[MapSelectionScreen] Mapa listo');
                     // Si tenemos coordenadas iniciales, centrar el mapa inmediatamente
                     if (normalizedInitialLocation && mapRef.current) {
                         mapRef.current.animateToRegion({
@@ -292,10 +294,10 @@ const MapSelectionScreen = ({ navigation, route }: any) => {
                                         longitude: lon
                                     });
                                 } else {
-                                    console.warn('[MapSelectionScreen] onDragEnd - Coordenadas inválidas:', { lat, lon });
+                                    logger.warn('[MapSelectionScreen] onDragEnd - Coordenadas inválidas');
                                 }
                             } else {
-                                console.warn('[MapSelectionScreen] onDragEnd - Coordinate inválido:', coordinate);
+                                logger.warn('[MapSelectionScreen] onDragEnd - Coordinate inválido');
                             }
                         }}
                     >

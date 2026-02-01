@@ -6,8 +6,11 @@ import { capitalizeFirstLetter } from "../../helpers/Apiary/capitalizeFirstLette
 import colors from "../../constants/colors";
 import Icon from 'react-native-vector-icons/Ionicons';
 import AuthContext from "../../modules/API/AuthContext";
+import logger from "../../helpers/logger";
+import { ProfileScreenProps } from "../../types/navigation";
+import ProfileSkeleton from "../../components/skeletons/ProfileSkeleton";
 
-export default function ProfileScreen({ navigation }: any) {
+export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     const insets = useSafeAreaInsets();
     const { Logout } = useContext(AuthContext);
     const [loading, setLoading] = useState(true);
@@ -24,7 +27,7 @@ export default function ProfileScreen({ navigation }: any) {
                 setProfile(profileData);
             }
         } catch (error) {
-            console.error('Error loading profile data:', error);
+            logger.error('[ProfileScreen] Error loading profile data:', error);
         } finally {
             setLoading(false);
         }
@@ -47,7 +50,7 @@ export default function ProfileScreen({ navigation }: any) {
                             await Logout();
                             // La navegación se actualizará automáticamente cuando accessToken sea null
                         } catch (error) {
-                            console.error('Error al cerrar sesión:', error);
+                            logger.error('[ProfileScreen] Error al cerrar sesión:', error);
                             Alert.alert('Error', 'No se pudo cerrar sesión. Intenta nuevamente.');
                         }
                     },
@@ -57,11 +60,7 @@ export default function ProfileScreen({ navigation }: any) {
     };
 
     if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.BLACK} />
-            </View>
-        );
+        return <ProfileSkeleton />;
     }
 
     return (
@@ -90,6 +89,28 @@ export default function ProfileScreen({ navigation }: any) {
                     )}
                 </View>
             )}
+
+            <TouchableOpacity 
+                style={styles.devicesButton}
+                onPress={() => navigation.navigate('EditProfileScreen')}
+            >
+                <View style={styles.devicesButtonContent}>
+                    <Icon name="person-outline" size={24} color={colors.BLACK} />
+                    <Text style={styles.devicesButtonText}>Editar Perfil</Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color={colors.BLACK_TRANSPARENT} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+                style={styles.devicesButton}
+                onPress={() => navigation.navigate('ChangePasswordScreen')}
+            >
+                <View style={styles.devicesButtonContent}>
+                    <Icon name="lock-closed-outline" size={24} color={colors.BLACK} />
+                    <Text style={styles.devicesButtonText}>Cambiar Contraseña</Text>
+                </View>
+                <Icon name="chevron-forward" size={20} color={colors.BLACK_TRANSPARENT} />
+            </TouchableOpacity>
 
             <TouchableOpacity 
                 style={styles.devicesButton}

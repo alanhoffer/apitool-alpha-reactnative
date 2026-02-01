@@ -15,8 +15,10 @@ import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { updateApiary, getHarvestTotals } from "../../modules/API/Apiarys";
+import logger from "../../helpers/logger";
+import { ApiaryScreenProps } from "../../types/navigation";
 
-function ApiaryScreen({ route, navigation }: any) {
+function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     const insets = useSafeAreaInsets();
     const isFocused = useIsFocused();
     
@@ -25,7 +27,7 @@ function ApiaryScreen({ route, navigation }: any) {
     
     // Validar que apiaryInfo exista
     if (!apiaryInfo) {
-        console.error('[ApiaryScreen] apiaryInfo no está disponible en route.params');
+        logger.error('[ApiaryScreen] apiaryInfo no está disponible en route.params');
         // Si no hay apiaryInfo, intentar usar el estado anterior o mostrar error
     }
     

@@ -9,8 +9,8 @@ import { updateApiary } from "../../modules/API/Apiarys";
 import Capitalize from "../../modules/Capitalize";
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
 import ImagePick from "../../components/imagePicker";
-
-
+import logger from "../../helpers/logger";
+import { ApiaryVisitScreenProps } from "../../types/navigation";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -39,7 +39,9 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         tOxalic: apiaryNavData.tOxalic,
         tAmitraz: apiaryNavData.tAmitraz,
         tFlumetrine: apiaryNavData.tFlumetrine,
-        tFence: apiaryNavData.tFence
+        tFence: apiaryNavData.tFence,
+        latitude: apiaryNavData.latitude || 0,
+        longitude: apiaryNavData.longitude || 0
     });
     const [apiaryImage, setApiaryImage] = useState()
 
@@ -122,14 +124,13 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         });
     };
 
-
     const handleApiaryQuantity = (key: string) => {
-        // Si la propiedad del objeto existe o es igual a 0 retornar la infomacion del useState
-        if (apiaryData[key] || apiaryData[key] == 0) {
-            return apiaryData[key]
+        // Si la propiedad del objeto existe o es igual a 0 retornar la información del useState
+        if (apiaryData[key] !== undefined && apiaryData[key] !== null) {
+            return apiaryData[key];
         }
-        // sino retornar la informacion antigua
-        return apiaryNavData[key]
+        // sino retornar la información antigua
+        return apiaryNavData[key] ?? 0;
     }
 
     const handleApiaryStatus = (value: number) => {
@@ -150,31 +151,39 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         }
     }
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const handleSubmit = async () => {
+        if (isSubmitting) return; // Evitar múltiples envíos
 
-        updateApiary(apiaryImage, apiaryNavData.id, apiaryData).then(createdSuccessful => {
+        setIsSubmitting(true);
+        try {
+            const createdSuccessful = await updateApiary(apiaryImage, apiaryNavData.id, apiaryData);
             if (createdSuccessful) {
-                ToastAndroid.show(`Cambios realizados`, ToastAndroid.SHORT);
-                navigation.navigate('ApiaryListScreen')
+                ToastAndroid.show('Cambios realizados exitosamente', ToastAndroid.SHORT);
+                navigation.navigate('ApiaryListScreen');
+            } else {
+                ToastAndroid.show('Error en los cambios', ToastAndroid.SHORT);
             }
-            else {
-                ToastAndroid.show(`Error en los cambios`, ToastAndroid.SHORT);
-            }
-        }).catch((error: Error) => {
-            ToastAndroid.show(`Error al cambiar ${apiaryNavData.name}: ${error}`, ToastAndroid.SHORT);
-
-        })
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
+            ToastAndroid.show(`Error al cambiar ${apiaryNavData.name}: ${errorMessage}`, ToastAndroid.SHORT);
+            logger.error('[ApiaryVisitScreen] Error al actualizar apiario:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     useEffect(() => {
         navigation.setOptions({
             headerRight: () =>
                 <HeaderNoIconButton
-                    text='Finalizar'
+                    text={isSubmitting ? 'Guardando...' : 'Finalizar'}
                     move={() => handleSubmit()}
+                    disabled={isSubmitting}
                 />,
         })
-    }, [apiaryData])
+    }, [apiaryData, isSubmitting])
 
     return (
         <ScrollView style={styles.scrollContainer}>

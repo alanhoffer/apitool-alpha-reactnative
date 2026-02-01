@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Platform, Alert } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import apiClient from '../modules/API/client';
+import Constants from 'expo-constants';
+import { getDeviceInfo } from '../helpers/deviceInfo';
+import { registerDevice } from '../modules/API/Devices';
+import logger from '../helpers/logger';
 
 // Configuración de cómo mostrar notificaciones cuando la app está abierta
 Notifications.setNotificationHandler({
@@ -25,31 +28,26 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
   const notificationListener = useRef<Notifications.Subscription>();
 
   /**
-   * Envía el token FCM al backend con información del dispositivo
+   * Envía el token FCM al backend con información completa del dispositivo
    */
   async function sendTokenToBackend(token: string): Promise<void> {
     try {
-      // Obtener información del dispositivo
-      const deviceName = Device.modelName || Device.deviceName || 'Unknown Device';
-      const platform = Platform.OS; // 'ios' o 'android'
+      // Obtener información completa del dispositivo
+      const deviceInfo = await getDeviceInfo();
       
-      // Enviar al backend
-      await apiClient.post('/users/push-token', {
-        token: token,
-        deviceName: deviceName,
-        platform: platform,
-      });
+      // Registrar/actualizar dispositivo con el push token
+      await registerDevice(deviceInfo, token);
       
-      console.log('[usePushNotifications] Token FCM registrado en el backend exitosamente');
+      logger.info('[usePushNotifications] Token FCM y dispositivo registrado en el backend exitosamente');
     } catch (error: any) {
-      console.error('[usePushNotifications] Error enviando token al backend:', error?.response?.data || error?.message);
+      logger.error('[usePushNotifications] Error enviando token al backend:', error?.response?.data || error?.message);
       // No lanzar error para no interrumpir el flujo
     }
   }
 
   /**
-   * Registra el dispositivo para recibir push notifications usando Firebase Cloud Messaging
-   * Para Expo, esto funciona con builds nativos que tienen FCM configurado
+   * Registra el dispositivo para recibir push notifications
+   * Usa Expo Push Notifications (compatible con FCM en builds nativos)
    */
   async function registerForPushNotificationsAsync(): Promise<string | null> {
     let token: string | null = null;
@@ -67,7 +65,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
 
     // Solo funciona en dispositivos físicos
     if (!Device.isDevice) {
-      console.warn('[usePushNotifications] Push notifications solo funcionan en dispositivos físicos');
+      logger.warn('[usePushNotifications] Push notifications solo funcionan en dispositivos físicos');
       return null;
     }
 
@@ -89,45 +87,48 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       return null;
     }
     
-    // Obtener el token de FCM
-    // Nota: Para usar FCM directamente, necesitas @react-native-firebase/messaging
-    // Para Expo, expo-notifications puede obtener el token nativo de FCM en builds nativos
+    // Obtener el projectId de Expo
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) {
+      logger.error('[usePushNotifications] Project ID no encontrado en app.json. Verifica que extra.eas.projectId esté configurado.');
+      return null;
+    }
+
     try {
-      // Intentar obtener el token usando expo-notifications
-      // En builds nativos con FCM configurado, esto retornará el token de FCM
-      const tokenData = await Notifications.getDevicePushTokenAsync();
-      
-      if (tokenData?.data) {
-        token = tokenData.data;
-        console.log('[usePushNotifications] Token FCM obtenido:', token);
-        
-        // Enviar token al backend
-        await sendTokenToBackend(token);
-        
-        setFcmToken(token);
-        return token;
-      } else {
-        console.error('[usePushNotifications] No se pudo obtener el token FCM');
-        return null;
-      }
-    } catch (error: any) {
-      console.error('[usePushNotifications] Error obteniendo token FCM:', error?.message || error);
-      
-      // Si falla, intentar con el método alternativo
+      // Intentar obtener el token nativo (FCM para Android, APNs para iOS) si está disponible
+      // Esto funciona en builds nativos con Firebase configurado
       try {
-        // Para builds nativos con FCM, el token puede estar disponible de otra forma
-        const expoToken = await Notifications.getExpoPushTokenAsync();
-        if (expoToken?.data) {
-          token = expoToken.data;
-          console.log('[usePushNotifications] Token Expo obtenido (fallback):', token);
+        const deviceToken = await Notifications.getDevicePushTokenAsync();
+        if (deviceToken?.data) {
+          token = deviceToken.data;
+          logger.info('[usePushNotifications] Token nativo obtenido (FCM/APNs):', token);
           await sendTokenToBackend(token);
           setFcmToken(token);
           return token;
         }
-      } catch (fallbackError) {
-        console.error('[usePushNotifications] Error en fallback:', fallbackError);
+      } catch (nativeError: any) {
+        // Si no hay token nativo disponible, usar Expo Push Token
+        logger.debug('[usePushNotifications] Token nativo no disponible, usando Expo Push Token:', nativeError?.message);
       }
+
+      // Obtener el token de Expo Push Notifications
+      // Este token funciona con el servicio de Expo o puede ser convertido a FCM
+      const expoToken = await Notifications.getExpoPushTokenAsync({
+        projectId: projectId,
+      });
       
+      if (expoToken?.data) {
+        token = expoToken.data;
+        logger.info('[usePushNotifications] Token Expo Push obtenido:', token);
+        await sendTokenToBackend(token);
+        setFcmToken(token);
+        return token;
+      } else {
+        logger.error('[usePushNotifications] No se pudo obtener el token de Expo');
+        return null;
+      }
+    } catch (error: any) {
+      logger.error('[usePushNotifications] Error obteniendo token:', error?.message || error);
       return null;
     }
   }
@@ -139,7 +140,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     // Escuchar notificaciones recibidas cuando la app está en primer plano
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
-      console.log('[usePushNotifications] Notificación recibida:', notification);
+      logger.info('[usePushNotifications] Notificación recibida:', notification);
     });
 
     return () => {

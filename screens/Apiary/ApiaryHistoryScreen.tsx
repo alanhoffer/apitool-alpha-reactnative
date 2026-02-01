@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import { valueToPretty, variableToPretty } from "../../modules/Apiary/ApiaryVariable";
 import colors from "../../constants/colors";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import logger from "../../helpers/logger";
+import { ApiaryHistoryScreenProps } from "../../types/navigation";
 
-export default function ApiaryHistoryScreen({ route, navigation }: any) {
+export default function ApiaryHistoryScreen({ route, navigation }: ApiaryHistoryScreenProps) {
     const insets = useSafeAreaInsets();
     const apiaryData = route.params.apiaryInfo;
 
@@ -30,7 +32,7 @@ export default function ApiaryHistoryScreen({ route, navigation }: any) {
             }
             temporalHistory[dateTime].push(obj);
         });
-        console.log(arreglo)
+        logger.debug('[ApiaryHistoryScreen] Historial procesado:', Object.keys(temporalHistory).length, 'fechas');
 
         setHistoryByDate(temporalHistory);
     }

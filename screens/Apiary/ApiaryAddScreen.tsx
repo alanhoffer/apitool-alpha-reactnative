@@ -7,9 +7,10 @@ import { useIsFocused } from '@react-navigation/native';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
 import ImagePick from "../../components/imagePicker";
+import * as Location from 'expo-location';
 import Icon from 'react-native-vector-icons/Ionicons';
-
-
+import logger from "../../helpers/logger";
+import { ApiaryAddScreenProps } from "../../types/navigation";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -27,9 +28,9 @@ import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
 import { getApiaryStatusLabel } from "../../helpers/Apiary/getApiaryStatusLabel";
 
-function ApiaryAddScreen({ route, navigation }: any) {
-
-    const apiarySettings = route.params.apiarySettings;
+function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
+    const isFocused = useIsFocused();
+    const apiarySettings = route.params?.apiarySettings;
     const [apiaryStatus, setApiaryStatus] = useState(0)
     const [apiaryData, setApiaryData] = useState<IApiaryData>({
         name: '',
@@ -53,29 +54,32 @@ function ApiaryAddScreen({ route, navigation }: any) {
         longitude: 0
     })
 
-    const isFocused = useIsFocused();
+    const [loadingLocation, setLoadingLocation] = useState(false);
 
-    useEffect(() => {
-        // Verificar si hay una ubicación seleccionada cuando la pantalla recibe foco
-        if (isFocused) {
-            const selectedLocation = route.params?.selectedLocation;
-            if (selectedLocation) {
-                console.log('[ApiaryAddScreen] Ubicación seleccionada:', selectedLocation);
-                setApiaryData(prev => {
-                    const updated = {
-                        ...prev,
-                        latitude: selectedLocation.latitude,
-                        longitude: selectedLocation.longitude
-                    };
-                    console.log('[ApiaryAddScreen] Estado actualizado con coordenadas:', updated.latitude, updated.longitude);
-                    return updated;
-                });
-                ToastAndroid.show('Ubicación seleccionada', ToastAndroid.SHORT);
-                // Limpiar el parámetro para evitar procesarlo de nuevo
-                navigation.setParams({ selectedLocation: undefined });
+    const handleGetLocation = async () => {
+        setLoadingLocation(true);
+        try {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permiso denegado', 'No se puede acceder a la ubicación');
+                setLoadingLocation(false);
+                return;
             }
+
+            let location = await Location.getCurrentPositionAsync({});
+            setApiaryData(prev => ({
+                ...prev,
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+            }));
+            ToastAndroid.show('Ubicación capturada', ToastAndroid.SHORT);
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo obtener la ubicación');
+            logger.error('[ApiaryAddScreen] Error obteniendo ubicación:', error);
+        } finally {
+            setLoadingLocation(false);
         }
-    }, [isFocused, route.params?.selectedLocation]);
+    };
 
     const handleOpenMapSelection = () => {
         navigation.navigate('MapSelectionScreen', {
@@ -176,36 +180,41 @@ function ApiaryAddScreen({ route, navigation }: any) {
     };
 
 
-    const handleSubmit = async () => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-        if (apiaryData.name.length < 4) {
-            ToastAndroid.show(`Nombre muy corto`, ToastAndroid.SHORT);
-            return
+    const handleSubmit = async () => {
+        if (isSubmitting) return; // Evitar múltiples envíos
+
+        // Validaciones
+        if (!apiaryData.name || apiaryData.name.trim().length < 4) {
+            ToastAndroid.show('El nombre debe tener al menos 4 caracteres', ToastAndroid.SHORT);
+            return;
         }
         if (apiaryData.name.length > 20) {
-            ToastAndroid.show(`Nombre muy largo`, ToastAndroid.SHORT);
-            return
+            ToastAndroid.show('El nombre no puede tener más de 20 caracteres', ToastAndroid.SHORT);
+            return;
         }
-        console.log('[ApiaryAddScreen] Enviando apiaryData:', {
-            name: apiaryData.name,
-            latitude: apiaryData.latitude,
-            longitude: apiaryData.longitude,
-            hasLatitude: apiaryData.latitude !== undefined && apiaryData.latitude !== null && apiaryData.latitude !== 0,
-            hasLongitude: apiaryData.longitude !== undefined && apiaryData.longitude !== null && apiaryData.longitude !== 0
-        });
-        createApiary(apiaryImage, apiaryData).then(createdSuccessful => {
-            if (true) {
+        if (apiaryData.hives < 1) {
+            ToastAndroid.show('Debe tener al menos 1 colmena', ToastAndroid.SHORT);
+            return;
+        }
 
-                ToastAndroid.show(`Apiario creado`, ToastAndroid.SHORT);
-                navigation.navigate('ApiaryListScreen')
+        setIsSubmitting(true);
+        try {
+            const response = await createApiary(apiaryImage, apiaryData);
+            if (response && (response.status === 200 || response.status === 201)) {
+                ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
+                navigation.navigate('ApiaryListScreen');
+            } else {
+                ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
             }
-            else {
-                ToastAndroid.show(`No se puede crear`, ToastAndroid.SHORT);
-            }
-        }).catch((error: Error) => {
-            ToastAndroid.show(`Error al crear ${error}`, ToastAndroid.SHORT);
-
-        })
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
+            ToastAndroid.show(`Error al crear apiario: ${errorMessage}`, ToastAndroid.SHORT);
+            logger.error('[ApiaryAddScreen] Error al crear apiario:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
 
@@ -213,12 +222,29 @@ function ApiaryAddScreen({ route, navigation }: any) {
         navigation.setOptions({
             headerRight: () =>
                 <HeaderNoIconButton
-                    text='Finalizar'
+                    text={isSubmitting ? 'Creando...' : 'Crear'}
                     move={handleSubmit}
+                    disabled={isSubmitting}
                 />,
         })
-    }, [apiaryData, navigation])
+    }, [apiaryData, isSubmitting])
 
+    // Manejar selectedLocation cuando se regresa de MapSelectionScreen
+    useEffect(() => {
+        if (isFocused && route.params?.selectedLocation && route.params?.confirmed) {
+            const selectedLocation = route.params.selectedLocation;
+            if (selectedLocation?.latitude && selectedLocation?.longitude) {
+                setApiaryData(prev => ({
+                    ...prev,
+                    latitude: selectedLocation.latitude,
+                    longitude: selectedLocation.longitude
+                }));
+                ToastAndroid.show('Ubicación seleccionada', ToastAndroid.SHORT);
+                // Limpiar los parámetros
+                navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
+            }
+        }
+    }, [isFocused, route.params?.selectedLocation, route.params?.confirmed]);
 
     return (
         <ScrollView style={styles.scrollContainer} >
@@ -242,17 +268,29 @@ function ApiaryAddScreen({ route, navigation }: any) {
                 </View>
 
                 {/* UBICACION GPS */}
-                <TouchableOpacity style={styles.locationButton} onPress={handleOpenMapSelection}>
-                    <View style={styles.locationButtonContent}>
-                        <Icon name="map-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
-                        <Text style={styles.locationButtonText}>
-                            {apiaryData.latitude ? 'Actualizar Ubicación' : 'Seleccionar Ubicación'}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-                {apiaryData.latitude && apiaryData.longitude && 
-                 typeof apiaryData.latitude === 'number' && 
-                 typeof apiaryData.longitude === 'number' ? (
+                <View style={styles.locationButtonsContainer}>
+                    <TouchableOpacity style={[styles.locationButton, styles.locationButtonHalf]} onPress={handleGetLocation} disabled={loadingLocation}>
+                        {loadingLocation ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <View style={styles.locationButtonContent}>
+                                <Icon name="location-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
+                                <Text style={styles.locationButtonText}>
+                                    GPS
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.locationButton, styles.locationButtonHalf]} onPress={handleOpenMapSelection}>
+                        <View style={styles.locationButtonContent}>
+                            <Icon name="map-outline" size={20} color="#fff" style={{ marginRight: 5 }} />
+                            <Text style={styles.locationButtonText}>
+                                Mapa
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                {apiaryData.latitude && apiaryData.longitude ? (
                     <Text style={styles.locationText}>
                         Lat: {apiaryData.latitude.toFixed(4)}, Long: {apiaryData.longitude.toFixed(4)}
                     </Text>
@@ -545,6 +583,12 @@ const styles = StyleSheet.create({
         borderRadius: 5,
 
     },
+    locationButtonsContainer: {
+        flexDirection: 'row',
+        width: wp('80%'),
+        marginVertical: 10,
+        gap: 10,
+    },
     locationButton: {
         backgroundColor: colors.YELLOW,
         paddingVertical: 12,
@@ -552,8 +596,10 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
-        width: wp('80%'),
-        marginVertical: 10,
+        flex: 1,
+    },
+    locationButtonHalf: {
+        flex: 1,
     },
     locationButtonContent: {
         flexDirection: 'row',
