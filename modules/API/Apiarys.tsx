@@ -4,6 +4,7 @@ import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettin
 import { ToastAndroid } from "react-native";
 import { transformSnakeToCamel } from '../../helpers/Apiary/snakeToCamel';
 import logger from '../../helpers/logger';
+import { addToQueue } from '../Offline/OfflineQueue';
 
 export const getApiarys = async (): Promise<IApiary[] | null> => {
   try {
@@ -65,7 +66,7 @@ export const getApiaryAndHivesCount = async () => {
   }
 };
 
-export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
+export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryData) {
   logger.api('apiarys', 'POST', { name: ApiaryData.name });
 
   const data = new FormData();
@@ -122,17 +123,45 @@ export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
   }
 }
 
-export const deleteApiary = async (apiaryId: number) => {
+export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
+    try {
+        return await createApiaryImpl(profileImage, ApiaryData);
+    } catch (error: any) {
+        if (!error.response) { // Network error usually has no response
+            logger.info('[createApiary] Network error, adding to offline queue');
+            await addToQueue('createApiary', { profileImage, ApiaryData });
+            ToastAndroid.show('Sin conexión. Se guardó para sincronizar luego.', ToastAndroid.LONG);
+            return { status: 200, data: { offline: true } }; // Mock success
+        }
+        throw error;
+    }
+}
+
+export const deleteApiaryImpl = async (apiaryId: number) => {
   try {
     const response = await apiClient.delete(`apiarys/${apiaryId}`);
     return response.status === 200;
   } catch (error) {
     logger.error('Error deleting apiary:', error);
-    return false;
+    throw error;
   }
 };
 
-export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
+export const deleteApiary = async (apiaryId: number) => {
+    try {
+        return await deleteApiaryImpl(apiaryId);
+    } catch (error: any) {
+        if (!error.response) {
+            logger.info('[deleteApiary] Network error, adding to offline queue');
+            await addToQueue('deleteApiary', { apiaryId });
+            ToastAndroid.show('Sin conexión. Se eliminará al reconectar.', ToastAndroid.LONG);
+            return true; // Mock success
+        }
+        return false;
+    }
+};
+
+export const updateApiaryImpl = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
   try {
     const data = new FormData();
 
@@ -176,22 +205,50 @@ export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryDa
     return response.status === 200;
   } catch (error) {
     logger.error('Error updating apiary:', error);
-    return false;
+    throw error;
   }
 };
 
+export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
+    try {
+        return await updateApiaryImpl(profileImage, apiaryId, ApiaryData);
+    } catch (error: any) {
+        if (!error.response) {
+            logger.info('[updateApiary] Network error, adding to offline queue');
+            await addToQueue('updateApiary', { profileImage, apiaryId, ApiaryData });
+            ToastAndroid.show('Sin conexión. Cambios guardados localmente.', ToastAndroid.LONG);
+            return true;
+        }
+        return false;
+    }
+};
 
-export const updateSettings = async (settingsData: IApiarySettings) => {
+
+export const updateSettingsImpl = async (settingsData: IApiarySettings) => {
   try {
     const response = await apiClient.put(`apiarys/settings/${settingsData.id}`, settingsData);
     return response.status === 200;
   } catch (error) {
     logger.error('Error updating settings:', error);
-    return false;
+    throw error;
   }
 };
 
-export const toggleHarvestAll = async (harvesting: boolean) => {
+export const updateSettings = async (settingsData: IApiarySettings) => {
+    try {
+        return await updateSettingsImpl(settingsData);
+    } catch (error: any) {
+        if (!error.response) {
+            logger.info('[updateSettings] Network error, adding to offline queue');
+            await addToQueue('updateSettings', { settingsData });
+            ToastAndroid.show('Sin conexión. Configuración guardada localmente.', ToastAndroid.LONG);
+            return true;
+        }
+        return false;
+    }
+};
+
+export const toggleHarvestAllImpl = async (harvesting: boolean) => {
   try {
     const response = await apiClient.put('apiarys/harvest/all', { harvesting });
 
@@ -203,7 +260,20 @@ export const toggleHarvestAll = async (harvesting: boolean) => {
   } catch (error) {
     ToastAndroid.show('Hubo un problema al intentar actualizar el estado de cosecha.', ToastAndroid.SHORT);
     logger.error('Error handling harvest all:', error);
+    throw error;
   }
+};
+
+export const toggleHarvestAll = async (harvesting: boolean) => {
+    try {
+        await toggleHarvestAllImpl(harvesting);
+    } catch (error: any) {
+        if (!error.response) {
+            logger.info('[toggleHarvestAll] Network error, adding to offline queue');
+            await addToQueue('toggleHarvestAll', { harvesting });
+            ToastAndroid.show('Sin conexión. Se actualizará al reconectar.', ToastAndroid.LONG);
+        }
+    }
 };
 
 export const getHistory = async (apiaryId: number) => {

@@ -106,100 +106,6 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
         }
     }, [isFocused, apiaryInfoState?.id]);
 
-    // Comentado - no se usa ubicación por ahora
-    // useEffect(() => {
-    //     // Verificar si hay una ubicación seleccionada cuando la pantalla recibe foco
-    //     // Esto se ejecuta cuando regresamos del MapSelectionScreen
-    //     if (isFocused && route.params?.selectedLocation && route.params?.confirmed) {
-    //         const selectedLocation = route.params.selectedLocation;
-    //         
-    //         console.log('[ApiaryScreen] Recibida selectedLocation:', selectedLocation);
-    //         
-    //         // Validar que selectedLocation tenga las propiedades necesarias
-    //         if (!selectedLocation) {
-    //             console.error('[ApiaryScreen] selectedLocation es null o undefined');
-    //             navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
-    //             return;
-    //         }
-    //         
-    //         if (selectedLocation.latitude === undefined || 
-    //             selectedLocation.latitude === null ||
-    //             selectedLocation.longitude === undefined || 
-    //             selectedLocation.longitude === null) {
-    //             console.error('[ApiaryScreen] selectedLocation tiene coordenadas inválidas:', selectedLocation);
-    //             ToastAndroid.show('Error: Ubicación inválida', ToastAndroid.SHORT);
-    //             navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
-    //             return;
-    //         }
-    //         
-    //         // Validar que sean números válidos
-    //         const lat = Number(selectedLocation.latitude);
-    //         const lon = Number(selectedLocation.longitude);
-    //         
-    //         if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
-    //             console.error('[ApiaryScreen] Coordenadas no son números válidos:', { lat, lon });
-    //             ToastAndroid.show('Error: Coordenadas inválidas', ToastAndroid.SHORT);
-    //             navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
-    //             return;
-    //         }
-    //         
-    //         (async () => {
-    //             try {
-    //                 console.log('[ApiaryScreen] Actualizando apiario con coordenadas:', { latitude: lat, longitude: lon });
-    //                 const updated = await updateApiary(null, apiaryInfoState.id, {
-    //                     latitude: lat,
-    //                     longitude: lon
-    //                 });
-    //                 if (updated) {
-    //                     setApiaryInfoState(prev => ({
-    //                         ...prev,
-    //                         latitude: lat,
-    //                         longitude: lon
-    //                     }));
-    //                     ToastAndroid.show('Ubicación actualizada', ToastAndroid.SHORT);
-    //                 } else {
-    //                     ToastAndroid.show('Error al actualizar ubicación', ToastAndroid.SHORT);
-    //                 }
-    //             } catch (error) {
-    //                 ToastAndroid.show('Error al actualizar ubicación', ToastAndroid.SHORT);
-    //                 console.error('[ApiaryScreen] Error actualizando ubicación:', error);
-    //             }
-    //         })();
-    //         // Limpiar los parámetros para evitar procesarlos de nuevo
-    //         navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
-    //     }
-    // }, [isFocused, route.params?.selectedLocation, route.params?.confirmed]);
-
-    // Comentado - no se usa mapa por ahora
-    // const handleOpenMapSelection = () => {
-    //     try {
-    //         // Asegurar que las coordenadas sean números válidos
-    //         const lat = apiaryInfoState?.latitude;
-    //         const lon = apiaryInfoState?.longitude;
-    //         
-    //         const hasValidCoordinates = lat !== undefined && 
-    //                                    lat !== null && 
-    //                                    lat !== 0 &&
-    //                                    !isNaN(Number(lat)) &&
-    //                                    lon !== undefined && 
-    //                                    lon !== null && 
-    //                                    lon !== 0 &&
-    //                                    !isNaN(Number(lon));
-    //         
-    //         navigation.navigate('MapSelectionScreen', {
-    //             initialLocation: hasValidCoordinates ? {
-    //                 latitude: Number(lat),
-    //                 longitude: Number(lon)
-    //             } : null,
-    //             returnScreen: 'ApiaryScreen',
-    //             apiaryInfo: apiaryInfoState // Pasar apiaryInfo para preservarlo
-    //         });
-    //     } catch (error) {
-    //         console.error('[ApiaryScreen] Error navegando a MapSelectionScreen:', error);
-    //         ToastAndroid.show('Error al abrir el mapa', ToastAndroid.SHORT);
-    //     }
-    // };
-
     const renderApiaryInfo = () => {
         if (!apiaryInfoState) {
             return null;
@@ -247,6 +153,12 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                     text='Visitar'
                     move={() => navigation.navigate('ApiaryVisitScreen', { apiaryNavData: apiaryInfoState })}
                 />,
+            headerTitle: '',
+             headerStyle: {
+                 backgroundColor: colors.WHITE,
+                 elevation: 0,
+                 shadowOpacity: 0
+             }
         });
     }, [apiaryInfoState]);
 
@@ -258,38 +170,48 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
         <ScrollView 
             style={styles.scrollContainer}
             contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
+            showsVerticalScrollIndicator={false}
         >
             <View style={styles.container}>
-                {/* Imagen del apiario */}
-                <View>
+                {/* Header Image & Title */}
+                <View style={styles.headerContainer}>
                     <Image
                         style={styles.apiaryImage}
                         source={apiaryInfoState.image ? { uri: `${APIARY_IMG_URL}${apiaryInfoState.image}` } : BlankImage}
                     />
-                </View>
-                <Text style={styles.apiaryName}>{Capitalize(apiaryInfoState.name)}</Text>
-
-                {/* Botones de menu del apiario */}
-                <View style={styles.apiaryMenu}>
-                    {/* Comentado - no se usa mapa por ahora */}
-                    {/* <TouchableOpacity style={styles.ApiaryMenuItem} onPress={handleOpenMapSelection}>
-                        <Icon name="map-outline" size={22} color="#fff" />
-                    </TouchableOpacity> */}
-
-                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}>
-                        <Ionicons name="file-tray-full-outline" size={22} color="#fff" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.ApiaryMenuItem} onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfoState.settings })}>
-                        <Ionicons name="settings-outline" size={22} color="#fff" />
-                    </TouchableOpacity>
+                    <Text style={styles.apiaryName}>{Capitalize(apiaryInfoState.name)}</Text>
                 </View>
 
-                {/* Items del apiario */}
+                {/* Quick Actions */}
+                <View style={styles.actionsContainer}>
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.iconCircle}>
+                            <Ionicons name="time-outline" size={24} color={colors.YELLOW} />
+                        </View>
+                        <Text style={styles.actionLabel}>Historial</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => navigation.navigate('ApiarySettingsScreen', { apiarySettings: apiaryInfoState.settings })}
+                        activeOpacity={0.8}
+                    >
+                        <View style={styles.iconCircle}>
+                            <Ionicons name="options-outline" size={24} color={colors.YELLOW} />
+                        </View>
+                        <Text style={styles.actionLabel}>Ajustes</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Stats Grid */}
                     {renderApiaryInfo()}
 
-                {/* Comentarios del apiario */}
-                {apiaryInfoState.settings?.tComment && apiaryInfoState.tComment.length > 1 && (
+                {/* Comments Section */}
+                {apiaryInfoState.settings?.tComment && apiaryInfoState.tComment.length > 0 && (
                     <View style={styles.apiaryCommentContainer}>
                         <Text style={styles.apiaryCommentTitle}>Comentario</Text>
                         <Text style={styles.apiaryCommentText}>{apiaryInfoState.tComment}</Text>
@@ -302,11 +224,62 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: 'white',
+        backgroundColor: colors.WHITE,
+        flex: 1,
     },
     container: {
         alignItems: 'center',
         paddingBottom: 20,
+    },
+    headerContainer: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    apiaryImage: {
+        height: wp('40%'),
+        width: wp('80%'),
+        resizeMode: 'cover',
+        borderRadius: 10,
+        marginVertical: 10,
+    },
+    apiaryName: {
+        fontSize: 24,
+        fontWeight: '400',
+        color: colors.BLACK,
+        marginVertical: 10,
+    },
+    actionsContainer: {
+        flexDirection: 'row',
+        width: wp('90%'),
+        justifyContent: 'center',
+        marginBottom: 20,
+        gap: 20,
+    },
+    actionButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 80,
+    },
+    iconCircle: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: colors.WHITE,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#EEEEEE'
+    },
+    actionLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: colors.BLACK_LIGHT,
     },
     apiaryInfoContainer: {
         width: '80%',
@@ -316,37 +289,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginVertical: 15,
-    },
-    apiaryMenu: {
-        flexDirection: 'row',
-        width: wp('80%'),
-        marginVertical: 10,
-        justifyContent: 'space-evenly',
-    },
-    ApiaryMenuItem: {
-        flexDirection: 'row',
-        alignItems:'center',
-        backgroundColor: colors.YELLOW,
-        paddingVertical: 12,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        width: 48,
-        height: 48,
-        justifyContent: 'center',
-    },
-    apiaryName: {
-        fontSize: 24,
-        fontWeight: '400',
-        color: colors.BLACK,
-        marginVertical: 10,
-    },
-
-    apiaryImage: {
-        height: wp('40%'),
-        width: wp('80%'),
-        resizeMode: 'cover',
-        borderRadius: 10,
-        marginVertical: 10,
     },
     apiaryDataContainer: {
         flexDirection: 'row',
@@ -365,12 +307,6 @@ const styles = StyleSheet.create({
     apiaryCommentText: {
         color: colors.BLACK_LIGHT,
         fontSize: 16,
-    },
-    locationText: {
-        marginTop: 5,
-        color: colors.BLACK_LIGHT,
-        fontSize: 12,
-        textAlign: 'center',
     },
 });
 

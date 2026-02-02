@@ -18,13 +18,13 @@ const styles = StyleSheet.create({
     container: {
         width: '80%',
         justifyContent:'center',
-        marginBottom: 20,
+        marginBottom: 5,
     },
     categoryTitle: {
         fontSize: 20,
         fontWeight: '400',
         color: '#3C4256',
-        marginBottom: 20,
+        marginBottom: 10,
     },
     listContainer: {
         flexDirection: 'row',

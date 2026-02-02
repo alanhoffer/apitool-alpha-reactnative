@@ -4,7 +4,7 @@ const QUEUE_KEY = 'offline_queue';
 
 export interface OfflineRequest {
   id: string;
-  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll';
+  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll' | 'createTask' | 'updateTask' | 'deleteTask';
   payload: any;
   timestamp: number;
 }

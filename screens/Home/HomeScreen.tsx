@@ -18,6 +18,7 @@ import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.p
 import logger from '../../helpers/logger';
 import { HomeScreenProps } from '../../types/navigation';
 import FlyingBees from '../../components/animations/FlyingBees';
+import { syncPendingRequests } from '../../modules/Offline/SyncManager';
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const insets = useSafeAreaInsets();
@@ -89,6 +90,13 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       setRefreshing(true);
     }
     
+    // Intentar sincronizar datos pendientes si hay conexión
+    try {
+        await syncPendingRequests();
+    } catch (e) {
+        logger.warn('[HomeScreen] Error en sincronización:', e);
+    }
+
     await Promise.all([
       fetchUserInfo(),
       fetchWeather()
@@ -212,6 +220,11 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
           <Ionicons name="qr-code-outline" size={36} color={colors.BLACK} />
           <Text style={styles.quickAccessText}>ApiScanner</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('TasksScreen')}>
+          <Ionicons name="checkbox-outline" size={36} color={colors.BLACK} />
+          <Text style={styles.quickAccessText}>Tareas</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })}>

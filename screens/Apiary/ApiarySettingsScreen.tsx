@@ -63,8 +63,15 @@ function ApiarySettingsScreen({ route, navigation }: any) {
                         Escoge las opciones que te sean útiles para administrar tus apiarios. Esta configuración se guardará y podrá ser cambiada en un futuro.
                     </Text>
                 </View>
-                {Object.entries(categories).map(([category, items]: any) => (
-                    <SettingCategory key={category} title={category.charAt(0).toUpperCase() + category.slice(1)}>
+                {Object.entries(categories).map(([category, items]: any) => {
+                    let categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+                    if (category === 'food') categoryTitle = 'Alimento';
+                    if (category === 'treatment') categoryTitle = 'Tratamiento';
+                    if (category === 'harvesting') categoryTitle = 'Cosecha';
+                    if (category === 'others') categoryTitle = 'Otros';
+                    
+                    return (
+                        <SettingCategory key={category} title={categoryTitle}>
                         {items.map((item: UISettingsItem) => (
                             <SettingItem
                                 key={item.key}
@@ -75,7 +82,8 @@ function ApiarySettingsScreen({ route, navigation }: any) {
                             />
                         ))}
                     </SettingCategory>
-                ))}
+                    );
+                })}
             </View>
         </ScrollView>
     )
@@ -90,18 +98,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     settingsTitle: {
-        marginVertical: 20,
-        width: wp('80%'),
+        marginVertical: 25,
+        width: wp('85%'),
     },
     settingsTitleText: {
-        fontSize: 24,
-        fontWeight: '400',
-        color: '#3C4256',
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#2E3A59',
+        marginBottom: 8,
+        letterSpacing: 0.5,
     },
     settingsSubTitleText: {
-        color: '#CFCFD7',
+        color: '#8F9BB3',
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: '400',
+        lineHeight: 24,
     },
     settingsList: {
 
@@ -109,46 +120,5 @@ const styles = StyleSheet.create({
 
 
 });
-
-const stylesCategory = StyleSheet.create({
-    container: {
-        width: wp('80%'),
-        marginBottom: 20,
-    },
-    categoryTitle: {
-        fontSize: 20,
-        fontWeight: '400',
-        color: '#3C4256',
-        marginVertical: 5,
-    },
-    listContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-    },
-    itemContainer: {
-        margin: 10,
-        marginLeft: 0,
-        height: 110,
-        minWidth: wp('20%'),
-        maxWidth: wp('20%'),
-        borderRadius: 5,
-        alignItems: 'center',
-        justifyContent: 'space-evenly',
-        backgroundColor: '#ffffff'
-    },
-    itemIcon: {
-        width: 30,
-        height: 30,
-        padding: 20,
-        borderRadius: 50,
-        backgroundColor: '#F5F5F7'
-    },
-    itemText: {
-        fontSize: 14,
-        fontWeight: '500',
-        textAlign: 'center',
-        color: '#3C4256',
-    },
-})
 
 export default ApiarySettingsScreen;

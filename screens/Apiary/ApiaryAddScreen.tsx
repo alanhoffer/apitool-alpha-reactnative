@@ -187,7 +187,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
                 {/* CANTIDAD DE COLMENAS */}
                 <ApiarySlider
-                    max={100}
+                    max={1000}
                     min={1}
                     step={1}
                     text="Colmenas"
@@ -280,7 +280,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
                 {/* ALZAS STANDART */}
                 <ApiarySlider
-                    max={100}
+                    max={1000}
                     min={0}
                     step={1}
                     text="Alza"
@@ -294,7 +294,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
                 {/* ALZAS 3/4 */}
                 <ApiarySlider
-                    max={100}
+                    max={1000}
                     min={0}
                     step={1}
                     text="Alza 3/4"
@@ -308,7 +308,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
                 {/* ALZAS 1/2 */}
                 <ApiarySlider
-                    max={100}
+                    max={1000}
                     min={0}
                     step={1}
                     text="Alza 1/2"

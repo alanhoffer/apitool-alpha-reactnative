@@ -84,7 +84,14 @@ export default function ApiaryHistoryScreen({ route, navigation }: ApiaryHistory
                     <Text style={styles.headerSubtitle}>Todos los cambios realizados en este apiario</Text>
                 </View>
                 <View style={styles.historyContainerList}>
-                    {Object.entries(historyByDate).reverse().map(([date, history]: any, index, array) => {
+                    {Object.keys(historyByDate).length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="time-outline" size={80} color={colors.GREY_LIGHT} />
+                            <Text style={styles.emptyText}>No hay historial disponible</Text>
+                            <Text style={styles.emptySubText}>Realiza cambios en tu apiario para verlos aquí</Text>
+                        </View>
+                    ) : (
+                        Object.entries(historyByDate).reverse().map(([date, history]: any, index, array) => {
                         const dateObj = new Date(date.split(' ')[0]);
                         const formattedDate = formatDate(date);
                         const formattedTime = formatTime(date);
@@ -124,7 +131,7 @@ export default function ApiaryHistoryScreen({ route, navigation }: ApiaryHistory
                                 </View>
                             </View>
                         );
-                    })}
+                    }))}
                 </View>
             </View>
         </ScrollView>
@@ -157,6 +164,25 @@ const styles = StyleSheet.create({
     historyContainerList: {
         flex: 1,
         position: 'relative',
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: hp('10%'),
+        opacity: 0.8
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: colors.BLACK_LIGHT,
+        marginTop: 16,
+    },
+    emptySubText: {
+        fontSize: 16,
+        color: colors.GREY,
+        marginTop: 8,
+        textAlign: 'center',
+        width: '80%',
     },
     historyCard: {
         flexDirection: 'row',

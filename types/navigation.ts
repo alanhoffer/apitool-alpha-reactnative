@@ -16,20 +16,22 @@ export type RootStackParamList = {
   
   // Home
   HomeScreen: undefined;
-  NotificationsScreen: undefined;
+  NotificationScreen: undefined;
   
   // Apiary
+  Apiary: NavigatorScreenParams<any>;
   ApiaryListScreen: undefined;
   ApiaryScreen: { apiaryInfo: IApiary };
   ApiaryAddScreen: { 
     apiarySettings?: any;
     selectedLocation?: { latitude: number; longitude: number };
     confirmed?: boolean;
+    returnScreen?: string;
   };
   ApiaryVisitScreen: { apiaryNavData: IApiary };
   ApiaryHistoryScreen: { apiaryInfo: IApiary };
   ApiaryMapScreen: undefined;
-  ApiarySettingsScreen: { apiaryInfo: IApiary };
+  ApiarySettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
   ApiaryAddSettingsScreen: { apiaryInfo: IApiary };
   MapSelectionScreen: {
     initialLocation?: { latitude: number; longitude: number } | null;
@@ -38,22 +40,29 @@ export type RootStackParamList = {
   };
   
   // Scanner
+  Scanner: NavigatorScreenParams<any>;
   ScannerCameraScreen: undefined;
   ScannerListScreen: undefined;
   ScannerFormScreen: { code: string };
   ScannerInstructionsScreen: undefined;
   
   // Profile
+  Profile: NavigatorScreenParams<any>;
   ProfileScreen: undefined;
   DevicesScreen: undefined;
   EditProfileScreen: undefined;
   ChangePasswordScreen: undefined;
   
   // Statistics
+  Statistics: NavigatorScreenParams<any>;
   StatisticsScreen: undefined;
   
   // AI
   AIChatScreen: undefined;
+
+  // Tasks
+  TasksScreen: undefined;
+  TaskAddScreen: { task?: any; apiaryId?: number }; // task object if editing, apiaryId if pre-selected
 };
 
 // Tipos para props de navegación
@@ -93,4 +102,6 @@ export type AIChatScreenProps = ScreenProps<'AIChatScreen'>;
 export type ProfileScreenProps = ScreenProps<'ProfileScreen'>;
 export type DevicesScreenProps = ScreenProps<'DevicesScreen'>;
 export type ForgotPasswordScreenProps = ScreenProps<'ForgotPasswordScreen'>;
+export type TasksScreenProps = ScreenProps<'TasksScreen'>;
+export type TaskAddScreenProps = ScreenProps<'TaskAddScreen'>;
 
