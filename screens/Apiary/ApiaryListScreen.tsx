@@ -1,6 +1,7 @@
 // React Imports //
 import React from 'react';
 import { StyleSheet, View, Text, TextInput, ScrollView, Image, TouchableOpacity, ToastAndroid, RefreshControl, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
 import { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,8 @@ import { filterApiaryByName } from '../../helpers/Apiary/filterApiaryByName';
 import { ApiaryCard } from '../../components/apiary/ApiaryCard';
 import { ApiaryListScreenProps } from '../../types/navigation';
 import ApiaryCardSkeleton from '../../components/skeletons/ApiaryCardSkeleton';
+import FlyingBees from '../../components/animations/FlyingBees';
+import colors from '../../constants/colors';
 
 const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
   const insets = useSafeAreaInsets();
@@ -96,6 +99,7 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
 
   return (
     <View style={styles.container}>
+      <FlyingBees beeCount={4} />
       <View style={styles.search}>
         <TextInput value={searchValue} onChangeText={setSearchValue} style={styles.searchInput} placeholder='Search for an apiary ' placeholderTextColor='#BCBDC5' />
       </View>
@@ -141,6 +145,7 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 0,
     backgroundColor: 'white',
+    zIndex: 1,
   },
   search: {
     marginVertical: 10,
@@ -148,7 +153,7 @@ const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: '#F9F9F9',
     paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingVertical: 12,
     borderRadius: 5,
   },
   apiaryList: {

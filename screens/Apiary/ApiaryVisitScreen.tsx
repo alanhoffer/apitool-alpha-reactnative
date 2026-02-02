@@ -1,6 +1,5 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { View, ScrollView, StyleSheet, Text, Image, TextInput, TouchableOpacity, Pressable, ToastAndroid } from 'react-native';
-import { Slider } from '@rneui/themed';
 import ApiarySlider from '../../components/apiary/apiarySlider';
 import ApiaryTreatment from '../../components/apiary/ApiaryTreatment';
 import { useEffect, useState } from 'react';
@@ -24,7 +23,6 @@ import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocar
 import colors from "../../constants/colors";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
-import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { APIARY_IMG_URL } from "../../constants/api";
 
 
@@ -45,41 +43,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
     });
     const [apiaryImage, setApiaryImage] = useState()
 
-
-    const [apiaryTreatment, setApiaryTreatment] = useState<any>({
-        tOxalic: false,
-        tAmitraz: false,
-        tFlumetrine: false,
-        tFence: false,
-    })
-
-    const toggleTreatmentDays = (treatment: any) => {
-        setApiaryTreatment({
-            ...apiaryTreatment, [treatment]: true
-        });
-        switch (apiaryData[treatment]) {
-            case 0:
-                handleChangeData(15, treatment)
-                break;
-            case 15:
-                handleChangeData(45, treatment)
-                break;
-            case 45:
-                handleChangeData(90, treatment)
-                break;
-            case 90:
-                handleChangeData(360, treatment)
-                break;
-            case 360:
-                handleChangeData(0, treatment);
-                setApiaryTreatment({
-                    ...apiaryTreatment, [treatment]: false
-                });
-                break;
-        }
-    }
-
-
     const renderTreatments = () => {
         // Filtrar los ítems de tratamiento
         const items = []
@@ -87,41 +50,28 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         const tfence = apiaryItems(apiaryNavData).filter(item => item.key === 'tFence')
         items.push(...treatments, ...tfence)
 
-
-
-        // Dividir los elementos en filas de 2
-        const rows = [];
-        for (let i = 0; i < items.length; i += 2) {
-            rows.push(items.slice(i, i + 2));
-        }
-
         return (
             <View style={styles.apiaryInfoContainer}>
-                {rows.map((row, rowIndex) => (
-                    <View key={rowIndex} style={styles.apiaryTreatmentRow}>
-                        {row.map((item, index) => (
-                            <Pressable key={index} onPress={() => toggleTreatmentDays(item.key)}>
-                                <ApiaryInfo
-                                    label={item.title}
-                                    value={handleApiaryQuantity(item.key)}
-                                    image={item.image}
-                                    isVisible={item.isVisible}
-                                    isActive={apiaryTreatment[item.key]}
-                                />
-
-                            </Pressable>
-                        ))}
-                    </View>
+                {items.map((item, index) => (
+                    <ApiaryTreatment
+                        key={index}
+                        name={item.key}
+                        title={item.title}
+                        image={item.image}
+                        isVisible={item.isVisible}
+                        value={Number(handleApiaryQuantity(item.key))} // Ensure it's a number
+                        onChange={handleChangeData}
+                    />
                 ))}
             </View>
         );
     };
 
     const handleChangeData = (value: number | string, key: string) => {
-        setApiaryData({
-            ...apiaryData,
+        setApiaryData((prev: any) => ({
+            ...prev,
             [key]: value
-        });
+        }));
     };
 
     const handleApiaryQuantity = (key: string) => {
@@ -185,6 +135,26 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         })
     }, [apiaryData, isSubmitting])
 
+    const getStatusColor = (status: number) => {
+        switch (status) {
+            case 0: return colors.RED_LIGHT;
+            case 1: return colors.YELLOW;
+            case 2: return colors.BLUE_LIGHT;
+            case 3: return colors.BLUE;
+            default: return colors.GREY;
+        }
+    };
+
+    const getStatusLabel = (status: number) => {
+        switch (status) {
+            case 0: return 'Malo';
+            case 1: return 'Medio';
+            case 2: return 'Bueno';
+            case 3: return 'Excel.';
+            default: return '';
+        }
+    };
+
     return (
         <ScrollView style={styles.scrollContainer}>
 
@@ -196,7 +166,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
             </View>
             <View style={styles.apiaryInfo}>
    
-            <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={apiaryNavData.image ?  `${APIARY_IMG_URL}${apiaryNavData.image}`  : '../assets/images/apiary-default.png'} />
+            <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={apiaryNavData.image ? { uri: `${APIARY_IMG_URL}${apiaryNavData.image}` } : require('../../assets/images/apiary-default.png')} />
 
                 {/* NOMBRE DEL APIARIO */}
                 <View style={styles.apiaryNameContainer}>
@@ -229,24 +199,30 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                             <Text style={styles.apiaryInfoItemDataText}>
                                 Estado
                             </Text>
-                            <Text style={styles.apiaryInfoItemDataText}>
+                            <Text style={[styles.apiaryInfoItemDataText, { fontWeight: 'bold', color: getStatusColor(apiaryStatus) }]}>
                                 {handleApiaryQuantity('status')}
                             </Text>
                         </View>
 
-                        <Slider
-                            style={styles.apiaryInfoItemSlider}
-                            step={1}
-                            value={apiaryStatus}
-                            onValueChange={handleApiaryStatus}
-                            minimumValue={0}
-                            maximumValue={3}
-                            thumbTintColor="grey"
-                            allowTouchTrack
-                            thumbStyle={styles.apiaryInfoItemSliderThumb}
-                            trackStyle={{ height: 10 }}
-                            minimumTrackTintColor="#525252"
-                            maximumTrackTintColor="#EEF0F3" />
+                        <View style={styles.statusButtonsContainer}>
+                            {[0, 1, 2, 3].map((status) => (
+                                <TouchableOpacity
+                                    key={status}
+                                    onPress={() => handleApiaryStatus(status)}
+                                    style={[
+                                        styles.statusButton,
+                                        apiaryStatus === status && { backgroundColor: getStatusColor(status), borderColor: getStatusColor(status) }
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.statusButtonText,
+                                        apiaryStatus === status ? { color: colors.WHITE } : { color: colors.GREY }
+                                    ]}>
+                                        {getStatusLabel(status)}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
 
@@ -366,6 +342,10 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
     },
+    apiaryInfo: {
+        alignItems: 'center',
+        width: '100%',
+    },
 
     addApiaryTitle: {
         marginVertical: 20,
@@ -373,22 +353,19 @@ const styles = StyleSheet.create({
     },
     addApiaryTitleText: {
         fontSize: 24,
-        fontWeight: '400',
-        color: '#3C4256',
+        fontWeight: '700',
+        color: colors.BLACK_LIGHT,
+        fontFamily: 'Bebas Neue', // Assuming you have this font linked, otherwise remove this line
     },
     addApiarySubTitleText: {
-        color: '#CFCFD7',
+        color: colors.GREY,
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: '400',
+        marginTop: 5,
     },
     apiaryNameContainer: {
         marginVertical: 20,
         width: wp('80%'),
-        alignItems: 'center'
-    },
-    apiaryInfo: {
-        width: wp('100%'),
-        marginVertical: 10,
         alignItems: 'center'
     },
     apiaryName: {
@@ -405,47 +382,72 @@ const styles = StyleSheet.create({
 
 
     apiaryStatusContainer: {
-        width: '80%',
-        justifyContent: 'center',
+        width: '90%',
+        backgroundColor: colors.WHITE,
+        borderRadius: 12,
+        padding: 15,
+        justifyContent: 'flex-start',
         alignItems:'center',
         flexDirection: 'row',
-        marginVertical: 5,
+        marginVertical: 8,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2.22,
+        elevation: 3,
     },
     apiaryInfoItem: {
-        width: '80%',
+        flex: 1,
     },
     apiaryIcon: {
         height: 40,
         width: 40,
-        marginRight: 10,
+        marginRight: 15,
         tintColor: colors.YELLOW,
         resizeMode: 'contain',
     },
     apiaryInfoItemData: {
         flexDirection: 'row',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        marginBottom: 10,
     },
     apiaryInfoItemDataText: {
-        color: '#CFCFD7',
+        color: colors.BLACK_LIGHT,
         fontSize: 16,
-        fontWeight: '500'
+        fontWeight: '600'
     },
-    apiaryInfoItemSlider: {
-        margin: 5,
+    statusButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 5,
     },
-    apiaryInfoItemSliderThumb: {
-        width: 18,
-        height: 18,
+    statusButton: {
+        flex: 1,
+        marginHorizontal: 4,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        backgroundColor: '#F5F5F7',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    statusButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     apiaryInfoContainer: {
-        flexDirection: 'column',
-        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        width: '90%',
+        justifyContent: 'space-between',
     },
     apiaryTreatments: {
-        width: wp('80%'),
-        flexDirection: 'row',
+        width: '100%',
         alignItems: 'center',
-        justifyContent: 'space-evenly',
         marginVertical: 10,
     },
 

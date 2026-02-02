@@ -136,7 +136,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 
   return (
     <View style={styles.wrapper}>
-      <FlyingBees beeCount={6} />
+      <FlyingBees beeCount={4} />
       <ScrollView 
         style={styles.container}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + 20 }}
@@ -162,7 +162,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         <View style={styles.userStats}>
           <View style={styles.stat}>
             <View style={styles.statWithIcon}>
-              <MaterialIcons name="hive" size={24} color={colors.BLACK} style={styles.statIcon} />
+              <MaterialIcons name="hive" size={24} color={colors.YELLOW} style={styles.statIcon} />
               <View>
                 <Text style={styles.userStatsTitle}>{apiaries}</Text>
                 <Text style={styles.userStatsSub}>Apiarios</Text>
@@ -171,7 +171,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           </View>
           <View style={styles.stat}>
             <View style={styles.statWithIcon}>
-              <Image source={beehiveCollonySize} style={styles.statIconImage} />
+              <Image source={beehiveCollonySize} style={[styles.statIconImage, { tintColor: '#A0826D' }]} />
               <View>
                 <Text style={styles.userStatsTitle}>{hives}</Text>
                 <Text style={styles.userStatsSub}>Colmenas</Text>
@@ -199,7 +199,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       <Text style={styles.title}>Accesos Directos</Text>
       <View style={styles.quickAccessContainer}>
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}>
-          <MaterialIcons name="hive" size={36} color={colors.BLACK} />
+          <MaterialIcons name="hive" size={36} color={colors.YELLOW} />
           <Text style={styles.quickAccessText}>Mis Apiarios</Text>
         </TouchableOpacity>
 
@@ -210,20 +210,17 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         </TouchableOpacity> */}
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}>
-          <Image
-            source={require('../../assets/images/icons/camera.png')}
-            style={styles.apiScannerIcon}
-          />
+          <Ionicons name="qr-code-outline" size={36} color={colors.BLACK} />
           <Text style={styles.quickAccessText}>ApiScanner</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })}>
-          <Ionicons name="stats-chart" size={36} color={colors.BLACK} />
+          <Ionicons name="stats-chart" size={36} color={colors.BLUE_LIGHT} />
           <Text style={styles.quickAccessText}>Estadísticas</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickAccessButton} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })}>
-          <Ionicons name="settings" size={36} color={colors.BLACK} />
+          <Ionicons name="settings" size={36} color={colors.GREY} />
           <Text style={styles.quickAccessText}>Configuración</Text>
         </TouchableOpacity>
 
@@ -259,24 +256,20 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#FFFBF0', // Fondo cálido crema
+    backgroundColor: 'white',
   },
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
     paddingHorizontal: 40,
     paddingTop: 40,
-    zIndex: 1,
+    zIndex: 2,
   },
   userContainer: {
-    backgroundColor: colors.WHITE,
-    borderRadius: 15,
+    backgroundColor: 'white',
+    borderRadius: 10,
     marginBottom: 15,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    zIndex: 3,
   },
   navigation: {
     flexDirection: 'row',
@@ -286,18 +279,12 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.WHITE,
+    backgroundColor: '#F9F9F9',
     paddingVertical: 20,
-    borderRadius: 15,
+    borderRadius: 10,
     marginVertical: 20,
     justifyContent: 'space-around',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.YELLOW + '30',
+    zIndex: 3,
   },
   userStats: {    
     justifyContent: 'center'
@@ -330,35 +317,24 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 18,
     color: colors.BLACK_TRANSPARENT,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   usernameText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: colors.BLACK,
-    marginTop: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     marginVertical: 20,
     fontWeight: 'bold',
-    color: colors.BLACK,
   },
   userStatsTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: colors.BLACK,
-  },
-  userStatsSub: {
-    fontSize: 14,
-    color: colors.BLACK_TRANSPARENT,
-    marginTop: 2,
   },
   info: {
     fontSize: 16,
     marginBottom: 5,
-    color: colors.BLACK,
-    fontWeight: '500',
   },
   errorText: {
     color: 'red',
@@ -367,48 +343,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     flexWrap: 'wrap',
+    zIndex: 3,
   },
   quickAccessButton: {
-    backgroundColor: colors.WHITE,
+    backgroundColor: '#F9F9F9',
     width: '45%',
     height: 120,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 15,
+    borderRadius: 10,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: colors.YELLOW + '20',
+    zIndex: 3,
   },
   quickAccessText: {
-    color: colors.BLACK,
-    fontSize: 14,
+    color: 'black',
+    fontSize: 16,
     marginTop: 10,
-    fontWeight: '600',
-  },
-  apiScannerIcon: {
-    width: 36,
-    height: 36,
-    tintColor: colors.BLACK,
   },
   aiPromoButton: {
     backgroundColor: colors.WHITE,
     width: '100%',
-    borderRadius: 15,
+    borderRadius: 12,
     marginTop: 10,
     marginBottom: 20,
     padding: 20,
-    borderWidth: 2,
-    borderColor: colors.YELLOW + '40',
-    shadowColor: colors.YELLOW,
+    borderWidth: 1,
+    borderColor: colors.GREY_LIGHT,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
+    zIndex: 3,
   },
   aiPromoContent: {
     flexDirection: 'row',
@@ -459,6 +425,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.BLACK,
   },
+  userStatsSub: {},
 });
 
 export default HomeScreen;

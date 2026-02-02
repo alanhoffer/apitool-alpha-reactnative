@@ -2,7 +2,7 @@ import { Pressable, Text, StyleSheet} from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../../constants/colors';
 
-function AddApiaryButton(props:any):JSX.Element{
+function AddApiaryButton(props:any){
     return(
         <Pressable style={style.container} onPress={props.move}> 
             <Ionicons name="add" size={18} color={colors.BLACK_LIGHT} />

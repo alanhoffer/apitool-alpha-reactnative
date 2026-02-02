@@ -13,6 +13,7 @@ import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocar
 import DatePretty from '../../modules/DatePretty';
 import { APIARY_IMG_URL } from '../../constants/api';
 import colors from '../../constants/colors';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export const ApiaryCard = ({ apiaryInfo }: any) => {
 
@@ -36,7 +37,11 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
   return (
     <View style={styles.apiaryCard}>
       <View style={styles.apiaryImageContainer}>
-        <Image style={styles.apiaryImage} source={{ uri: `${APIARY_IMG_URL}${apiaryInfo.image}` }} />
+        <Image 
+          style={styles.apiaryImage} 
+          source={apiaryInfo.image ? { uri: `${APIARY_IMG_URL}${apiaryInfo.image}` } : require('../../assets/images/icons/beehive_box_general.png')}
+          defaultSource={require('../../assets/images/icons/beehive_box_general.png')}
+        />
         <View style={[{ backgroundColor: statusToColor(apiaryInfo.status) }, styles.apiaryStatus]} />
       </View>
       <View style={styles.apiaryData}>
@@ -50,7 +55,10 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
           </View>
         )}
       </View>
-      <Text style={styles.apiaryHivesText}>{apiaryInfo.hives}</Text>
+      <View style={styles.apiaryHivesContainer}>
+        <MaterialIcons name="hive" size={20} color={colors.YELLOW} />
+        <Text style={styles.apiaryHivesText}>{apiaryInfo.hives}</Text>
+      </View>
     </View>
   );
 };
@@ -71,49 +79,63 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   apiaryImage: {
-    height: 60,
-    width: 60,
+    height: 70,
+    width: 70,
     resizeMode: 'cover',
-    borderRadius: 6,
+    borderRadius: 10,
   },
   apiaryStatus: {
     position: 'absolute',
-    width: 10,
-    height: 10,
-    bottom: 2,
-    right: 2,
-    borderRadius: 5,
-    borderWidth: 2,
+    width: 14,
+    height: 14,
+    bottom: 0,
+    right: 0,
+    borderRadius: 7,
+    borderWidth: 3,
     borderColor: colors.WHITE,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   apiaryData: {
     flex: 1,
     justifyContent: 'center',
   },
   apiaryDataName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
     color: colors.BLACK,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   apiaryDataDate: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.BLACK_TRANSPARENT,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   apiaryTreatments: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   apiaryTreatment: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     resizeMode: 'contain',
-    marginRight: 6,
+    marginRight: 8,
+  },
+  apiaryHivesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.YELLOW + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   apiaryHivesText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: colors.BLACK,
   },
 });

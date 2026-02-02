@@ -1,8 +1,9 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { useEffect, useState } from "react"
 import * as ImagePicker from 'expo-image-picker';
-import BlankImage from '../assets/images/apiary-default.png'
-import { View, Text, Button, Image, TouchableOpacity, StyleSheet, ImageSourcePropType } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, ImageSourcePropType } from "react-native";
+import Icon from 'react-native-vector-icons/Feather';
+import colors from "../constants/colors";
 
 
 interface Props {
@@ -46,50 +47,72 @@ export default function ImagePick(props: Props) {
 
 
     return (
-        <View>
-            <TouchableOpacity onPress={() => pickImage()}>
+        <View style={styles.container}>
+            <TouchableOpacity onPress={() => pickImage()} activeOpacity={0.8}>
                 <View style={styles.imageContainer}>
                     {image ? (
                         <Image style={styles.apiaryInfoImage} source={{ uri: image }} />
                     ) : (
                         <Image style={styles.apiaryInfoImage} source={props.image} />
                     )}
-                    {/* Capa oscura encima de la imagen */}
-                    <View style={styles.overlay} />
-                    <Text style={styles.pickImageText}>Elige una imagen</Text>
+                    
+                    <View style={styles.imageOverlay} />
+
+                    <View style={styles.editIconContainer}>
+                        <Icon name="camera" size={20} color={colors.WHITE} />
+                    </View>
                 </View>
             </TouchableOpacity>
         </View>
     );
-    
-    
 }
 
 
 const styles = StyleSheet.create({
+    container: {
+        width: '90%',
+        alignItems: 'center',
+        marginVertical: 10,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    noAccessText: {
+        color: 'red',
+        textAlign: 'center',
+        margin: 20,
+    },
     imageContainer: {
-        justifyContent: 'center', // Centra verticalmente
-        alignItems: 'center', // Centra horizontalmente
-        position: 'relative', // Para poder usar posición absoluta en el texto y overlay
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        borderRadius: 15,
+        backgroundColor: colors.WHITE,
+        overflow: 'hidden', // Ensures image respects border radius
     },
     apiaryInfoImage: {
-        height: wp('40%'),
-        width: wp('80%'),
+        height: 200,
+        width: wp('90%'),
         resizeMode: 'cover',
-        borderRadius: 10,
-        marginVertical: 10,
     },
-    overlay: {
-        ...StyleSheet.absoluteFillObject, // Cubre toda la imagen
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Capa oscura con transparencia
-        marginVertical: 10,
-        borderRadius: 10, // Mismo borde redondeado que la imagen
+    imageOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Darken image slightly
     },
-    pickImageText: {
-        position: 'absolute', // Posiciona el texto sobre la imagen
-        color: 'white', // Color de texto para que se vea claramente
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center', // Alinea el texto horizontalmente en el centro
+    editIconContainer: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: [{ translateX: -20 }, { translateY: -20 }], // Adjust based on icon/container size
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        padding: 10,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
