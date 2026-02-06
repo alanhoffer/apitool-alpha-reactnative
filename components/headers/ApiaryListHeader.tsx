@@ -15,7 +15,7 @@ export default function ApiaryListHeader ({ navigation }:any):NativeStackNavigat
     return ({
         title: '',  
         headerLeft:() => <Pressable onPress={() => navigation.navigate('HomeScreen')}><Image source={Logo}  /></Pressable>,
-        headerRight: () =>  <AddApiaryButton move={() => navigation.navigate('ApiaryAddSettingsScreen')} />,
+        headerRight: () =>  <AddApiaryButton move={() => navigation.navigate('ApiaryManagementTypeScreen')} />,
         headerShadowVisible: false, 
     })
 };  

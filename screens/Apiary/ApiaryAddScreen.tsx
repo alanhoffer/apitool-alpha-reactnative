@@ -28,6 +28,7 @@ import { getApiaryStatusLabel } from "../../helpers/Apiary/getApiaryStatusLabel"
 function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
     const isFocused = useIsFocused();
     const apiarySettings = route.params?.apiarySettings;
+    const managementType = route.params?.managementType || 'apiary'; // Por defecto 'apiary' (conjunto)
     const [apiaryStatus, setApiaryStatus] = useState(0)
     const [apiaryData, setApiaryData] = useState<IApiaryData>({
         name: '',

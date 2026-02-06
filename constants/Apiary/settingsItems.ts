@@ -36,3 +36,35 @@ export const settingsItems = (): UICategorizedSettings => ({
         { key: 'tComment', title: 'Notas', value: 'Sí', image: beehiveNotes },
     ]
 });
+
+// Settings específicas para colmenas individuales
+export const settingsItemsIndividual = (): UICategorizedSettings => ({
+    [SettingsCategory.Food]: [
+        { key: 'honey', title: 'Miel por Colmena', value: 'Sí', image: beehiveFoodHoney },
+        { key: 'levudex', title: 'Levudex por Colmena', value: 'Sí', image: beehiveFoodLevudex },
+        { key: 'sugar', title: 'Azúcar por Colmena', value: 'Sí', image: beehiveFoodSugar },
+    ],
+    [SettingsCategory.Treatment]: [
+        { key: 'tOxalic', title: 'Oxálico', value: 'Sí', image: beehiveTreatmentOxalic },
+        { key: 'tAmitraz', title: 'Amitraz', value: 'Sí', image: beehiveTreatmentGeneral },
+        { key: 'tFlumetrine', title: 'Flumetrina', value: 'Sí', image: beehiveTreatmentFlumetrine },
+        { key: 'disease', title: 'Enfermedades', value: 'Sí', image: beehiveTreatmentGeneral },
+    ],
+    [SettingsCategory.Harvesting]: [
+        { key: 'box', title: 'Alza', value: 'Sí', image: beehiveBoxGeneral },
+        { key: 'boxMedium', title: 'Alza 3/4', value: 'Sí', image: beehiveBoxGeneral },
+        { key: 'boxSmall', title: 'Alza 1/2', value: 'Sí', image: beehiveBoxGeneral },
+        { key: 'production', title: 'Producción Individual', value: 'Sí', image: beehiveBoxGeneral },
+    ],
+    [SettingsCategory.Others]: [
+        { key: 'queenStatus', title: 'Estado de la Reina', value: 'Sí', image: beehiveCollonySize },
+        { key: 'population', title: 'Población', value: 'Sí', image: beehiveCollonySize },
+        { key: 'broodFrames', title: 'Cuadros con Cría', value: 'Sí', image: beehiveBoxGeneral },
+        { key: 'honeyFrames', title: 'Cuadros con Miel', value: 'Sí', image: beehiveFoodHoney },
+        { key: 'pollenFrames', title: 'Cuadros con Polen', value: 'Sí', image: beehiveFoodHoney },
+        { key: 'hiveStrength', title: 'Fortaleza de Colmena', value: 'Sí', image: beehiveCollonySize },
+        { key: 'swarming', title: 'Enjambrazón', value: 'Sí', image: beehiveTranshumance },
+        { key: 'lastInspection', title: 'Última Revisión', value: 'Sí', image: beehiveNotes },
+        { key: 'tComment', title: 'Notas', value: 'Sí', image: beehiveNotes },
+    ]
+});
