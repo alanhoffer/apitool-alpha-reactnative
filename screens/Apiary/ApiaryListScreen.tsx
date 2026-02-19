@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 1 API
 import { deleteApiary, getApiarys } from '../../modules/API/Apiarys';
+import { getAllMockApiaries, deleteMockApiary } from '../../modules/Mock/ApiaryMock';
 
 // 2 Visuals
 
@@ -31,22 +32,36 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
 
   async function loadApiarys() {
     try {
+      // Cargar apiarios de la API
       const apiaryData = await getApiarys();
       
+      // Cargar apiarios mockeados
+      const mockApiaries = await getAllMockApiaries();
+      
+      // Combinar ambos arrays
+      let allApiaries: IApiary[] = [];
+      
       if (apiaryData != null && Array.isArray(apiaryData)) {
+        allApiaries = [...apiaryData];
+      }
+      
+      if (mockApiaries != null && Array.isArray(mockApiaries)) {
+        allApiaries = [...allApiaries, ...mockApiaries];
+      }
+      
+      if (allApiaries.length > 0) {
         // Ordenar por fecha de actualización más reciente
-        // Manejar tanto camelCase como snake_case como respaldo
-        const sortedApiaryData = apiaryData.sort((a: any, b: any) => {
+        const sortedApiaryData = allApiaries.sort((a: any, b: any) => {
           const dateA = (a.updatedAt || a.updated_at) ? new Date(a.updatedAt || a.updated_at).getTime() : 0;
           const dateB = (b.updatedAt || b.updated_at) ? new Date(b.updatedAt || b.updated_at).getTime() : 0;
           return dateB - dateA;
         });
         setApiaryList(sortedApiaryData);
-        setApiarysLoaded(true);
       } else {
         setApiaryList([]);
-        setApiarysLoaded(true);
       }
+      
+      setApiarysLoaded(true);
     } catch (error) {
       setApiaryList([]);
       setApiarysLoaded(true);
@@ -67,18 +82,26 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
         {
           text: 'Aceptar',
           onPress: async () => {
-            deleteApiary(apiary.id)
-              .then((deleteSuccessful: any) => {
-                if (deleteSuccessful) {
-                  loadApiarys();
-                  ToastAndroid.show(`${apiary.name} borrado`, ToastAndroid.SHORT);
-                } else {
-                  ToastAndroid.show(`${apiary.name} no se puede borrar`, ToastAndroid.SHORT);
-                }
-              })
-              .catch((error: Error) => {
-                ToastAndroid.show(`Error al borrar ${error}`, ToastAndroid.SHORT);
-              });
+            try {
+              let deleteSuccessful = false;
+              
+              // Si es apiario mockeado (individual), usar deleteMockApiary
+              if (apiary.managementType === 'individual') {
+                deleteSuccessful = await deleteMockApiary(apiary.id);
+              } else {
+                // Si es apiario de la API (conjunto), usar deleteApiary
+                deleteSuccessful = await deleteApiary(apiary.id);
+              }
+              
+              if (deleteSuccessful) {
+                loadApiarys();
+                ToastAndroid.show(`${apiary.name} borrado`, ToastAndroid.SHORT);
+              } else {
+                ToastAndroid.show(`${apiary.name} no se puede borrar`, ToastAndroid.SHORT);
+              }
+            } catch (error: any) {
+              ToastAndroid.show(`Error al borrar: ${error?.message || error}`, ToastAndroid.SHORT);
+            }
           },
         },
       ],
@@ -92,7 +115,20 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
   };
 
   useEffect(() => {
+    const initializeMock = async () => {
+      try {
+        const profile = await getProfile();
+        if (profile && profile.id) {
+          // Inicializar apiario individual mockeado si no existe
+          await initializeMockIndividualApiary(profile.id);
+        }
+      } catch (error) {
+        console.error('[ApiaryListScreen] Error initializing mock apiary:', error);
+      }
+    };
+
     if (isFocused) {
+      initializeMock();
       loadApiarys();
     }
   }, [isFocused]);

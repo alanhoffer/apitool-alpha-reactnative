@@ -27,4 +27,5 @@ export interface IApiaryData {
     settings: IApiarySettings;
     latitude?: number;
     longitude?: number;
+    managementType?: 'apiary' | 'individual'; // Tipo de manejo del apiario
 }

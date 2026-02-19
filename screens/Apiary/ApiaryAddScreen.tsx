@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
+import { createMockApiary } from "../../modules/Mock/ApiaryMock";
+import { getProfile } from "../../modules/API/User";
 import ImagePick from "../../components/imagePicker";
 import logger from "../../helpers/logger";
 import { ApiaryAddScreenProps } from "../../types/navigation";
@@ -114,12 +116,38 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
         setIsSubmitting(true);
         try {
-            const response = await createApiary(apiaryImage, apiaryData);
-            if (response && (response.status === 200 || response.status === 201)) {
-                ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
-                navigation.navigate('ApiaryListScreen');
+            // Agregar managementType a los datos del apiario
+            const apiaryDataWithType = {
+                ...apiaryData,
+                managementType: managementType,
+            };
+
+            // Si es manejo individual, usar mock. Si es conjunto, usar API
+            if (managementType === 'individual') {
+                // Mock: Crear apiario en AsyncStorage
+                try {
+                    const profile = await getProfile();
+                    if (!profile || !profile.id) {
+                        ToastAndroid.show('Error: No se pudo obtener el usuario', ToastAndroid.SHORT);
+                        return;
+                    }
+                    
+                    await createMockApiary(profile.id, apiaryDataWithType);
+                    ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
+                    navigation.navigate('ApiaryListScreen');
+                } catch (mockError: any) {
+                    ToastAndroid.show(`Error al crear apiario: ${mockError?.message || 'Error desconocido'}`, ToastAndroid.SHORT);
+                    logger.error('[ApiaryAddScreen] Error al crear apiario mockeado:', mockError);
+                }
             } else {
-                ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
+                // API: Crear apiario usando la API real
+                const response = await createApiary(apiaryImage, apiaryDataWithType);
+                if (response && (response.status === 200 || response.status === 201)) {
+                    ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
+                    navigation.navigate('ApiaryListScreen');
+                } else {
+                    ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
+                }
             }
         } catch (error: any) {
             const errorMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
@@ -163,6 +191,50 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
         }
     };
 
+    // Si es manejo individual, mostrar formulario simplificado
+    if (managementType === 'individual') {
+        return (
+            <ScrollView style={styles.scrollContainer}>
+                <View style={styles.container}>
+                    <View style={styles.addApiaryTitle}>
+                        <Text style={styles.addApiaryTitleText}>Creación del Apiario</Text>
+                        <Text style={styles.addApiarySubTitleText}>
+                            Crea el apiario para manejar colmenas individuales. Podrás agregar colmenas después de crearlo.
+                        </Text>
+                    </View>
+                </View>
+                <View style={styles.apiaryInfo}>
+                    <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={require('../../assets/images/apiary-default.png')} />
+
+                    <View style={styles.apiaryNameContainer}>
+                        <TextInput
+                            style={styles.apiaryInfoName}
+                            maxLength={20}
+                            onChangeText={(value) => handleChangeData(value, 'name')}
+                            placeholder='Nombre del Apiario'
+                            placeholderTextColor={colors.GREY}
+                        />
+                    </View>
+
+                    {/* CANTIDAD DE COLMENAS */}
+                    <ApiarySlider
+                        max={1000}
+                        min={1}
+                        step={1}
+                        text="Número de Colmenas"
+                        name="hives"
+                        image={beehiveCollonySize}
+                        unity=""
+                        isActive={true}
+                        quantity={apiaryData.hives}
+                        functionchange={handleChangeData}
+                    />
+                </View>
+            </ScrollView>
+        );
+    }
+
+    // Vista normal para apiarios con manejo conjunto
     return (
         <ScrollView style={styles.scrollContainer} >
             <View style={styles.container}>

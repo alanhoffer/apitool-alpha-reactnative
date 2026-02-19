@@ -5,6 +5,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { IApiary } from '../constants/interfaces/Apiary/IApiary';
+import { IHive } from '../constants/interfaces/Apiary/IHive';
 import { ScannedDataItem } from '../constants/interfaces/Scanner/ScannedDataItem';
 
 // Tipos de parámetros para cada pantalla
@@ -33,11 +34,16 @@ export type RootStackParamList = {
   ApiaryHistoryScreen: { apiaryInfo: IApiary };
   ApiaryMapScreen: undefined;
   ApiarySettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
+  ApiaryIndividualSettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
   ApiaryAddSettingsScreen: { 
     managementType?: 'apiary' | 'individual';
     apiaryInfo?: IApiary;
   };
   ApiaryManagementTypeScreen: undefined;
+  HiveAddScreen: { apiaryInfo: IApiary };
+  HiveScreen: { hiveInfo: IHive; apiaryInfo: IApiary };
+  HiveVisitScreen: { hiveInfo: IHive; apiaryInfo: IApiary };
+  HiveHistoryScreen: { hiveInfo: IHive; apiaryInfo: IApiary };
   MapSelectionScreen: {
     initialLocation?: { latitude: number; longitude: number } | null;
     returnScreen: keyof RootStackParamList;

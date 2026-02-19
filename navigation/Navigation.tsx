@@ -31,6 +31,11 @@ import ApiaryHistoryScreen from '../screens/Apiary/ApiaryHistoryScreen';
 
 
 import ApiarySettingsScreen from '../screens/Apiary/ApiarySettingsScreen';
+import ApiaryIndividualSettingsScreen from '../screens/Apiary/ApiaryIndividualSettingsScreen';
+import HiveAddScreen from '../screens/Hive/HiveAddScreen';
+import HiveScreen from '../screens/Hive/HiveScreen';
+import HiveVisitScreen from '../screens/Hive/HiveVisitScreen';
+import HiveHistoryScreen from '../screens/Hive/HiveHistoryScreen';
 import HomeScreen from '../screens/Home/HomeScreen';
 import InstructionsScreen from '../screens/Scanner/ScannerInstructionsScreen';
 import ListScreen from '../screens/Scanner/ScannerListScreen';
@@ -60,9 +65,14 @@ function ApiaryNavigator() {
             <ApiaryStack.Screen name="ApiaryVisitScreen" component={ApiaryVisitScreen} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryHistoryScreen" component={ApiaryHistoryScreen} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiarySettingsScreen" component={ApiarySettingsScreen} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryIndividualSettingsScreen" component={ApiaryIndividualSettingsScreen} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryManagementTypeScreen" component={ApiaryManagementTypeScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryAddSettingsScreen" component={ApiaryAddSettingsScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveAddScreen" component={HiveAddScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveScreen" component={HiveScreen} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveVisitScreen" component={HiveVisitScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveHistoryScreen" component={HiveHistoryScreen} options={(navigation) => ApiaryHeader(navigation)} />
             {/* <ApiaryStack.Screen name="MapSelectionScreen" component={MapSelectionScreen} options={{ title: 'Seleccionar Ubicación' }} /> Comentado - no se usa mapa por ahora */}
         </ApiaryStack.Navigator>
     );

@@ -17,7 +17,6 @@ import { SettingItem } from "../../components/apiary/ApiarySettingItem";
 
 
 function ApiarySettingsScreen({ route, navigation }: any) {
-
     const prevSettings = route.params.apiarySettings;
     const categories = settingsItems();
 

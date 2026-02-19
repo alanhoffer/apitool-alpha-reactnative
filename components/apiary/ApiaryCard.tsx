@@ -14,6 +14,7 @@ import DatePretty from '../../modules/DatePretty';
 import { APIARY_IMG_URL } from '../../constants/api';
 import colors from '../../constants/colors';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 export const ApiaryCard = ({ apiaryInfo }: any) => {
 
@@ -45,7 +46,15 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
         <View style={[{ backgroundColor: statusToColor(apiaryInfo.status) }, styles.apiaryStatus]} />
       </View>
       <View style={styles.apiaryData}>
-        <Text style={styles.apiaryDataName}>{Capitalize(apiaryInfo.name || '')}</Text>
+        <View style={styles.apiaryNameContainer}>
+          <Text style={styles.apiaryDataName}>{Capitalize(apiaryInfo.name || '')}</Text>
+          {apiaryInfo.managementType === 'individual' && (
+            <View style={styles.individualBadge}>
+              <Ionicons name="cube-outline" size={12} color={colors.YELLOW} />
+              <Text style={styles.individualBadgeText}>Individual</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.apiaryDataDate}>{DatePretty(updatedAt)}</Text>
         {(isFoodActive() || isTreatmentsActive() || (apiaryInfo.settings?.tFence && Number(apiaryInfo.tFence) >= 1)) && (
           <View style={styles.apiaryTreatments}>
@@ -103,11 +112,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  apiaryNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 6,
+  },
   apiaryDataName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.BLACK,
-    marginBottom: 6,
+  },
+  individualBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.YELLOW + '20',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  individualBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.YELLOW,
   },
   apiaryDataDate: {
     fontSize: 13,
