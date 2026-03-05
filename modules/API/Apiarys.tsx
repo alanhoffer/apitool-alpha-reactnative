@@ -3,6 +3,7 @@ import { IApiary, IApiaryData } from '../../constants/interfaces/Apiary/IApiary'
 import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
 import { ToastAndroid } from "react-native";
 import { transformSnakeToCamel } from '../../helpers/Apiary/snakeToCamel';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 import logger from '../../helpers/logger';
 import { addToQueue } from '../Offline/OfflineQueue';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -54,7 +55,7 @@ export const getApiarys = async (): Promise<IApiary[] | null> => {
     // Logging detallado del error para debugging
     const statusCode = error?.response?.status;
     const statusText = error?.response?.statusText;
-    const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message;
+    const errorMessage = getApiErrorMessage(error, 'Error obteniendo apiarios');
     const errorData = error?.response?.data;
 
     logger.error('[getApiarys] Error fetching apiarys:', {

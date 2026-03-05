@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import colors from '../../constants/colors';
 import AuthContext from '../../modules/API/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 import { isValidEmail, isValidLength } from '../../helpers/validation';
 import { LoginScreenProps } from '../../types/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,7 +62,7 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                 ToastAndroid.show('No se pudo iniciar sesion. Verifica tus credenciales.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Ocurrio un error al hacer la peticion';
+            const errorMessage = getApiErrorMessage(error, 'Ocurrio un error al hacer la peticion');
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
         }
     };

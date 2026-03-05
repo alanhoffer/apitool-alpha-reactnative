@@ -8,6 +8,7 @@ import { updateApiary } from "../../modules/API/Apiarys";
 import Capitalize from "../../modules/Capitalize";
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
 import ImagePick from "../../components/imagePicker";
+import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryVisitScreenProps } from "../../types/navigation";
 import { VoiceNoteRecorder } from "../../components/general/VoiceNoteRecorder"; // Importar grabadora
@@ -118,7 +119,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 ToastAndroid.show('Error en los cambios', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
+            const errorMessage = getApiErrorMessage(error, 'Error desconocido');
             ToastAndroid.show(`Error al cambiar ${apiaryNavData.name}: ${errorMessage}`, ToastAndroid.SHORT);
             logger.error('[ApiaryVisitScreen] Error al actualizar apiario:', error);
         } finally {

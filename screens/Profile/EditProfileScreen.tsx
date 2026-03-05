@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../constants/colors';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 import { isValidEmail, isValidLength } from '../../helpers/validation';
 import logger from '../../helpers/logger';
 import { EditProfileScreenProps } from '../../types/navigation';
@@ -68,7 +69,7 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
                 ToastAndroid.show('No se pudo actualizar el perfil', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Error al actualizar el perfil';
+            const errorMessage = getApiErrorMessage(error, 'Error al actualizar el perfil');
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[EditProfileScreen] Error actualizando perfil:', error);
         } finally {

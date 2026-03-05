@@ -9,6 +9,7 @@ import { createApiary } from "../../modules/API/Apiarys";
 import { createMockApiary } from "../../modules/Mock/ApiaryMock";
 import { getProfile } from "../../modules/API/User";
 import ImagePick from "../../components/imagePicker";
+import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryAddScreenProps } from "../../types/navigation";
 
@@ -150,7 +151,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                 }
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || error?.message || 'Error desconocido';
+            const errorMessage = getApiErrorMessage(error, 'Error desconocido');
             ToastAndroid.show(`Error al crear apiario: ${errorMessage}`, ToastAndroid.SHORT);
             logger.error('[ApiaryAddScreen] Error al crear apiario:', error);
         } finally {

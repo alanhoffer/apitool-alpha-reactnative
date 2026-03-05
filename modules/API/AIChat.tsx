@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 
 const AI_API_URL = 'https://api.serenitystar.ai/api/v2/agent/robertaso/execute';
 const AI_TRANSCRIBE_URL = 'https://api.serenitystar.ai/api/v2/Audio/transcribe?culture=es';
@@ -216,22 +217,8 @@ export const sendAIMessage = async (
       errorMessage = 'Demasiadas solicitudes. Por favor, espera un momento.';
     } else if (error.response?.status >= 500) {
       errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
-    } else if (error.response?.data) {
-      const errorData = error.response.data;
-      if (typeof errorData === 'string') {
-        errorMessage = errorData;
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.error) {
-        errorMessage = errorData.error;
-      } else if (Array.isArray(errorData) && errorData.length > 0) {
-        const errorItem = errorData.find((item: any) => item.key === 'error' || item.key === 'message');
-        if (errorItem) {
-          errorMessage = errorItem.value;
-        }
-      }
-    } else if (error.message) {
-      errorMessage = error.message;
+    } else if (error.response?.data || error.message) {
+      errorMessage = getApiErrorMessage(error, errorMessage);
     }
     
     // Retry automático para errores de red
@@ -301,4 +288,3 @@ export const transcribeAudio = async (audioUri: string): Promise<string> => {
   const transcript = data.transcript ?? '';
   return transcript.trim();
 };
-

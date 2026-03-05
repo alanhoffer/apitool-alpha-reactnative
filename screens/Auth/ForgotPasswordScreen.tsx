@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import getTheme from '../../constants/themes';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 import { isValidEmail } from '../../helpers/validation';
 import logger from '../../helpers/logger';
 import { ForgotPasswordScreenProps } from '../../types/navigation';
@@ -32,7 +33,7 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
                 ToastAndroid.show('No se pudo enviar el enlace. Intenta nuevamente.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Error al enviar el enlace de recuperacion';
+            const errorMessage = getApiErrorMessage(error, 'Error al enviar el enlace de recuperacion');
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[ForgotPasswordScreen] Error enviando enlace de recuperacion:', error);
         } finally {

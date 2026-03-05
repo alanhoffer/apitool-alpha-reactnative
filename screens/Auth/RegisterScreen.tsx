@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import colors from '../../constants/colors';
 import AuthContext from '../../modules/API/AuthContext';
+import { getApiErrorMessage } from '../../helpers/apiErrors';
 import { isValidEmail, isValidLength } from '../../helpers/validation';
 import logger from '../../helpers/logger';
 import { RegisterScreenProps } from '../../types/navigation';
@@ -64,7 +65,7 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                 ToastAndroid.show('Error interno del sistema de autenticacion.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || error?.message || 'Error al registrar';
+            const errorMessage = getApiErrorMessage(error, 'Error al registrar');
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[RegisterScreen] Error al registrar:', error);
         } finally {
