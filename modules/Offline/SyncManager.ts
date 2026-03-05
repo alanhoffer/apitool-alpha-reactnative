@@ -14,6 +14,32 @@ import {
 import { ToastAndroid } from 'react-native';
 import logger from '../../helpers/logger';
 
+const isNetworkError = (error: any): boolean => {
+    return error?.message === 'Network Error' || error?.code === 'ERR_NETWORK';
+};
+
+const isSuccessfulResponse = (response: any): boolean => {
+    return Boolean(response && typeof response.status === 'number' && response.status >= 200 && response.status < 300);
+};
+
+const hasConfirmedSuccess = (req: OfflineRequest, result: any): boolean => {
+    switch (req.type) {
+        case 'createApiary':
+            return isSuccessfulResponse(result);
+        case 'updateApiary':
+        case 'deleteApiary':
+        case 'updateSettings':
+        case 'toggleHarvestAll':
+        case 'deleteTask':
+            return result === true;
+        case 'createTask':
+        case 'updateTask':
+            return Boolean(result && typeof result === 'object');
+        default:
+            return false;
+    }
+};
+
 export const syncPendingRequests = async () => {
     logger.debug('[SyncManager] syncPendingRequests: Iniciando sincronización...');
     const queue = await getQueue();
@@ -33,57 +59,49 @@ export const syncPendingRequests = async () => {
     for (const req of queue) {
         logger.debug(`[SyncManager] syncPendingRequests: Procesando petición ${req.id} de tipo ${req.type}`);
         try {
-            let success = false;
+            let result: any = null;
             switch (req.type) {
                 // --- APIARY REQUESTS ---
                 case 'createApiary':
                     logger.debug('[SyncManager] syncPendingRequests: Creando apiario offline');
-                    await createApiaryImpl(req.payload.profileImage, req.payload.ApiaryData);
-                    success = true; 
+                    result = await createApiaryImpl(req.payload.profileImage, req.payload.ApiaryData);
                     logger.debug('[SyncManager] syncPendingRequests: Apiario creado exitosamente');
                     break;
                 case 'updateApiary':
                     logger.debug('[SyncManager] syncPendingRequests: Actualizando apiario offline ID:', req.payload.apiaryId);
-                    await updateApiaryImpl(req.payload.profileImage, req.payload.apiaryId, req.payload.ApiaryData);
-                    success = true;
+                    result = await updateApiaryImpl(req.payload.profileImage, req.payload.apiaryId, req.payload.ApiaryData);
                     logger.debug('[SyncManager] syncPendingRequests: Resultado actualización: éxito');
                     break;
                 case 'deleteApiary':
                     logger.debug('[SyncManager] syncPendingRequests: Eliminando apiario offline ID:', req.payload.apiaryId);
-                    await deleteApiaryImpl(req.payload.apiaryId);
-                    success = true;
+                    result = await deleteApiaryImpl(req.payload.apiaryId);
                     logger.debug('[SyncManager] syncPendingRequests: Resultado eliminación: éxito');
                     break;
                 case 'updateSettings':
                     logger.debug('[SyncManager] syncPendingRequests: Actualizando settings offline ID:', req.payload.settingsData?.id);
-                    await updateSettingsImpl(req.payload.settingsData);
-                    success = true;
+                    result = await updateSettingsImpl(req.payload.settingsData);
                     logger.debug('[SyncManager] syncPendingRequests: Resultado actualización settings: éxito');
                     break;
                 case 'toggleHarvestAll':
                     logger.debug('[SyncManager] syncPendingRequests: Cambiando estado de cosecha offline:', req.payload.harvesting);
-                    await toggleHarvestAllImpl(req.payload.harvesting);
-                    success = true;
+                    result = await toggleHarvestAllImpl(req.payload.harvesting);
                     logger.debug('[SyncManager] syncPendingRequests: Estado de cosecha cambiado');
                     break;
 
                 // --- TASK REQUESTS ---
                 case 'createTask':
                     logger.debug('[SyncManager] syncPendingRequests: Creando tarea offline');
-                    await createTaskImpl(req.payload.taskData);
-                    success = true;
+                    result = await createTaskImpl(req.payload.taskData);
                     logger.debug('[SyncManager] syncPendingRequests: Tarea creada exitosamente');
                     break;
                 case 'updateTask':
                     logger.debug('[SyncManager] syncPendingRequests: Actualizando tarea offline ID:', req.payload.id);
-                    await updateTaskImpl(req.payload.id, req.payload.taskData);
-                    success = true;
+                    result = await updateTaskImpl(req.payload.id, req.payload.taskData);
                     logger.debug('[SyncManager] syncPendingRequests: Tarea actualizada exitosamente');
                     break;
                 case 'deleteTask':
                     logger.debug('[SyncManager] syncPendingRequests: Eliminando tarea offline ID:', req.payload.id);
-                    await deleteTaskImpl(req.payload.id);
-                    success = true;
+                    result = await deleteTaskImpl(req.payload.id);
                     logger.debug('[SyncManager] syncPendingRequests: Tarea eliminada exitosamente');
                     break;
 
@@ -91,7 +109,15 @@ export const syncPendingRequests = async () => {
                     logger.warn('[SyncManager] syncPendingRequests: Tipo de petición desconocido:', req.type);
             }
 
-            // Si llegamos aquí sin excepción, asumimos éxito
+            if (!hasConfirmedSuccess(req, result)) {
+                logger.warn('[SyncManager] syncPendingRequests: Operación sin confirmación explícita, se mantiene en cola', {
+                    id: req.id,
+                    type: req.type,
+                    result,
+                });
+                continue;
+            }
+
             logger.debug(`[SyncManager] syncPendingRequests: Removiendo petición ${req.id} de la cola`);
             await removeFromQueue(req.id);
             syncedCount++;
@@ -104,8 +130,9 @@ export const syncPendingRequests = async () => {
                 response: error.response?.data
             });
             // Si es error de red, se mantiene en la cola para el próximo intento
-            if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+            if (isNetworkError(error)) {
                 logger.debug('[SyncManager] Error de red persistente, manteniendo en cola.');
+                break;
             }
         }
     }

@@ -290,8 +290,10 @@ export const toggleHarvestAllImpl = async (harvesting: boolean) => {
 
     if (response.status === 200) {
       ToastAndroid.show(`${harvesting ? 'Apiarios en cosecha' : 'Apiarios fuera de cosecha'}.`, ToastAndroid.SHORT);
+      return true;
     } else {
       ToastAndroid.show('No se pudo actualizar el estado de cosecha.', ToastAndroid.SHORT);
+      return false;
     }
   } catch (error) {
     ToastAndroid.show('Hubo un problema al intentar actualizar el estado de cosecha.', ToastAndroid.SHORT);
@@ -302,13 +304,15 @@ export const toggleHarvestAllImpl = async (harvesting: boolean) => {
 
 export const toggleHarvestAll = async (harvesting: boolean) => {
   try {
-    await toggleHarvestAllImpl(harvesting);
+    return await toggleHarvestAllImpl(harvesting);
   } catch (error: any) {
     if (!error.response) {
       logger.info('[toggleHarvestAll] Network error, adding to offline queue');
       await addToQueue('toggleHarvestAll', { harvesting });
       ToastAndroid.show('Sin conexión. Se actualizará al reconectar.', ToastAndroid.LONG);
+      return true;
     }
+    return false;
   }
 };
 
