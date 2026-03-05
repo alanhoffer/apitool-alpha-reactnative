@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 
 
-const SplashScreen = ():JSX.Element => {
+const SplashScreen = () => {
 
   const [rotateValue, setRotateValue] = useState(new Animated.Value(0));
 

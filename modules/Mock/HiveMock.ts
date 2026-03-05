@@ -94,6 +94,7 @@ export const updateHive = async (hiveId: number, hiveData: Partial<IHiveData>): 
                     hiveId: hiveId,
                     apiaryId: oldHive.apiaryId,
                     userId: oldHive.userId,
+                    date: new Date(),
                     changes: changes,
                     comment: hiveData.tComment || undefined,
                     createdBy: oldHive.userId,

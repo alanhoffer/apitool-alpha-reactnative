@@ -75,7 +75,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                         image={item.image}
                         isVisible={item.isVisible}
                         value={Number(apiaryData[item.key as keyof IApiaryData]) || 0}
-                        onChange={handleChangeData}
+                        onChange={(value: number, key: string) => handleChangeData(value, key as keyof IApiaryData)}
                     />
                 ))}
             </View>
@@ -88,10 +88,10 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
         handleChangeData(statusLabel, 'status');
     };
 
-    const handleChangeData = (value: string | number, field: keyof IApiaryData) => {
+    const handleChangeData = (value: string | number | boolean, field: keyof IApiaryData) => {
         setApiaryData((prevState) => ({
             ...prevState,
-            [field]: value
+            [field]: value as any
         }));
     };
 

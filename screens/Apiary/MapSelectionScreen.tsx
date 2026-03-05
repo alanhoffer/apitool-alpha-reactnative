@@ -73,7 +73,6 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                     // Usar timeout para evitar que se quede colgado
                     const locationPromise = Location.getCurrentPositionAsync({
                         accuracy: Location.Accuracy.Balanced,
-                        maximumAge: 60000, // Usar ubicación cacheada si tiene menos de 1 minuto
                     });
                     
                     // Timeout de 3 segundos

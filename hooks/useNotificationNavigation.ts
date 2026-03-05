@@ -3,8 +3,8 @@ import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
 
 export const useNotificationNavigation = (isAuthenticated: boolean = true) => {
-  const navigation = useNavigation();
-  const notificationListener = useRef<Notifications.Subscription>();
+  const navigation = useNavigation<any>();
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
     // Solo configurar navegación si el usuario está autenticado
@@ -51,9 +51,7 @@ export const useNotificationNavigation = (isAuthenticated: boolean = true) => {
 
     return () => {
       if (notificationListener.current) {
-        if (typeof notificationListener.current.remove === 'function') {
-          notificationListener.current.remove();
-        }
+        notificationListener.current.remove();
       }
     };
   }, [navigation, isAuthenticated]);

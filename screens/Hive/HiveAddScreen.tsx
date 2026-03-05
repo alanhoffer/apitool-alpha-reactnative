@@ -56,10 +56,10 @@ function HiveAddScreen({ route, navigation }: any) {
     const [hiveStatus, setHiveStatus] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleChangeData = (value: string | number, field: keyof IHiveData) => {
+    const handleChangeData = (value: string | number | boolean, field: keyof IHiveData) => {
         setHiveData((prevState) => ({
             ...prevState,
-            [field]: value
+            [field]: value as any
         }));
     };
 
@@ -138,7 +138,7 @@ function HiveAddScreen({ route, navigation }: any) {
                         image={item.image}
                         isVisible={true}
                         value={Number(hiveData[item.key as keyof IHiveData]) || 0}
-                        onChange={handleChangeData}
+                        onChange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                     />
                 ))}
             </View>
@@ -232,7 +232,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" kg"
                             isActive={true}
                             quantity={hiveData.honey}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -247,7 +247,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" kg"
                             isActive={true}
                             quantity={hiveData.levudex}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -262,7 +262,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" kg"
                             isActive={true}
                             quantity={hiveData.sugar}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -278,7 +278,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" Unidades"
                             isActive={true}
                             quantity={hiveData.box}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -293,7 +293,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" Unidades"
                             isActive={true}
                             quantity={hiveData.boxMedium}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -308,7 +308,7 @@ function HiveAddScreen({ route, navigation }: any) {
                             unity=" Unidades"
                             isActive={true}
                             quantity={hiveData.boxSmall}
-                            functionchange={handleChangeData}
+                            functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                         />
                     )}
 
@@ -377,7 +377,7 @@ function HiveAddScreen({ route, navigation }: any) {
                                 unity=""
                                 isActive={true}
                                 quantity={hiveData.population}
-                                functionchange={handleChangeData}
+                                functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                             />
                         )}
 
@@ -393,7 +393,7 @@ function HiveAddScreen({ route, navigation }: any) {
                                 unity=""
                                 isActive={true}
                                 quantity={hiveData.broodFrames}
-                                functionchange={handleChangeData}
+                                functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                             />
                         )}
 
@@ -408,7 +408,7 @@ function HiveAddScreen({ route, navigation }: any) {
                                 unity=""
                                 isActive={true}
                                 quantity={hiveData.honeyFrames}
-                                functionchange={handleChangeData}
+                                functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                             />
                         )}
 
@@ -423,7 +423,7 @@ function HiveAddScreen({ route, navigation }: any) {
                                 unity=""
                                 isActive={true}
                                 quantity={hiveData.pollenFrames}
-                                functionchange={handleChangeData}
+                                functionchange={(value: number, key: string) => handleChangeData(value, key as keyof IHiveData)}
                             />
                         )}
 
@@ -482,7 +482,7 @@ function HiveAddScreen({ route, navigation }: any) {
                                 placeholderTextColor='#BCBDC5'
                             />
                             <VoiceNoteRecorder
-                                onTranscriptionComplete={(transcription) => {
+                                onTranscription={(transcription: string) => {
                                     handleChangeData(hiveData.tComment + (hiveData.tComment ? ' ' : '') + transcription, 'tComment');
                                 }}
                             />

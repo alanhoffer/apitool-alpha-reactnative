@@ -29,7 +29,7 @@ function ApiarySettingsScreen({ route, navigation }: any) {
 
     const handleSubmit = async () => {
         try {
-            const updatedSuccessful = await updateSettings(settings);
+            const updatedSuccessful = await updateSettings(settings as any);
             if (updatedSuccessful) {
                 ToastAndroid.show('Configuración cambiada', ToastAndroid.SHORT);
                 navigation.navigate('ApiaryListScreen');

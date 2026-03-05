@@ -8,7 +8,7 @@ interface HeaderNoIconButtonProps {
     disabled?: boolean;
 }
 
-function HeaderNoIconButton(props: HeaderNoIconButtonProps): JSX.Element {
+function HeaderNoIconButton(props: HeaderNoIconButtonProps) {
     return(
         <Pressable 
             style={[style.container, props.disabled && style.containerDisabled]} 

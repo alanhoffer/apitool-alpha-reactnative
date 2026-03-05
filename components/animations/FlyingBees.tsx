@@ -10,6 +10,8 @@ interface Bee {
   x: Animated.Value;
   y: Animated.Value;
   rotation: Animated.Value;
+  currentX: number;
+  currentY: number;
   size: number;
   duration: number;
   delay: number;
@@ -38,6 +40,8 @@ const FlyingBees: React.FC<FlyingBeesProps> = ({ beeCount = 4 }) => {
         x: new Animated.Value(startX),
         y: new Animated.Value(startY),
         rotation: new Animated.Value(0),
+        currentX: startX,
+        currentY: startY,
         size: 20 + Math.random() * 12, // Tamaño entre 20 y 32 (más chicas)
         duration: 4000 + Math.random() * 2000, // Duración entre 4 y 6 segundos
         delay: i * 500, // Delay escalonado
@@ -53,13 +57,13 @@ const FlyingBees: React.FC<FlyingBeesProps> = ({ beeCount = 4 }) => {
       const createFlightAnimation = () => {
         // Determinar destino (opuesto al inicio)
         const endX = bee.direction > 0 ? width + 50 : -50;
-        const baseY = bee.y._value; // Mantener altura similar
+        const baseY = bee.currentY; // Mantener altura similar
         
         // Variar más el movimiento en S para que no siempre pasen por el mismo lugar
         const sVariation = 40 + Math.random() * 30; // Variación entre 40 y 70px
-        const midX1 = bee.x._value + (endX - bee.x._value) * 0.33;
+        const midX1 = bee.currentX + (endX - bee.currentX) * 0.33;
         const midY1 = Math.max(150, baseY - sVariation + Math.random() * 20); // Primera curva hacia arriba, pero no menos de 150px
-        const midX2 = bee.x._value + (endX - bee.x._value) * 0.66;
+        const midX2 = bee.currentX + (endX - bee.currentX) * 0.66;
         const midY2 = baseY + sVariation - Math.random() * 20; // Segunda curva hacia abajo
         
         // Animación de rotación más rápida y variada
@@ -124,6 +128,8 @@ const FlyingBees: React.FC<FlyingBeesProps> = ({ beeCount = 4 }) => {
         ]).start(() => {
           // Cambiar dirección y reiniciar desde el otro lado
           bee.direction *= -1;
+          bee.currentX = endX;
+          bee.currentY = baseY;
           bee.x.setValue(endX);
           bee.y.setValue(baseY);
           createFlightAnimation(); // Loop infinito

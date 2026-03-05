@@ -51,31 +51,31 @@ import TaskAddScreen from '../screens/Tasks/TaskAddScreen';
 import GuidesListScreen from '../screens/Guides/GuidesListScreen';
 import GuideDetailScreen from '../screens/Guides/GuideDetailScreen';
 
-const Stack = createNativeStackNavigator();
-const ApiaryStack = createNativeStackNavigator();
-const ScannerStack = createNativeStackNavigator();
-const StatisticsStack = createNativeStackNavigator();
-const ProfileStack = createNativeStackNavigator();
-const GuidesStack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<any>();
+const ApiaryStack = createNativeStackNavigator<any>();
+const ScannerStack = createNativeStackNavigator<any>();
+const StatisticsStack = createNativeStackNavigator<any>();
+const ProfileStack = createNativeStackNavigator<any>();
+const GuidesStack = createNativeStackNavigator<any>();
 
 // Apiary Stack Navigator to group Apiary screens
 function ApiaryNavigator() {
     return (
         <ApiaryStack.Navigator>
-            <ApiaryStack.Screen name="ApiaryListScreen" component={ApiaryListScreen} options={(navigation) => ApiaryListHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryListScreen" component={ApiaryListScreen as any} options={(navigation) => ApiaryListHeader(navigation)} />
             {/* <ApiaryStack.Screen name="ApiaryMapScreen" component={ApiaryMapScreen} options={(navigation) => ApiaryHeader(navigation)} /> Comentado - no se usa mapa por ahora */}
-            <ApiaryStack.Screen name="ApiaryScreen" component={ApiaryScreen} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryVisitScreen" component={ApiaryVisitScreen} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryHistoryScreen" component={ApiaryHistoryScreen} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiarySettingsScreen" component={ApiarySettingsScreen} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryIndividualSettingsScreen" component={ApiaryIndividualSettingsScreen} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryScreen" component={ApiaryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryVisitScreen" component={ApiaryVisitScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryHistoryScreen" component={ApiaryHistoryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiarySettingsScreen" component={ApiarySettingsScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryIndividualSettingsScreen" component={ApiaryIndividualSettingsScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryManagementTypeScreen" component={ApiaryManagementTypeScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryAddSettingsScreen" component={ApiaryAddSettingsScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
-            <ApiaryStack.Screen name="HiveAddScreen" component={HiveAddScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
-            <ApiaryStack.Screen name="HiveScreen" component={HiveScreen} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="HiveVisitScreen" component={HiveVisitScreen} options={(navigation) => ApiaryAddHeader(navigation)} />
-            <ApiaryStack.Screen name="HiveHistoryScreen" component={HiveHistoryScreen} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveAddScreen" component={HiveAddScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveScreen" component={HiveScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveVisitScreen" component={HiveVisitScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
+            <ApiaryStack.Screen name="HiveHistoryScreen" component={HiveHistoryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             {/* <ApiaryStack.Screen name="MapSelectionScreen" component={MapSelectionScreen} options={{ title: 'Seleccionar Ubicación' }} /> Comentado - no se usa mapa por ahora */}
         </ApiaryStack.Navigator>
     );
@@ -87,7 +87,7 @@ function ScannerNavigator() {
             <ScannerStack.Screen component={InstructionsScreen} name="InstructionsScreen" options={(navigation) => ApiaryHeader(navigation)} />
             <ScannerStack.Screen component={ListScreen} name="ListScreen" options={{ title: 'Lista de Tambores' }} />
             <ScannerStack.Screen component={CameraScreen} name="CameraScreen" options={{ title: 'Scaneando codigo' }} />
-            <ScannerStack.Screen component={FormScreen} name="FormScreen" options={{ title: 'Completa los datos' }} />
+            <ScannerStack.Screen component={FormScreen as any} name="FormScreen" options={{ title: 'Completa los datos' }} />
         </ScannerStack.Navigator>
     );
 }
@@ -96,7 +96,7 @@ function ScannerNavigator() {
 function StatisticsNavigator() {
     return (
         <StatisticsStack.Navigator screenOptions={{ headerShown: false }}>
-            <StatisticsStack.Screen component={StatisticsScreen} name="StatisticsScreen" />
+            <StatisticsStack.Screen component={StatisticsScreen as any} name="StatisticsScreen" />
         </StatisticsStack.Navigator>
     );
 }
@@ -104,10 +104,10 @@ function StatisticsNavigator() {
 function ProfileNavigator() {
     return (
         <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-            <ProfileStack.Screen component={ProfileScreen} name="ProfileScreen" />
-            <ProfileStack.Screen component={EditProfileScreen} name="EditProfileScreen" />
-            <ProfileStack.Screen component={ChangePasswordScreen} name="ChangePasswordScreen" />
-            <ProfileStack.Screen component={DevicesScreen} name="DevicesScreen" />
+            <ProfileStack.Screen component={ProfileScreen as any} name="ProfileScreen" />
+            <ProfileStack.Screen component={EditProfileScreen as any} name="EditProfileScreen" />
+            <ProfileStack.Screen component={ChangePasswordScreen as any} name="ChangePasswordScreen" />
+            <ProfileStack.Screen component={DevicesScreen as any} name="DevicesScreen" />
         </ProfileStack.Navigator>
     );
 }
@@ -141,11 +141,11 @@ export default function Navigation() {
                 ) : accessToken ? (
                     // Main flow when user is logged in
                     <>
-                        <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="HomeScreen" component={HomeScreen as any} options={{ headerShown: false }} />
                         <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="AIChatScreen" component={AIChatScreen} options={{ headerShown: false }} />
-                        <Stack.Screen name="TasksScreen" component={TasksScreen} options={{ headerShown: false }} />
-                        <Stack.Screen name="TaskAddScreen" component={TaskAddScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="TasksScreen" component={TasksScreen as any} options={{ headerShown: false }} />
+                        <Stack.Screen name="TaskAddScreen" component={TaskAddScreen as any} options={{ headerShown: false }} />
                         <Stack.Screen name="Apiary" component={ApiaryNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Scanner" component={ScannerNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Statistics" component={StatisticsNavigator} options={{ headerShown: false }} />
@@ -155,9 +155,9 @@ export default function Navigation() {
                 ) : (
                     // Auth flow if user is not logged in
                     <>
-                        <Stack.Screen name="LoginScreen" component={LoginScreen} options={{ headerShown: false }} />
-                        <Stack.Screen name="RegisterScreen" component={RegisterScreen} options={{ headerShown: false }} />
-                        <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+                        <Stack.Screen name="LoginScreen" component={LoginScreen as any} options={{ headerShown: false }} />
+                        <Stack.Screen name="RegisterScreen" component={RegisterScreen as any} options={{ headerShown: false }} />
+                        <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen as any} options={{ headerShown: false }} />
                     </>
                 )}
             </Stack.Navigator>

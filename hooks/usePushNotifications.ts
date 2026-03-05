@@ -11,6 +11,8 @@ import logger from '../helpers/logger';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -25,7 +27,7 @@ interface UsePushNotificationsReturn {
 export const usePushNotifications = (): UsePushNotificationsReturn => {
   const [fcmToken, setFcmToken] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
-  const notificationListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.EventSubscription | null>(null);
 
   /**
    * Envía el token FCM al backend con información completa del dispositivo
@@ -100,11 +102,12 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       try {
         const deviceToken = await Notifications.getDevicePushTokenAsync();
         if (deviceToken?.data) {
-          token = deviceToken.data;
-          logger.info('[usePushNotifications] Token nativo obtenido (FCM/APNs):', token);
-          await sendTokenToBackend(token);
-          setFcmToken(token);
-          return token;
+          const nativeToken = String(deviceToken.data);
+          token = nativeToken;
+          logger.info('[usePushNotifications] Token nativo obtenido (FCM/APNs):', nativeToken);
+          await sendTokenToBackend(nativeToken);
+          setFcmToken(nativeToken);
+          return nativeToken;
         }
       } catch (nativeError: any) {
         // Si no hay token nativo disponible, usar Expo Push Token
@@ -118,11 +121,12 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       });
 
       if (expoToken?.data) {
-        token = expoToken.data;
-        logger.info('[usePushNotifications] Token Expo Push obtenido:', token);
-        await sendTokenToBackend(token);
-        setFcmToken(token);
-        return token;
+        const resolvedToken = expoToken.data;
+        token = resolvedToken;
+        logger.info('[usePushNotifications] Token Expo Push obtenido:', resolvedToken);
+        await sendTokenToBackend(resolvedToken);
+        setFcmToken(resolvedToken);
+        return resolvedToken;
       } else {
         logger.error('[usePushNotifications] No se pudo obtener el token de Expo');
         return null;
@@ -147,9 +151,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       // Limpiar listeners al desmontar
       if (notificationListener.current) {
         try {
-          if (typeof notificationListener.current.remove === 'function') {
-            notificationListener.current.remove();
-          }
+          notificationListener.current.remove();
         } catch (error) {
           console.warn('[usePushNotifications] Error al limpiar listener:', error);
         }

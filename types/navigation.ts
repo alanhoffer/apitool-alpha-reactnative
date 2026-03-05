@@ -56,6 +56,10 @@ export type RootStackParamList = {
   ScannerListScreen: undefined;
   ScannerFormScreen: { code: string };
   ScannerInstructionsScreen: undefined;
+  CameraScreen: undefined;
+  ListScreen: undefined;
+  FormScreen: { code: string };
+  InstructionsScreen: undefined;
 
   // Profile
   Profile: NavigatorScreenParams<any>;
@@ -104,6 +108,7 @@ export type ScreenProps<T extends keyof RootStackParamList> = NavigationProp<T>;
 export type ApiaryScreenProps = ScreenProps<'ApiaryScreen'>;
 export type ApiaryVisitScreenProps = ScreenProps<'ApiaryVisitScreen'>;
 export type ApiaryAddScreenProps = ScreenProps<'ApiaryAddScreen'>;
+export type ApiaryMapScreenProps = ScreenProps<'ApiaryMapScreen'>;
 export type MapSelectionScreenProps = ScreenProps<'MapSelectionScreen'>;
 export type ScannerFormScreenProps = ScreenProps<'ScannerFormScreen'>;
 export type LoginScreenProps = ScreenProps<'LoginScreen'>;
@@ -120,4 +125,3 @@ export type DevicesScreenProps = ScreenProps<'DevicesScreen'>;
 export type ForgotPasswordScreenProps = ScreenProps<'ForgotPasswordScreen'>;
 export type TasksScreenProps = ScreenProps<'TasksScreen'>;
 export type TaskAddScreenProps = ScreenProps<'TaskAddScreen'>;
-

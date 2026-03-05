@@ -8,6 +8,8 @@ export interface UICategoryItem {
     image: ImageSourcePropType;
 }
 
+export type UISettingsItem = UICategoryItem;
+
 export interface UICategorizedSettings {
     [SettingsCategory.Food]: UICategoryItem[];
     [SettingsCategory.Treatment]: UICategoryItem[];

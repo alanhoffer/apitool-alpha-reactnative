@@ -8,7 +8,7 @@ import logger from '../../helpers/logger';
 
 const NotificationScreen = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { notifications, loading, error, refresh, markAsRead, markAllAsRead } = useNotifications(false);
   const [activeFilter, setActiveFilter] = useState('Todas');
 

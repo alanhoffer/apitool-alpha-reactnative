@@ -82,8 +82,9 @@ export const getChanges = (oldData: Partial<IHiveData>, newData: Partial<IHiveDa
     
     Object.keys(newData).forEach(key => {
         const typedKey = key as keyof IHiveData;
-        if (oldData[typedKey] !== newData[typedKey]) {
-            changes[typedKey] = newData[typedKey];
+        const nextValue = newData[typedKey];
+        if (oldData[typedKey] !== nextValue && nextValue !== undefined) {
+            (changes as any)[typedKey] = nextValue;
         }
     });
     

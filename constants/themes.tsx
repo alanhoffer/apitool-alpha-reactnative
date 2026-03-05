@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Appearance, Platform } from 'react-native';
 import colors from './colors';
 
 const lightTheme = {
@@ -22,16 +22,17 @@ const darkTheme = {
 };
 
 const getTheme = () => {
-    
-    const androidVersion = parseInt(Platform.Version, 10);
+    const androidVersion = typeof Platform.Version === 'string'
+      ? parseInt(Platform.Version, 10)
+      : Platform.Version;
 
   // Determine the current theme based on the platform (e.g. iOS or Android)
   const isAndroid = Platform.OS === 'android';
   const isDarkMode = isAndroid
     ? androidVersion >= 29
-      ? Platform.isDarkModeEnabled
+      ? Appearance.getColorScheme() === 'dark'
       : false
-    : false;
+    : Appearance.getColorScheme() === 'dark';
   return isDarkMode ? darkTheme : lightTheme;
 
 };
