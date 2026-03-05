@@ -27,39 +27,38 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
             return;
         }
 
-        if (!isValidLength(newPassword, 6, 50)) {
-            ToastAndroid.show('La nueva contraseña debe tener al menos 6 caracteres', ToastAndroid.SHORT);
+        if (!isValidLength(newPassword, 7, 50)) {
+            ToastAndroid.show('La nueva contrasena debe tener al menos 7 caracteres', ToastAndroid.SHORT);
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            ToastAndroid.show('Las contraseñas nuevas no coinciden', ToastAndroid.SHORT);
+            ToastAndroid.show('Las contrasenas nuevas no coinciden', ToastAndroid.SHORT);
             return;
         }
 
         if (currentPassword === newPassword) {
-            ToastAndroid.show('La nueva contraseña debe ser diferente a la actual', ToastAndroid.SHORT);
+            ToastAndroid.show('La nueva contrasena debe ser diferente a la actual', ToastAndroid.SHORT);
             return;
         }
 
         setIsSubmitting(true);
         try {
             const success = await changePassword({
-                oldPassword: currentPassword,
-                newPassword: newPassword,
-                confirmPassword: confirmPassword
+                currentPassword,
+                newPassword,
             });
 
             if (success) {
-                ToastAndroid.show('Contraseña actualizada exitosamente', ToastAndroid.SHORT);
+                ToastAndroid.show('Contrasena actualizada exitosamente', ToastAndroid.SHORT);
                 navigation.goBack();
             } else {
-                ToastAndroid.show('No se pudo actualizar la contraseña. Verifica tu contraseña actual.', ToastAndroid.SHORT);
+                ToastAndroid.show('No se pudo actualizar la contrasena. Verifica tu contrasena actual.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || 'Error al actualizar la contraseña';
+            const errorMessage = error?.response?.data?.detail || 'Error al actualizar la contrasena';
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
-            logger.error('[ChangePasswordScreen] Error actualizando contraseña:', error);
+            logger.error('[ChangePasswordScreen] Error actualizando contrasena:', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -84,7 +83,7 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
                     style={styles.eyeIcon}
                 >
                     <Icon
-                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                         size={22}
                         color={colors.SLATE[400]}
                     />
@@ -120,38 +119,38 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
                             <Icon name="shield-checkmark" size={60} color="#6366f1" />
                         </LinearGradient>
                     </View>
-                    <Text style={styles.heroTitle}>Cambiar Contraseña</Text>
+                    <Text style={styles.heroTitle}>Cambiar Contrasena</Text>
                     <Text style={styles.heroSubtitle}>Protege tu cuenta con una clave segura</Text>
                 </View>
 
                 <View style={styles.formCard}>
                     <PasswordInput
-                        label="Contraseña Actual"
+                        label="Contrasena Actual"
                         value={currentPassword}
                         onChangeText={setCurrentPassword}
                         showPassword={showCurrentPassword}
                         setShowPassword={setShowCurrentPassword}
-                        placeholder="••••••••"
+                        placeholder="********"
                     />
 
                     <View style={styles.separator} />
 
                     <PasswordInput
-                        label="Nueva Contraseña"
+                        label="Nueva Contrasena"
                         value={newPassword}
                         onChangeText={setNewPassword}
                         showPassword={showNewPassword}
                         setShowPassword={setShowNewPassword}
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder="Minimo 7 caracteres"
                     />
 
                     <PasswordInput
-                        label="Confirmar Nueva Contraseña"
+                        label="Confirmar Nueva Contrasena"
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         showPassword={showConfirmPassword}
                         setShowPassword={setShowConfirmPassword}
-                        placeholder="Repite la contraseña"
+                        placeholder="Repite la contrasena"
                     />
                 </View>
 
@@ -170,7 +169,7 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
                                 <ActivityIndicator color={colors.WHITE} />
                             ) : (
                                 <>
-                                    <Text style={styles.saveButtonText}>Actualizar Contraseña</Text>
+                                    <Text style={styles.saveButtonText}>Actualizar Contrasena</Text>
                                     <Icon name="lock-open" size={20} color={colors.WHITE} />
                                 </>
                             )}
@@ -342,4 +341,3 @@ const styles = StyleSheet.create({
 });
 
 export default ChangePasswordScreen;
-

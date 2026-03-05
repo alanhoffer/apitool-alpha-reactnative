@@ -42,9 +42,8 @@ export const updateProfile = async (data: UpdateProfileData): Promise<boolean> =
 };
 
 export interface ChangePasswordData {
-    oldPassword?: string;
-    newPassword?: string;
-    confirmPassword?: string;
+    currentPassword: string;
+    newPassword: string;
 }
 
 export const changePassword = async (data: ChangePasswordData): Promise<boolean> => {

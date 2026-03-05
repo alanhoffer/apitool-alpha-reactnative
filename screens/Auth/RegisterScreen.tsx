@@ -17,6 +17,7 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
     const { Register, isLoading } = useContext(AuthContext);
 
     const [name, setName] = useState('');
+    const [surname, setSurname] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -25,42 +26,45 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleRegister = async () => {
-        // Validaciones
-        if (!name || !isValidLength(name, 2, 50)) {
-            ToastAndroid.show('El nombre debe tener entre 2 y 50 caracteres', ToastAndroid.SHORT);
+        if (!name || !isValidLength(name, 3, 50)) {
+            ToastAndroid.show('El nombre debe tener entre 3 y 50 caracteres', ToastAndroid.SHORT);
+            return;
+        }
+
+        if (!surname || !isValidLength(surname, 3, 50)) {
+            ToastAndroid.show('El apellido debe tener entre 3 y 50 caracteres', ToastAndroid.SHORT);
             return;
         }
 
         if (!email || !isValidEmail(email)) {
-            ToastAndroid.show('Por favor ingresa un email válido', ToastAndroid.SHORT);
+            ToastAndroid.show('Por favor ingresa un email valido', ToastAndroid.SHORT);
             return;
         }
 
-        if (!password || !isValidLength(password, 6, 50)) {
-            ToastAndroid.show('La contraseña debe tener entre 6 y 50 caracteres', ToastAndroid.SHORT);
+        if (!password || !isValidLength(password, 7, 50)) {
+            ToastAndroid.show('La contrasena debe tener entre 7 y 50 caracteres', ToastAndroid.SHORT);
             return;
         }
 
         if (password !== confirmPassword) {
-            ToastAndroid.show('Las contraseñas no coinciden', ToastAndroid.SHORT);
+            ToastAndroid.show('Las contrasenas no coinciden', ToastAndroid.SHORT);
             return;
         }
 
         setIsSubmitting(true);
         try {
             if (Register) {
-                const success = await Register(email, password);
+                const success = await Register({ name, surname, email, password });
                 if (success) {
                     ToastAndroid.show('Registro exitoso. Bienvenido!', ToastAndroid.SHORT);
-                    // El AuthContext ya maneja la navegación automática
                 } else {
                     ToastAndroid.show('No se pudo completar el registro. Intenta nuevamente.', ToastAndroid.SHORT);
                 }
             } else {
-                ToastAndroid.show('Error interno del sistema de autenticación.', ToastAndroid.SHORT);
+                ToastAndroid.show('Error interno del sistema de autenticacion.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || error?.message || 'Error al registrar';
+            const errorMessage = error?.response?.data?.detail || error?.message || 'Error al registrar';
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[RegisterScreen] Error al registrar:', error);
         } finally {
@@ -83,7 +87,6 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Header Back Button */}
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => navigation.goBack()}
@@ -91,7 +94,6 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                     <Icon name="arrow-back" size={24} color={colors.BLACK_LIGHT} />
                 </TouchableOpacity>
 
-                {/* Header Section */}
                 <View style={styles.header}>
                     <View style={styles.logoContainer}>
                         <Image
@@ -100,14 +102,12 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                         />
                     </View>
                     <Text style={styles.title}>Crea tu cuenta</Text>
-                    <Text style={styles.subtitle}>Únete y comienza a administrar tus apiarios fácilmente.</Text>
+                    <Text style={styles.subtitle}>Unete y comienza a administrar tus apiarios facilmente.</Text>
                 </View>
 
-                {/* Form Card */}
                 <View style={styles.formCard}>
-                    {/* Name Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Nombre Completo</Text>
+                        <Text style={styles.label}>Nombre</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="person-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
@@ -122,9 +122,24 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                         </View>
                     </View>
 
-                    {/* Email Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Correo Electrónico</Text>
+                        <Text style={styles.label}>Apellido</Text>
+                        <View style={styles.inputContainer}>
+                            <Icon name="person-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Tu apellido"
+                                placeholderTextColor="#999"
+                                onChangeText={setSurname}
+                                value={surname}
+                                autoCapitalize="words"
+                                editable={!loading}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Correo Electronico</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="mail-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
@@ -140,14 +155,13 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                         </View>
                     </View>
 
-                    {/* Password Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Contraseña</Text>
+                        <Text style={styles.label}>Contrasena</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="lock-closed-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Mínimo 6 caracteres"
+                                placeholder="Minimo 7 caracteres"
                                 placeholderTextColor="#999"
                                 onChangeText={setPassword}
                                 value={password}
@@ -155,19 +169,18 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                                 editable={!loading}
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                <Icon name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={colors.GREY} />
+                                <Icon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.GREY} />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Confirm Password Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Confirmar Contraseña</Text>
+                        <Text style={styles.label}>Confirmar Contrasena</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="checkmark-circle-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="Repite tu contraseña"
+                                placeholder="Repite tu contrasena"
                                 placeholderTextColor="#999"
                                 onChangeText={setConfirmPassword}
                                 value={confirmPassword}
@@ -175,12 +188,11 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                                 editable={!loading}
                             />
                             <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                                <Icon name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} size={20} color={colors.GREY} />
+                                <Icon name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.GREY} />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Register Button */}
                     <TouchableOpacity
                         style={[styles.registerButton, loading && styles.buttonDisabled]}
                         onPress={handleRegister}
@@ -195,17 +207,15 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Login Link Section */}
                 <View style={styles.loginContainer}>
-                    <Text style={styles.loginText}>¿Ya tienes una cuenta?</Text>
+                    <Text style={styles.loginText}>Ya tienes una cuenta?</Text>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('LoginScreen')}
                         activeOpacity={0.6}
                     >
-                        <Text style={styles.loginLinkBold}>Iniciar Sesión</Text>
+                        <Text style={styles.loginLinkBold}>Iniciar Sesion</Text>
                     </TouchableOpacity>
                 </View>
-
             </ScrollView>
         </KeyboardAvoidingView>
     );
@@ -214,7 +224,7 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB', // Fondo limpio muy claro
+        backgroundColor: '#F9FAFB',
     },
     scrollContent: {
         flexGrow: 1,
@@ -229,7 +239,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 10,
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 4,
@@ -276,7 +286,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.WHITE,
         borderRadius: 12,
         padding: 24,
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 10,

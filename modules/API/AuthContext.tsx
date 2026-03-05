@@ -5,19 +5,26 @@ import logger from '../../helpers/logger';
 import { getDeviceInfo } from '../../helpers/deviceInfo';
 import { registerDevice } from './Devices';
 
+type RegisterPayload = {
+    name: string;
+    surname: string;
+    email: string;
+    password: string;
+};
 
 type IAuthProvider = {
     isLoading?: boolean
     sessionInfo?: Object
     accessToken?: string | null
-    Register?: Function
-    isLoggedIn?: Function
-    Login: Function
-    Logout?: Function
+    Register?: (payload: RegisterPayload) => Promise<boolean>
+    isLoggedIn?: () => Promise<string | false | null>
+    Login: (email: string, password: string) => Promise<boolean>
+    Logout?: () => Promise<boolean>
 };
 
-
-export const AuthContext = createContext<IAuthProvider>({Login:Function});
+export const AuthContext = createContext<IAuthProvider>({
+    Login: async () => false,
+});
 
 
 export const AuthProvider = ({ children }: any) => {
@@ -60,10 +67,10 @@ export const AuthProvider = ({ children }: any) => {
       };
       
 
-      const Register = async (email: string, password: string): Promise<boolean> => {
+      const Register = async ({ name, surname, email, password }: RegisterPayload): Promise<boolean> => {
         try {
           setLoading(true);
-          const response = await apiClient.post('auth/register', { email, password });
+          const response = await apiClient.post('auth/register', { name, surname, email, password });
           const accessToken = response.data['access_token'];
           
           if (accessToken) {
@@ -88,7 +95,7 @@ export const AuthProvider = ({ children }: any) => {
           }
         } catch (error: any) {
           logger.error('[AuthContext] Error en registro:', error);
-          return false;
+          throw error;
         } finally {
           setLoading(false);
         }
