@@ -43,8 +43,8 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
     };
 
     const handleSave = async () => {
-        if (!name || !isValidLength(name, 2, 50)) {
-            ToastAndroid.show('El nombre debe tener entre 2 y 50 caracteres', ToastAndroid.SHORT);
+        if (!name || !isValidLength(name, 3, 50)) {
+            ToastAndroid.show('El nombre debe tener entre 3 y 50 caracteres', ToastAndroid.SHORT);
             return;
         }
 
@@ -68,7 +68,7 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
                 ToastAndroid.show('No se pudo actualizar el perfil', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || 'Error al actualizar el perfil';
+            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Error al actualizar el perfil';
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[EditProfileScreen] Error actualizando perfil:', error);
         } finally {

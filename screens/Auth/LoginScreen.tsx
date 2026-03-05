@@ -7,8 +7,8 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import colors from '../../constants/colors';
 import AuthContext from '../../modules/API/AuthContext';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { isValidEmail } from '../../helpers/validation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isValidEmail, isValidLength } from '../../helpers/validation';
 import { LoginScreenProps } from '../../types/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,13 +24,13 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
     const [showPassword, setShowPassword] = useState(false);
 
     const handleRemember = () => {
-        setRemember(!remember)
+        setRemember(!remember);
         if (!remember) {
-            ToastAndroid.show('Se recordará tu usuario', ToastAndroid.SHORT);
+            ToastAndroid.show('Se recordara tu usuario', ToastAndroid.SHORT);
             return AsyncStorage.setItem('email', email);
         }
-        return AsyncStorage.removeItem('email')
-    }
+        return AsyncStorage.removeItem('email');
+    };
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -39,7 +39,12 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
         }
 
         if (!isValidEmail(email)) {
-            ToastAndroid.show('Por favor ingresa un email válido', ToastAndroid.SHORT);
+            ToastAndroid.show('Por favor ingresa un email valido', ToastAndroid.SHORT);
+            return;
+        }
+
+        if (!isValidLength(password, 7, 50)) {
+            ToastAndroid.show('La contrasena debe tener entre 7 y 50 caracteres', ToastAndroid.SHORT);
             return;
         }
 
@@ -51,24 +56,24 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                 } else {
                     await AsyncStorage.removeItem('email');
                 }
-                ToastAndroid.show('Inicio de sesión exitoso', ToastAndroid.SHORT);
+                ToastAndroid.show('Inicio de sesion exitoso', ToastAndroid.SHORT);
             } else {
-                ToastAndroid.show('No se pudo iniciar sesión. Verifica tus credenciales.', ToastAndroid.SHORT);
+                ToastAndroid.show('No se pudo iniciar sesion. Verifica tus credenciales.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || 'Ocurrió un error al hacer la petición';
+            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Ocurrio un error al hacer la peticion';
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
         }
-    }
+    };
 
     useEffect(() => {
         AsyncStorage.getItem('email')
             .then((response: any) => {
                 if (response) {
-                    setEmail(response)
+                    setEmail(response);
                     setRemember(true);
                 }
-            })
+            });
     }, []);
 
     return (
@@ -84,7 +89,6 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Header Section */}
                 <View style={styles.header}>
                     <View style={styles.logoContainer}>
                         <Image
@@ -92,15 +96,13 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                             style={styles.logo}
                         />
                     </View>
-                    <Text style={styles.title}>¡Bienvenido!</Text>
-                    <Text style={styles.subtitle}>Inicia sesión para gestionar tus apiarios y registrar tus tareas.</Text>
+                    <Text style={styles.title}>Bienvenido</Text>
+                    <Text style={styles.subtitle}>Inicia sesion para gestionar tus apiarios y registrar tus tareas.</Text>
                 </View>
 
-                {/* Form Card */}
                 <View style={styles.formCard}>
-                    {/* Email Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Correo Electrónico</Text>
+                        <Text style={styles.label}>Correo Electronico</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="mail-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
@@ -115,21 +117,20 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                         </View>
                     </View>
 
-                    {/* Password Input */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Contraseña</Text>
+                        <Text style={styles.label}>Contrasena</Text>
                         <View style={styles.inputContainer}>
                             <Icon name="lock-closed-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
                             <TextInput
                                 style={styles.input}
-                                placeholder="••••••••"
+                                placeholder="********"
                                 placeholderTextColor="#999"
                                 onChangeText={setPassword}
                                 value={password}
                                 secureTextEntry={!showPassword}
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                <Icon name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={colors.GREY} />
+                                <Icon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.GREY} />
                             </TouchableOpacity>
                         </View>
 
@@ -137,11 +138,10 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                             onPress={() => navigation.navigate('ForgotPasswordScreen' as never, { email } as never)}
                             style={styles.forgotPasswordLink}
                         >
-                            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+                            <Text style={styles.forgotPasswordText}>Olvidaste tu contrasena?</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Remember me */}
                     <TouchableOpacity style={styles.rememberContainer} onPress={handleRemember} activeOpacity={0.7}>
                         <View style={[styles.checkbox, remember && styles.checkboxActive]}>
                             {remember && <Icon name="checkmark" size={14} color={colors.WHITE} />}
@@ -149,7 +149,6 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                         <Text style={styles.checkboxText}>Recordar mi usuario</Text>
                     </TouchableOpacity>
 
-                    {/* Login Button */}
                     <TouchableOpacity
                         style={[styles.loginButton, isLoading && styles.buttonDisabled]}
                         onPress={handleLogin}
@@ -164,11 +163,10 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Register Section */}
                 <View style={styles.registerContainer}>
                     <View style={styles.dividerContainer}>
                         <View style={styles.divider} />
-                        <Text style={styles.dividerText}>o también puedes</Text>
+                        <Text style={styles.dividerText}>o tambien puedes</Text>
                         <View style={styles.divider} />
                     </View>
 
@@ -181,16 +179,15 @@ const LoginScreen = ({ route, navigation }: LoginScreenProps) => {
                         <Icon name="arrow-forward" size={16} color={colors.BLACK_LIGHT} style={{ marginLeft: 6, marginTop: 1 }} />
                     </TouchableOpacity>
                 </View>
-
             </ScrollView>
         </KeyboardAvoidingView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB', // Fondo limpio muy claro
+        backgroundColor: '#F9FAFB',
     },
     scrollContent: {
         flexGrow: 1,
@@ -238,7 +235,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.WHITE,
         borderRadius: 12,
         padding: 24,
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 10,
@@ -367,7 +364,7 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 24,
         width: '100%',
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.03,
         shadowRadius: 4,

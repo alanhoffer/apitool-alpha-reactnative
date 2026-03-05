@@ -52,20 +52,20 @@ export const getDevices = async (): Promise<Device[]> => {
  * Registra o actualiza un dispositivo del usuario
  */
 export const registerDevice = async (deviceInfo: DeviceInfo, pushToken?: string | null): Promise<Device | null> => {
-  try {
-    const requestData: RegisterDeviceRequest = {
-      deviceName: deviceInfo.deviceName,
-      modelName: deviceInfo.modelName,
-      brand: deviceInfo.brand,
-      manufacturer: deviceInfo.manufacturer,
-      platform: deviceInfo.platform,
-      osVersion: deviceInfo.osVersion,
-      deviceType: deviceInfo.deviceType,
-      appVersion: deviceInfo.appVersion,
-      buildVersion: deviceInfo.buildVersion,
-      pushToken: pushToken || null,
-    };
+  const requestData: RegisterDeviceRequest = {
+    deviceName: deviceInfo.deviceName,
+    modelName: deviceInfo.modelName,
+    brand: deviceInfo.brand,
+    manufacturer: deviceInfo.manufacturer,
+    platform: deviceInfo.platform,
+    osVersion: deviceInfo.osVersion,
+    deviceType: deviceInfo.deviceType,
+    appVersion: deviceInfo.appVersion,
+    buildVersion: deviceInfo.buildVersion,
+    pushToken: pushToken || null,
+  };
 
+  try {
     const response = await apiClient.post<Device>('/users/devices', requestData);
     return response.data;
   } catch (error: any) {

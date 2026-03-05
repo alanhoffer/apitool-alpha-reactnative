@@ -10,33 +10,31 @@ import apiClient from '../../modules/API/client';
 const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) => {
     const insets = useSafeAreaInsets();
     const initialEmail = route.params?.email || '';
-    
+
     const [email, setEmail] = useState(initialEmail);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
 
     const handleSendResetLink = async () => {
         if (!email || !isValidEmail(email)) {
-            ToastAndroid.show('Por favor ingresa un email válido', ToastAndroid.SHORT);
+            ToastAndroid.show('Por favor ingresa un email valido', ToastAndroid.SHORT);
             return;
         }
 
         setIsSubmitting(true);
         try {
-            // TODO: Reemplazar con el endpoint real cuando esté disponible
-            // Por ahora, simulamos la llamada
             const response = await apiClient.post('auth/forgot-password', { email });
-            
+
             if (response.status === 200 || response.status === 201) {
                 setEmailSent(true);
-                ToastAndroid.show('Se ha enviado un enlace de recuperación a tu email', ToastAndroid.SHORT);
+                ToastAndroid.show('Se ha enviado un enlace de recuperacion a tu email', ToastAndroid.SHORT);
             } else {
                 ToastAndroid.show('No se pudo enviar el enlace. Intenta nuevamente.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.message || 'Error al enviar el enlace de recuperación';
+            const errorMessage = error?.response?.data?.detail || error?.response?.data?.message || 'Error al enviar el enlace de recuperacion';
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
-            logger.error('[ForgotPasswordScreen] Error enviando enlace de recuperación:', error);
+            logger.error('[ForgotPasswordScreen] Error enviando enlace de recuperacion:', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -47,25 +45,25 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
     if (emailSent) {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
-                <Image 
+                <Image
                     source={{
                         uri: 'https://i.imgur.com/BWBW8rW.png',
-                    }} 
-                    style={styles.logo} 
+                    }}
+                    style={styles.logo}
                 />
 
                 <View style={styles.successContainer}>
-                    <Text style={styles.successTitle}>¡Email enviado!</Text>
+                    <Text style={styles.successTitle}>Email enviado</Text>
                     <Text style={styles.successMessage}>
-                        Hemos enviado un enlace de recuperación a{'\n'}
+                        Hemos enviado un enlace de recuperacion a{'\n'}
                         <Text style={styles.emailText}>{email}</Text>
                     </Text>
                     <Text style={styles.successSubMessage}>
-                        Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contraseña.
+                        Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contrasena.
                     </Text>
 
-                    <TouchableOpacity 
-                        style={styles.button} 
+                    <TouchableOpacity
+                        style={styles.button}
                         onPress={() => navigation.navigate('LoginScreen')}
                     >
                         <Text style={styles.buttonText}>Volver al Login</Text>
@@ -77,18 +75,18 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <Image 
+            <Image
                 source={{
                     uri: 'https://i.imgur.com/BWBW8rW.png',
-                }} 
-                style={styles.logo} 
+                }}
+                style={styles.logo}
             />
 
             <View style={styles.inputsContainer}>
                 <View style={styles.titleContainer}>
-                    <Text style={styles.title}>Recuperar Contraseña</Text>
+                    <Text style={styles.title}>Recuperar Contrasena</Text>
                     <Text style={styles.subtitle}>
-                        Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
+                        Ingresa tu email y te enviaremos un enlace para restablecer tu contrasena
                     </Text>
                 </View>
 
@@ -104,8 +102,8 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
                 />
             </View>
 
-            <TouchableOpacity 
-                style={[styles.button, loading && styles.buttonDisabled]} 
+            <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
                 onPress={handleSendResetLink}
                 disabled={loading}
             >
@@ -116,12 +114,12 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
                 )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
                 onPress={() => navigation.navigate('LoginScreen')}
                 style={styles.loginLink}
             >
                 <Text style={styles.loginLinkText}>
-                    ¿Recordaste tu contraseña? <Text style={styles.loginLinkBold}>Inicia sesión</Text>
+                    Recordaste tu contrasena? <Text style={styles.loginLinkBold}>Inicia sesion</Text>
                 </Text>
             </TouchableOpacity>
         </View>
@@ -235,4 +233,3 @@ const styles = StyleSheet.create({
 });
 
 export default ForgotPasswordScreen;
-
