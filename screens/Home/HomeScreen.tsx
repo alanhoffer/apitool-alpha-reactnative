@@ -14,6 +14,7 @@ import logger from '../../helpers/logger';
 import { HomeScreenProps } from '../../types/navigation';
 import { syncPendingRequests } from '../../modules/Offline/SyncManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getQueueStatus, OfflineQueueStatus } from '../../modules/Offline/OfflineQueue';
 
 const { width } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [weather, setWeather] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<OfflineQueueStatus>({ pendingCount: 0, retryingCount: 0 });
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -109,6 +111,15 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     }
   }, []);
 
+  const loadSyncStatus = useCallback(async () => {
+    try {
+      const status = await getQueueStatus();
+      setSyncStatus(status);
+    } catch (error) {
+      logger.warn('[HomeScreen] Error obteniendo estado de sincronización:', error);
+    }
+  }, []);
+
   const loadData = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) {
       setRefreshing(true);
@@ -121,6 +132,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     }
 
     await Promise.all([
+      loadSyncStatus(),
       fetchUserInfo(),
       fetchWeather()
     ]);
@@ -128,7 +140,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     if (showRefreshing) {
       setRefreshing(false);
     }
-  }, [fetchUserInfo, fetchWeather]);
+  }, [fetchUserInfo, fetchWeather, loadSyncStatus]);
 
   useEffect(() => {
     loadData();
@@ -154,6 +166,17 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const onRefresh = useCallback(() => {
     loadData(true);
   }, [loadData]);
+
+  const formatRetryText = (timestamp?: number) => {
+    if (!timestamp) return null;
+    const diffMs = timestamp - Date.now();
+    if (diffMs <= 0) return 'Reintento disponible ahora';
+    const totalMinutes = Math.ceil(diffMs / 60000);
+    if (totalMinutes <= 1) return 'Reintento en 1 min';
+    if (totalMinutes < 60) return `Reintento en ${totalMinutes} min`;
+    const hours = Math.ceil(totalMinutes / 60);
+    return `Reintento en ${hours} h`;
+  };
 
   // Animations
   useEffect(() => {
@@ -216,6 +239,33 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
               {profile ? `${capitalizeFirstLetter(profile.name)} ${capitalizeFirstLetter(profile.surname)}` : 'Apicultor Profesional'}
             </Text>
             <Text style={styles.userRole}>Apicultor Profesional</Text>
+            {syncStatus.pendingCount > 0 && (
+              <View
+                style={[
+                  styles.syncBadge,
+                  syncStatus.retryingCount > 0 ? styles.syncBadgeRetrying : styles.syncBadgePending,
+                ]}
+              >
+                <MaterialIcons
+                  name={syncStatus.retryingCount > 0 ? 'sync-problem' : 'cloud-upload'}
+                  size={14}
+                  color={syncStatus.retryingCount > 0 ? '#92400e' : '#14532d'}
+                />
+                <Text
+                  style={[
+                    styles.syncBadgeText,
+                    syncStatus.retryingCount > 0 ? styles.syncBadgeTextRetrying : styles.syncBadgeTextPending,
+                  ]}
+                >
+                  {syncStatus.pendingCount} cambio{syncStatus.pendingCount === 1 ? '' : 's'} pendiente{syncStatus.pendingCount === 1 ? '' : 's'}
+                </Text>
+                {syncStatus.retryingCount > 0 && (
+                  <Text style={styles.syncBadgeSubtext}>
+                    {formatRetryText(syncStatus.nextRetryAt)}
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
           <TouchableOpacity
             style={styles.bellButton}
@@ -479,6 +529,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
     marginTop: 2,
+  },
+  syncBadge: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  syncBadgePending: {
+    backgroundColor: '#dcfce7',
+  },
+  syncBadgeRetrying: {
+    backgroundColor: '#fef3c7',
+  },
+  syncBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+  syncBadgeTextPending: {
+    color: '#14532d',
+  },
+  syncBadgeTextRetrying: {
+    color: '#92400e',
+  },
+  syncBadgeSubtext: {
+    fontSize: 11,
+    color: '#92400e',
+    marginLeft: 8,
   },
   bellButton: {
     width: 40,

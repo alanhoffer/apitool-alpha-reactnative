@@ -13,6 +13,13 @@ export interface OfflineRequest {
   lastError?: string;
 }
 
+export interface OfflineQueueStatus {
+  pendingCount: number;
+  retryingCount: number;
+  nextRetryAt?: number;
+  lastError?: string;
+}
+
 const normalizeRequest = (request: Partial<OfflineRequest>): OfflineRequest => {
   return {
     id: request.id || Date.now().toString(),
@@ -83,5 +90,24 @@ export const updateQueueRequest = async (id: string, updates: Partial<OfflineReq
   } catch (error) {
     console.error('[OfflineQueue] Error updating queue request:', error);
   }
+};
+
+export const getQueueStatus = async (): Promise<OfflineQueueStatus> => {
+  const queue = await getQueue();
+  const now = Date.now();
+  const retryingItems = queue.filter(req => req.nextRetryAt && req.nextRetryAt > now);
+  const nextRetryAt = retryingItems.length > 0
+    ? Math.min(...retryingItems.map(req => req.nextRetryAt as number))
+    : undefined;
+  const lastError = [...queue]
+    .sort((a, b) => (b.lastAttemptAt || b.timestamp) - (a.lastAttemptAt || a.timestamp))
+    .find(req => req.lastError)?.lastError;
+
+  return {
+    pendingCount: queue.length,
+    retryingCount: retryingItems.length,
+    nextRetryAt,
+    lastError,
+  };
 };
 
