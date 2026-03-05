@@ -8,7 +8,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // 1 API
 import { deleteApiary, getApiarys } from '../../modules/API/Apiarys';
-import { getAllMockApiaries, deleteMockApiary } from '../../modules/Mock/ApiaryMock';
 
 // 2 Visuals
 
@@ -32,23 +31,13 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
 
   async function loadApiarys() {
     try {
-      // Cargar apiarios de la API
       const apiaryData = await getApiarys();
-      
-      // Cargar apiarios mockeados
-      const mockApiaries = await getAllMockApiaries();
-      
-      // Combinar ambos arrays
       let allApiaries: IApiary[] = [];
-      
+
       if (apiaryData != null && Array.isArray(apiaryData)) {
         allApiaries = [...apiaryData];
       }
-      
-      if (mockApiaries != null && Array.isArray(mockApiaries)) {
-        allApiaries = [...allApiaries, ...mockApiaries];
-      }
-      
+
       if (allApiaries.length > 0) {
         // Ordenar por fecha de actualización más reciente
         const sortedApiaryData = allApiaries.sort((a: any, b: any) => {
@@ -60,7 +49,7 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
       } else {
         setApiaryList([]);
       }
-      
+
       setApiarysLoaded(true);
     } catch (error) {
       setApiaryList([]);
@@ -83,16 +72,7 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
           text: 'Aceptar',
           onPress: async () => {
             try {
-              let deleteSuccessful = false;
-              
-              // Si es apiario mockeado (individual), usar deleteMockApiary
-              if (apiary.managementType === 'individual') {
-                deleteSuccessful = await deleteMockApiary(apiary.id);
-              } else {
-                // Si es apiario de la API (conjunto), usar deleteApiary
-                deleteSuccessful = await deleteApiary(apiary.id);
-              }
-              
+              const deleteSuccessful = await deleteApiary(apiary.id);
               if (deleteSuccessful) {
                 loadApiarys();
                 ToastAndroid.show(`${apiary.name} borrado`, ToastAndroid.SHORT);
@@ -115,20 +95,7 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
   };
 
   useEffect(() => {
-    const initializeMock = async () => {
-      try {
-        const profile = await getProfile();
-        if (profile && profile.id) {
-          // Inicializar apiario individual mockeado si no existe
-          await initializeMockIndividualApiary(profile.id);
-        }
-      } catch (error) {
-        console.error('[ApiaryListScreen] Error initializing mock apiary:', error);
-      }
-    };
-
     if (isFocused) {
-      initializeMock();
       loadApiarys();
     }
   }, [isFocused]);
@@ -153,9 +120,9 @@ const ApiaryListScreen = ({ navigation }: ApiaryListScreenProps) => {
             <Text style={styles.apiaryListEmptyText}> Presiona en + Añadir </Text>
           </View>
         ) : (
-          <ScrollView 
-            style={styles.apiaryListScroll} 
-            showsVerticalScrollIndicator={false} 
+          <ScrollView
+            style={styles.apiaryListScroll}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
             refreshControl={
               <RefreshControl refreshing={refresh} onRefresh={onRefresh} />

@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { sendAIMessage, AIChatMessage } from '../../modules/API/AIChat';
+import { Audio } from 'expo-av';
+import { sendAIMessage, transcribeAudio, AIChatMessage } from '../../modules/API/AIChat';
 import colors from '../../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../../helpers/logger';
@@ -28,7 +29,11 @@ const AIChatScreen = ({ navigation }: any) => {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recordingRef = useRef<Audio.Recording | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
 
   useEffect(() => {
     loadChatHistory();
@@ -45,7 +50,7 @@ const AIChatScreen = ({ navigation }: any) => {
     try {
       const savedChatId = await AsyncStorage.getItem(CHAT_ID_STORAGE_KEY);
       const savedHistory = await AsyncStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
-      
+
       // Solo cargar chatId si parece ser un instanceId válido de la API
       // Los instanceIds de la API suelen tener un formato específico
       if (savedChatId && !savedChatId.startsWith('chat_')) {
@@ -56,7 +61,7 @@ const AIChatScreen = ({ navigation }: any) => {
         await AsyncStorage.removeItem(CHAT_ID_STORAGE_KEY);
         setChatId(null);
       }
-      
+
       if (savedHistory) {
         const history = JSON.parse(savedHistory);
         setMessages(history);
@@ -75,77 +80,124 @@ const AIChatScreen = ({ navigation }: any) => {
     }
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim() || loading) return;
-
+  /** Envía un mensaje de texto a Robertaso (usado por texto escrito y por transcripción de voz) */
+  const sendMessageToAPI = async (text: string) => {
+    if (!text.trim() || loading) return;
     const userMessage: AIChatMessage = {
       role: 'user',
-      content: inputText.trim(),
+      content: text.trim(),
       timestamp: new Date(),
     };
-
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    const messageToSend = inputText.trim();
-    setInputText('');
     setLoading(true);
-
     try {
-      // Usar el chatId solo si existe y NO fue generado por nosotros
-      // Si el chatId empieza con "chat_", significa que lo generamos nosotros y no es válido
-      let currentChatId = chatId;
+      let currentChatId: string | undefined = chatId ?? undefined;
       if (currentChatId && currentChatId.startsWith('chat_')) {
-        logger.debug('[AIChatScreen] ChatId inválido detectado, iniciando nueva conversación');
-        currentChatId = undefined; // Forzar nuevo inicio
+        currentChatId = undefined;
         setChatId(null);
       }
-
-      logger.debug('[AIChatScreen] Enviando mensaje. Tiene chatId válido:', !!currentChatId);
-      const response = await sendAIMessage(messageToSend, currentChatId);
-      
+      const response = await sendAIMessage(text.trim(), currentChatId);
       const assistantMessage: AIChatMessage = {
         role: 'assistant',
         content: response.response,
         timestamp: new Date(),
       };
-
       const updatedMessages = [...newMessages, assistantMessage];
       setMessages(updatedMessages);
-      
-      // Guardar el chatId SOLO si viene de la API (no empieza con "chat_")
       if (response.chatId && !response.chatId.startsWith('chat_')) {
-        logger.debug('[AIChatScreen] Guardando chatId válido de la API');
         setChatId(response.chatId);
         await saveChatHistory(updatedMessages, response.chatId);
       } else if (response.chatId) {
-        // Si la API devolvió un chatId, usarlo aunque no lo guardemos
         setChatId(response.chatId);
         await saveChatHistory(updatedMessages, response.chatId);
       } else {
-        // Si no hay chatId en la respuesta, guardar sin chatId
         await saveChatHistory(updatedMessages, '');
       }
     } catch (error: any) {
-      logger.error('[AIChatScreen] Error completo:', error);
-      
-      // Si el error es de chatId inválido, limpiar y reintentar
+      logger.error('[AIChatScreen] Error:', error);
       if (error.message?.includes('ChatId') || error.message?.includes('chat_id')) {
-        logger.debug('[AIChatScreen] Error de chatId inválido, limpiando y reintentando...');
         setChatId(null);
         await AsyncStorage.removeItem(CHAT_ID_STORAGE_KEY);
-        
-        Alert.alert(
-          'Error',
-          'El chat anterior expiró. Por favor, envía el mensaje de nuevo para iniciar una nueva conversación.'
-        );
+        Alert.alert('Error', 'El chat anterior expiró. Envía el mensaje de nuevo.');
       } else {
-        Alert.alert(
-          'Error',
-          error.message || 'No se pudo enviar el mensaje. Por favor, intenta de nuevo.'
-        );
+        Alert.alert('Error', error.message || 'No se pudo enviar. Intenta de nuevo.');
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!inputText.trim() || loading) return;
+    const messageToSend = inputText.trim();
+    setInputText('');
+    await sendMessageToAPI(messageToSend);
+  };
+
+  const ensureMicPermission = async (): Promise<boolean> => {
+    if (permissionResponse?.status === 'granted') return true;
+    const { status } = await requestPermission();
+    if (status !== 'granted') {
+      Alert.alert('Permiso denegado', 'Se necesita el micrófono para enviar audios.');
+      return false;
+    }
+    return true;
+  };
+
+  const startAudioRecording = async () => {
+    if (loading || isRecordingAudio || transcribing) return;
+    const ok = await ensureMicPermission();
+    if (!ok) return;
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setIsRecordingAudio(true);
+    } catch (err: any) {
+      logger.error('[AIChatScreen] Error al iniciar grabación:', err);
+      Alert.alert('Error', 'No se pudo iniciar la grabación.');
+    }
+  };
+
+  const stopAudioRecordingAndSend = async () => {
+    const recording = recordingRef.current;
+    if (!recording || !isRecordingAudio) return;
+    try {
+      await recording.stopAndUnloadAsync();
+      recordingRef.current = null;
+      const uri = recording.getURI();
+      setIsRecordingAudio(false);
+      if (!uri) {
+        Alert.alert('Error', 'No se obtuvo el audio.');
+        return;
+      }
+      setTranscribing(true);
+      try {
+        const transcript = await transcribeAudio(uri);
+        if (transcript) {
+          await sendMessageToAPI(transcript);
+        } else {
+          Alert.alert('Sin texto', 'No se pudo transcribir el audio. Probá de nuevo.');
+        }
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'No se pudo transcribir el audio.');
+      } finally {
+        setTranscribing(false);
+      }
+    } catch (err: any) {
+      logger.error('[AIChatScreen] Error al procesar audio:', err);
+      setIsRecordingAudio(false);
+      recordingRef.current = null;
+      Alert.alert('Error', 'No se pudo procesar el audio.');
     }
   };
 
@@ -198,45 +250,55 @@ const AIChatScreen = ({ navigation }: any) => {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.BLACK} />
+          <Ionicons name="arrow-back" size={24} color={colors.SLATE[900]} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <View style={styles.headerIconContainer}>
-            <Image 
-              source={require('../../assets/images/ia/logo.png')} 
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
+          <View style={styles.headerIconWrapper}>
+            <View style={styles.headerIconInner}>
+              <Image
+                source={require('../../assets/images/ia/logo.png')}
+                style={styles.headerLogo}
+                resizeMode="cover"
+              />
+            </View>
           </View>
-          <Text style={styles.headerTitle}>Robertaso</Text>
+          <View>
+            <Text style={styles.headerTitle}>Robertaso</Text>
+            <View style={styles.statusContainer}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>En línea</Text>
+            </View>
+          </View>
         </View>
         <TouchableOpacity onPress={handleClearChat} style={styles.clearButton}>
-          <Ionicons name="trash-outline" size={22} color={colors.BLACK} />
+          <Ionicons name="trash-outline" size={20} color={colors.SLATE[400]} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={[styles.messagesContent, { paddingBottom: Math.max(insets.bottom, 20) }]}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: 20 }]}
         showsVerticalScrollIndicator={false}
       >
         {messages.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Image 
-                source={require('../../assets/images/ia/logo.png')} 
-                style={styles.emptyLogo}
-                resizeMode="contain"
-              />
+            <View style={styles.emptyIconWrapper}>
+              <View style={styles.emptyIconInner}>
+                <Image
+                  source={require('../../assets/images/ia/logo.png')}
+                  style={styles.emptyLogo}
+                  resizeMode="cover"
+                />
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>Robertaso</Text>
+            <Text style={styles.emptyTitle}>¡Hola! Soy Robertaso</Text>
             <Text style={styles.emptyText}>
-              ¡Hola! Soy Robertaso, tu experto en apicultura. ¿En qué puedo ayudarte hoy? 🐝
+              Tu experto en apicultura. Pregúntame sobre enfermedades, manejo de colmenas o cualquier duda técnica. 🐝
             </Text>
           </View>
         ) : (
@@ -249,12 +311,12 @@ const AIChatScreen = ({ navigation }: any) => {
               ]}
             >
               {message.role === 'assistant' && (
-                <View style={styles.avatarContainer}>
-                  <View style={styles.avatar}>
-                    <Image 
-                      source={require('../../assets/images/ia/logo.png')} 
-                      style={styles.avatarLogo}
-                      resizeMode="contain"
+                <View style={styles.avatarWrapper}>
+                  <View style={styles.avatarInner}>
+                    <Image
+                      source={require('../../assets/images/ia/logo.png')}
+                      style={styles.avatarImage}
+                      resizeMode="cover"
                     />
                   </View>
                 </View>
@@ -278,59 +340,70 @@ const AIChatScreen = ({ navigation }: any) => {
                   {formatTime(message.timestamp)}
                 </Text>
               </View>
-              {message.role === 'user' && (
-                <View style={styles.userAvatarContainer}>
-                  <View style={styles.userAvatar}>
-                    <Ionicons name="person" size={16} color={colors.WHITE} />
-                  </View>
-                </View>
-              )}
             </View>
           ))
         )}
-        {loading && (
+        {(loading || transcribing) && (
           <View style={[styles.messageWrapper, styles.assistantWrapper]}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Image 
-                  source={require('../../assets/images/ia/logo.png')} 
-                  style={styles.avatarLogo}
-                  resizeMode="contain"
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatarInner}>
+                <Image
+                  source={require('../../assets/images/ia/logo.png')}
+                  style={styles.avatarImage}
+                  resizeMode="cover"
                 />
               </View>
             </View>
             <View style={[styles.messageBubble, styles.assistantMessage, styles.typingBubble]}>
-              <ActivityIndicator size="small" color={colors.BLACK_TRANSPARENT} />
-              <Text style={styles.typingText}>Escribiendo...</Text>
+              <ActivityIndicator size="small" color={colors.SLATE[400]} />
+              <Text style={styles.typingText}>{transcribing ? 'Transcribiendo...' : 'Pensando...'}</Text>
             </View>
           </View>
         )}
       </ScrollView>
 
       <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder="Escribe tu mensaje..."
-            placeholderTextColor={colors.BLACK_TRANSPARENT}
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-            maxLength={500}
-            editable={!loading}
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
-            onPress={handleSend}
-            disabled={!inputText.trim() || loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={colors.WHITE} />
-            ) : (
-              <Ionicons name="send" size={18} color={colors.WHITE} />
-            )}
-          </TouchableOpacity>
-        </View>
+        {isRecordingAudio ? (
+          <View style={styles.recordingBar}>
+            <View style={styles.recordingPulse} />
+            <Text style={styles.recordingLabel}>Grabando...</Text>
+            <TouchableOpacity style={styles.stopRecordButton} onPress={stopAudioRecordingAndSend}>
+              <Ionicons name="stop" size={20} color={colors.WHITE} />
+              <Text style={styles.stopRecordText}>Enviar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.inputWrapper}>
+            <TouchableOpacity
+              style={[styles.micButton, (loading || transcribing) && styles.micButtonDisabled]}
+              onPress={startAudioRecording}
+              disabled={loading || transcribing}
+            >
+              <Ionicons name="mic" size={22} color={colors.SLATE[600]} />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Escribe tu mensaje..."
+              placeholderTextColor={colors.SLATE[400]}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+              editable={!loading}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
+              onPress={handleSend}
+              disabled={!inputText.trim() || loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.WHITE} />
+              ) : (
+                <Ionicons name="send" size={18} color={colors.WHITE} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -339,247 +412,293 @@ const AIChatScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.WHITE_DARK,
+    backgroundColor: '#fafaf9',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
     backgroundColor: colors.WHITE,
     borderBottomWidth: 1,
-    borderBottomColor: colors.GREY_LIGHT,
+    borderBottomColor: '#f1f5f9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    position: 'relative',
-    minHeight: 56,
-    alignContent: 'center',
+    shadowRadius: 8,
+    elevation: 3,
   },
   backButton: {
-    padding: 8,
-    borderRadius: 20,
     width: 40,
-    zIndex: 1,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+    marginRight: 12,
   },
   headerCenter: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 0,
   },
-  headerIconContainer: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+  headerIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    padding: 2,
+    marginRight: 12,
+  },
+  headerIconInner: {
+    flex: 1,
+    backgroundColor: colors.WHITE,
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   headerLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: '100%',
+    height: '100%',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.BLACK,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.SLATE[900],
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22c55e',
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '500',
   },
   clearButton: {
-    padding: 8,
-    borderRadius: 20,
     width: 40,
-    zIndex: 1,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   messagesContainer: {
     flex: 1,
-    backgroundColor: colors.WHITE_DARK,
   },
   messagesContent: {
-    padding: 16,
-    paddingBottom: 20,
+    padding: 20,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
+    paddingTop: 60,
   },
-  emptyIconContainer: {
+  emptyIconWrapper: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.YELLOW + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    padding: 4,
     marginBottom: 24,
   },
+  emptyIconInner: {
+    flex: 1,
+    backgroundColor: colors.WHITE,
+    borderRadius: 56,
+    overflow: 'hidden',
+  },
+  emptyLogo: {
+    width: '100%',
+    height: '100%',
+  },
   emptyTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.BLACK,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.SLATE[900],
     marginBottom: 12,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.BLACK,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubtext: {
     fontSize: 15,
-    color: colors.BLACK_TRANSPARENT,
+    color: colors.SLATE[600],
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: 20,
   },
   messageWrapper: {
     flexDirection: 'row',
-    marginBottom: 16,
-    alignItems: 'flex-end',
+    marginBottom: 20,
+    maxWidth: '85%',
   },
   userWrapper: {
-    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
   },
   assistantWrapper: {
-    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
   },
-  avatarContainer: {
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  avatar: {
+  avatarWrapper: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.YELLOW,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    padding: 2,
+    marginRight: 10,
+    alignSelf: 'flex-end',
+  },
+  avatarInner: {
+    flex: 1,
+    backgroundColor: colors.WHITE,
+    borderRadius: 14,
     overflow: 'hidden',
   },
-  avatarLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  emptyLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  userAvatarContainer: {
-    marginLeft: 8,
-    marginBottom: 4,
-  },
-  userAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.BLACK,
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   messageBubble: {
-    maxWidth: '75%',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
   },
   userMessage: {
-    backgroundColor: colors.BLACK,
+    backgroundColor: colors.SLATE[900],
     borderBottomRightRadius: 4,
   },
   assistantMessage: {
     backgroundColor: colors.WHITE,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: colors.GREY_LIGHT,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 120,
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 22,
   },
   userMessageText: {
     color: colors.WHITE,
-    fontWeight: '500',
   },
   assistantMessageText: {
-    color: colors.BLACK,
+    color: colors.SLATE[800],
   },
   messageTime: {
-    fontSize: 11,
-    marginTop: 6,
+    fontSize: 10,
+    marginTop: 4,
     alignSelf: 'flex-end',
   },
   userMessageTime: {
-    color: colors.WHITE + 'CC',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   assistantMessageTime: {
-    color: colors.BLACK_TRANSPARENT,
+    color: colors.SLATE[400],
   },
   typingText: {
-    fontSize: 14,
-    color: colors.BLACK_TRANSPARENT,
+    fontSize: 13,
+    color: colors.SLATE[400],
     marginLeft: 8,
-    fontStyle: 'italic',
   },
   inputContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: colors.WHITE,
     borderTopWidth: 1,
-    borderTopColor: colors.GREY_LIGHT,
+    borderTopColor: '#f1f5f9',
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: colors.WHITE_DARK,
-    borderRadius: 24,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 28,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderWidth: 1,
-    borderColor: colors.GREY_LIGHT,
+    borderColor: '#e2e8f0',
+  },
+  micButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micButtonDisabled: {
+    opacity: 0.5,
   },
   input: {
     flex: 1,
-    maxHeight: 100,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: colors.BLACK,
-    minHeight: 40,
+    maxHeight: 120,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: colors.SLATE[900],
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.YELLOW,
-    justifyContent: 'center',
+    backgroundColor: colors.HONEY[600],
     alignItems: 'center',
-    marginLeft: 4,
-    shadowColor: colors.YELLOW,
+    justifyContent: 'center',
+    shadowColor: colors.HONEY[600],
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
   },
   sendButtonDisabled: {
-    opacity: 0.4,
-    backgroundColor: colors.GREY_LIGHT,
+    backgroundColor: colors.SLATE[200],
+    shadowOpacity: 0,
+  },
+  recordingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.SLATE[900],
+    borderRadius: 28,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  recordingPulse: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+    marginRight: 10,
+  },
+  recordingLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.WHITE,
+    fontWeight: '500',
+  },
+  stopRecordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.HONEY[600],
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  stopRecordText: {
+    color: colors.WHITE,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 

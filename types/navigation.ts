@@ -14,16 +14,16 @@ export type RootStackParamList = {
   LoginScreen: undefined;
   RegisterScreen: undefined;
   ForgotPasswordScreen: { email?: string };
-  
+
   // Home
   HomeScreen: undefined;
   NotificationScreen: undefined;
-  
+
   // Apiary
   Apiary: NavigatorScreenParams<any>;
   ApiaryListScreen: undefined;
   ApiaryScreen: { apiaryInfo: IApiary };
-  ApiaryAddScreen: { 
+  ApiaryAddScreen: {
     apiarySettings?: any;
     managementType?: 'apiary' | 'individual';
     selectedLocation?: { latitude: number; longitude: number };
@@ -35,7 +35,7 @@ export type RootStackParamList = {
   ApiaryMapScreen: undefined;
   ApiarySettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
   ApiaryIndividualSettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
-  ApiaryAddSettingsScreen: { 
+  ApiaryAddSettingsScreen: {
     managementType?: 'apiary' | 'individual';
     apiaryInfo?: IApiary;
   };
@@ -49,31 +49,36 @@ export type RootStackParamList = {
     returnScreen: keyof RootStackParamList;
     apiaryInfo?: IApiary;
   };
-  
+
   // Scanner
   Scanner: NavigatorScreenParams<any>;
   ScannerCameraScreen: undefined;
   ScannerListScreen: undefined;
   ScannerFormScreen: { code: string };
   ScannerInstructionsScreen: undefined;
-  
+
   // Profile
   Profile: NavigatorScreenParams<any>;
   ProfileScreen: undefined;
   DevicesScreen: undefined;
   EditProfileScreen: undefined;
   ChangePasswordScreen: undefined;
-  
+
   // Statistics
   Statistics: NavigatorScreenParams<any>;
   StatisticsScreen: undefined;
-  
+
   // AI
   AIChatScreen: undefined;
 
   // Tasks
   TasksScreen: undefined;
   TaskAddScreen: { task?: any; apiaryId?: number }; // task object if editing, apiaryId if pre-selected
+
+  // Guides
+  Guides: NavigatorScreenParams<any>;
+  GuidesListScreen: undefined;
+  GuideDetailScreen: { guideId: string; title?: string };
 };
 
 // Tipos para props de navegación
@@ -107,10 +112,10 @@ export type HomeScreenProps = ScreenProps<'HomeScreen'>;
 export type StatisticsScreenProps = ScreenProps<'StatisticsScreen'>;
 export type ApiaryListScreenProps = ScreenProps<'ApiaryListScreen'>;
 export type ApiaryHistoryScreenProps = ScreenProps<'ApiaryHistoryScreen'>;
-export type ApiaryMapScreenProps = ScreenProps<'ApiaryMapScreen'>;
-export type MapSelectionScreenProps = ScreenProps<'MapSelectionScreen'>;
 export type AIChatScreenProps = ScreenProps<'AIChatScreen'>;
 export type ProfileScreenProps = ScreenProps<'ProfileScreen'>;
+export type EditProfileScreenProps = ScreenProps<'EditProfileScreen'>;
+export type ChangePasswordScreenProps = ScreenProps<'ChangePasswordScreen'>;
 export type DevicesScreenProps = ScreenProps<'DevicesScreen'>;
 export type ForgotPasswordScreenProps = ScreenProps<'ForgotPasswordScreen'>;
 export type TasksScreenProps = ScreenProps<'TasksScreen'>;

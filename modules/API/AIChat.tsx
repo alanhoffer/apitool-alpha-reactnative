@@ -1,7 +1,16 @@
 import axios from 'axios';
 
 const AI_API_URL = 'https://api.serenitystar.ai/api/v2/agent/robertaso/execute';
+const AI_TRANSCRIBE_URL = 'https://api.serenitystar.ai/api/v2/Audio/transcribe?culture=es';
 const AI_API_KEY = '84b7e0de-9d49-4395-ba0e-337a4b805c07';
+const AI_TRANSCRIBE_API_KEY = 'AE6EB64D-0DE4-41AC-B2D8-CB6E9D735922';
+
+export interface TranscribeResponse {
+  transcript?: string;
+  instanceId?: string;
+  metadata?: { language?: string; duration?: string };
+  [key: string]: any;
+}
 
 export interface AIChatMessage {
   role: 'user' | 'assistant';
@@ -237,5 +246,59 @@ export const sendAIMessage = async (
     
     throw new Error(errorMessage);
   }
+};
+
+/**
+ * Transcribe un archivo de audio a texto (API Serenity Star).
+ * POST /api/v2/Audio/transcribe?culture=es
+ * Body: multipart/form-data con campo "File".
+ * Devuelve el texto transcrito para enviar a Robertaso.
+ */
+export const transcribeAudio = async (audioUri: string): Promise<string> => {
+  const extension = audioUri.split('.').pop()?.toLowerCase() || 'm4a';
+  const mimeType = extension === 'webm' ? 'audio/webm' : extension === 'mp3' ? 'audio/mpeg' : extension === 'wav' ? 'audio/wav' : 'audio/m4a';
+  const formData = new FormData();
+  formData.append('File', {
+    uri: audioUri,
+    name: `audio.${extension}`,
+    type: mimeType,
+  } as any);
+
+  const response = await fetch(AI_TRANSCRIBE_URL, {
+    method: 'POST',
+    headers: {
+      'X-API-KEY': AI_TRANSCRIBE_API_KEY,
+      'Accept': 'application/json',
+    },
+    body: formData,
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    let errMsg = 'Error al transcribir el audio';
+    try {
+      const data = JSON.parse(responseText);
+      errMsg = data.message || data.error || errMsg;
+    } catch {
+      if (responseText.startsWith('<')) {
+        errMsg = 'El servidor devolvió una página en lugar de JSON. Revisa la URL o la API key.';
+      } else if (responseText) errMsg = responseText;
+    }
+    throw new Error(errMsg);
+  }
+
+  let data: TranscribeResponse;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    if (responseText.trim().startsWith('<')) {
+      throw new Error('La respuesta del servidor no es JSON válido.');
+    }
+    throw new Error('Respuesta de transcripción no es JSON válido.');
+  }
+
+  const transcript = data.transcript ?? '';
+  return transcript.trim();
 };
 

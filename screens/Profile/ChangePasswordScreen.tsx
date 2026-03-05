@@ -1,37 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import getTheme from '../../constants/themes';
+import colors from '../../constants/colors';
 import { isValidLength } from '../../helpers/validation';
 import logger from '../../helpers/logger';
 import { ChangePasswordScreenProps } from '../../types/navigation';
-import apiClient from '../../modules/API/client';
+import { changePassword } from '../../modules/API/User';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
     const insets = useSafeAreaInsets();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleChangePassword = async () => {
-        // Validaciones
-        if (!currentPassword) {
-            ToastAndroid.show('Por favor ingresa tu contraseña actual', ToastAndroid.SHORT);
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            ToastAndroid.show('Por favor completa todos los campos', ToastAndroid.SHORT);
             return;
         }
 
-        if (!newPassword || !isValidLength(newPassword, 6, 50)) {
-            ToastAndroid.show('La nueva contraseña debe tener entre 6 y 50 caracteres', ToastAndroid.SHORT);
+        if (!isValidLength(newPassword, 6, 50)) {
+            ToastAndroid.show('La nueva contraseña debe tener al menos 6 caracteres', ToastAndroid.SHORT);
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            ToastAndroid.show('Las contraseñas no coinciden', ToastAndroid.SHORT);
+            ToastAndroid.show('Las contraseñas nuevas no coinciden', ToastAndroid.SHORT);
             return;
         }
 
@@ -42,17 +44,17 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
 
         setIsSubmitting(true);
         try {
-            // TODO: Reemplazar con el endpoint real cuando esté disponible
-            const response = await apiClient.put('users/password', {
-                currentPassword,
-                newPassword,
+            const success = await changePassword({
+                oldPassword: currentPassword,
+                newPassword: newPassword,
+                confirmPassword: confirmPassword
             });
-            
-            if (response.status === 200 || response.status === 201) {
+
+            if (success) {
                 ToastAndroid.show('Contraseña actualizada exitosamente', ToastAndroid.SHORT);
                 navigation.goBack();
             } else {
-                ToastAndroid.show('No se pudo actualizar la contraseña', ToastAndroid.SHORT);
+                ToastAndroid.show('No se pudo actualizar la contraseña. Verifica tu contraseña actual.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
             const errorMessage = error?.response?.data?.message || 'Error al actualizar la contraseña';
@@ -63,202 +65,280 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
         }
     };
 
+    const PasswordInput = ({ label, value, onChangeText, showPassword, setShowPassword, placeholder }: any) => (
+        <View style={styles.inputGroup}>
+            <Text style={styles.label}>{label}</Text>
+            <View style={styles.inputWrapper}>
+                <Icon name="lock-closed-outline" size={20} color={colors.SLATE[400]} style={styles.inputIcon} />
+                <TextInput
+                    style={styles.input}
+                    placeholder={placeholder}
+                    value={value}
+                    onChangeText={onChangeText}
+                    secureTextEntry={!showPassword}
+                    editable={!isSubmitting}
+                    placeholderTextColor={colors.SLATE[300]}
+                />
+                <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                >
+                    <Icon
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={22}
+                        color={colors.SLATE[400]}
+                    />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+
     return (
-        <ScrollView 
-            style={[styles.container, { paddingTop: insets.top }]}
-            contentContainerStyle={styles.contentContainer}
-        >
-            <View style={styles.header}>
-                <Text style={styles.title}>Cambiar Contraseña</Text>
-                <Text style={styles.subtitle}>Ingresa tu contraseña actual y la nueva contraseña</Text>
-            </View>
-
-            <View style={styles.formContainer}>
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Contraseña Actual</Text>
-                    <View style={styles.passwordInputContainer}>
-                        <TextInput
-                            style={styles.passwordInput}
-                            placeholder="Contraseña actual"
-                            onChangeText={setCurrentPassword}
-                            value={currentPassword}
-                            secureTextEntry={!showCurrentPassword}
-                            editable={!isSubmitting}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                            style={styles.eyeIcon}
-                        >
-                            <Icon 
-                                name={showCurrentPassword ? "eye-off" : "eye"} 
-                                size={20} 
-                                color={getTheme().text} 
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Nueva Contraseña</Text>
-                    <View style={styles.passwordInputContainer}>
-                        <TextInput
-                            style={styles.passwordInput}
-                            placeholder="Nueva contraseña (mínimo 6 caracteres)"
-                            onChangeText={setNewPassword}
-                            value={newPassword}
-                            secureTextEntry={!showNewPassword}
-                            editable={!isSubmitting}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowNewPassword(!showNewPassword)}
-                            style={styles.eyeIcon}
-                        >
-                            <Icon 
-                                name={showNewPassword ? "eye-off" : "eye"} 
-                                size={20} 
-                                color={getTheme().text} 
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Confirmar Nueva Contraseña</Text>
-                    <View style={styles.passwordInputContainer}>
-                        <TextInput
-                            style={styles.passwordInput}
-                            placeholder="Confirma la nueva contraseña"
-                            onChangeText={setConfirmPassword}
-                            value={confirmPassword}
-                            secureTextEntry={!showConfirmPassword}
-                            editable={!isSubmitting}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                            style={styles.eyeIcon}
-                        >
-                            <Icon 
-                                name={showConfirmPassword ? "eye-off" : "eye"} 
-                                size={20} 
-                                color={getTheme().text} 
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                    style={[styles.button, styles.saveButton, isSubmitting && styles.buttonDisabled]} 
-                    onPress={handleChangePassword}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? (
-                        <ActivityIndicator color={getTheme().text} />
-                    ) : (
-                        <>
-                            <Icon name="lock-closed" size={20} color={getTheme().text} />
-                            <Text style={styles.buttonText}>Cambiar Contraseña</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                    style={[styles.button, styles.cancelButton]} 
+        <View style={styles.mainContainer}>
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity
+                    style={styles.backButton}
                     onPress={() => navigation.goBack()}
-                    disabled={isSubmitting}
                 >
-                    <Icon name="close-circle" size={20} color={getTheme().text} />
-                    <Text style={styles.buttonText}>Cancelar</Text>
+                    <Icon name="arrow-back" size={24} color={colors.SLATE[800]} />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Seguridad</Text>
+                <View style={{ width: 40 }} />
             </View>
-        </ScrollView>
+
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 40) }]}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.heroSection}>
+                    <View style={styles.iconBox}>
+                        <LinearGradient
+                            colors={['#e0e7ff', '#eff6ff']}
+                            style={styles.iconGradient}
+                        >
+                            <Icon name="shield-checkmark" size={60} color="#6366f1" />
+                        </LinearGradient>
+                    </View>
+                    <Text style={styles.heroTitle}>Cambiar Contraseña</Text>
+                    <Text style={styles.heroSubtitle}>Protege tu cuenta con una clave segura</Text>
+                </View>
+
+                <View style={styles.formCard}>
+                    <PasswordInput
+                        label="Contraseña Actual"
+                        value={currentPassword}
+                        onChangeText={setCurrentPassword}
+                        showPassword={showCurrentPassword}
+                        setShowPassword={setShowCurrentPassword}
+                        placeholder="••••••••"
+                    />
+
+                    <View style={styles.separator} />
+
+                    <PasswordInput
+                        label="Nueva Contraseña"
+                        value={newPassword}
+                        onChangeText={setNewPassword}
+                        showPassword={showNewPassword}
+                        setShowPassword={setShowNewPassword}
+                        placeholder="Mínimo 6 caracteres"
+                    />
+
+                    <PasswordInput
+                        label="Confirmar Nueva Contraseña"
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                        showPassword={showConfirmPassword}
+                        setShowPassword={setShowConfirmPassword}
+                        placeholder="Repite la contraseña"
+                    />
+                </View>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={[styles.saveButton, isSubmitting && styles.btnDisabled]}
+                        onPress={handleChangePassword}
+                        disabled={isSubmitting}
+                        activeOpacity={0.8}
+                    >
+                        <LinearGradient
+                            colors={[colors.HONEY[500], colors.HONEY[600]]}
+                            style={styles.btnGradient}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator color={colors.WHITE} />
+                            ) : (
+                                <>
+                                    <Text style={styles.saveButtonText}>Actualizar Contraseña</Text>
+                                    <Icon name="lock-open" size={20} color={colors.WHITE} />
+                                </>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => navigation.goBack()}
+                        disabled={isSubmitting}
+                    >
+                        <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: '#fafaf9',
+    },
     container: {
         flex: 1,
-        backgroundColor: getTheme().background,
-    },
-    contentContainer: {
-        padding: 20,
-        paddingBottom: 40,
     },
     header: {
-        marginBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        backgroundColor: colors.WHITE,
+        paddingBottom: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
     },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: getTheme().text,
-        marginBottom: 8,
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f8fafc',
     },
-    subtitle: {
-        fontSize: 16,
-        color: getTheme().text,
-        opacity: 0.7,
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.SLATE[800],
     },
-    formContainer: {
-        marginBottom: 24,
+    contentContainer: {
+        padding: 24,
+    },
+    heroSection: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    iconBox: {
+        marginBottom: 20,
+    },
+    iconGradient: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#6366f1',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 5,
+    },
+    heroTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: colors.SLATE[900],
+        marginBottom: 4,
+    },
+    heroSubtitle: {
+        fontSize: 14,
+        color: colors.SLATE[500],
+        textAlign: 'center',
+    },
+    formCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: colors.SLATE[900],
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 20,
+        elevation: 4,
     },
     inputGroup: {
         marginBottom: 20,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
-        color: getTheme().text,
-        marginBottom: 8,
+        fontWeight: '700',
+        color: colors.SLATE[700],
+        marginBottom: 10,
+        marginLeft: 4,
     },
-    passwordInputContainer: {
+    inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderColor: getTheme().borders,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
         borderWidth: 1,
-        borderRadius: 8,
-        backgroundColor: getTheme().background,
-    },
-    passwordInput: {
-        flex: 1,
-        height: 50,
+        borderColor: '#e2e8f0',
         paddingHorizontal: 16,
-        color: getTheme().text,
+    },
+    inputIcon: {
+        marginRight: 12,
+    },
+    input: {
+        flex: 1,
+        height: 56,
         fontSize: 16,
+        color: colors.SLATE[800],
+        fontWeight: '600',
     },
     eyeIcon: {
-        padding: 12,
+        padding: 8,
     },
-    buttonContainer: {
-        gap: 12,
+    separator: {
+        height: 1,
+        backgroundColor: '#f1f5f9',
+        marginBottom: 24,
+        marginTop: 4,
     },
-    button: {
+    footer: {
+        marginTop: 32,
+        gap: 16,
+    },
+    saveButton: {
+        borderRadius: 18,
+        overflow: 'hidden',
+        shadowColor: colors.HONEY[600],
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 8,
+    },
+    btnGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 8,
+        paddingVertical: 18,
+        gap: 10,
     },
-    saveButton: {
-        backgroundColor: getTheme().background,
-        borderColor: getTheme().borders,
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.WHITE,
     },
     cancelButton: {
-        backgroundColor: 'transparent',
-        borderColor: getTheme().borders,
-        opacity: 0.7,
+        paddingVertical: 14,
+        alignItems: 'center',
     },
-    buttonDisabled: {
-        opacity: 0.5,
-    },
-    buttonText: {
+    cancelButtonText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: getTheme().text,
+        fontWeight: '700',
+        color: colors.SLATE[400],
     },
+    btnDisabled: {
+        opacity: 0.6,
+    }
 });
 
 export default ChangePasswordScreen;

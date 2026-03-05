@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import getTheme from '../../constants/themes';
+import colors from '../../constants/colors';
 import { isValidEmail, isValidLength } from '../../helpers/validation';
 import logger from '../../helpers/logger';
 import { EditProfileScreenProps } from '../../types/navigation';
 import getProfile from '../../modules/API/User';
 import { updateProfile } from '../../modules/API/User';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -40,7 +43,6 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
     };
 
     const handleSave = async () => {
-        // Validaciones
         if (!name || !isValidLength(name, 2, 50)) {
             ToastAndroid.show('El nombre debe tener entre 2 y 50 caracteres', ToastAndroid.SHORT);
             return;
@@ -51,7 +53,6 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
             return;
         }
 
-        // Verificar si hay cambios
         if (originalData && name === originalData.name && email === originalData.email) {
             ToastAndroid.show('No hay cambios para guardar', ToastAndroid.SHORT);
             return;
@@ -77,165 +78,265 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
 
     if (loading) {
         return (
-            <View style={[styles.container, styles.centerContent, { paddingTop: insets.top }]}>
-                <ActivityIndicator size="large" color={getTheme().primary} />
+            <View style={styles.centerContainer}>
+                <ActivityIndicator size="large" color={colors.HONEY[500]} />
                 <Text style={styles.loadingText}>Cargando perfil...</Text>
             </View>
         );
     }
 
     return (
-        <ScrollView 
-            style={[styles.container, { paddingTop: insets.top }]}
-            contentContainerStyle={styles.contentContainer}
-        >
-            <View style={styles.header}>
-                <Text style={styles.title}>Editar Perfil</Text>
-                <Text style={styles.subtitle}>Actualiza tu información personal</Text>
-            </View>
-
-            <View style={styles.formContainer}>
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Nombre</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Nombre completo"
-                        onChangeText={setName}
-                        value={name}
-                        autoCapitalize="words"
-                        editable={!isSubmitting}
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email"
-                        onChangeText={setEmail}
-                        value={email}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        editable={!isSubmitting}
-                    />
-                </View>
-            </View>
-
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                    style={[styles.button, styles.saveButton, isSubmitting && styles.buttonDisabled]} 
-                    onPress={handleSave}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? (
-                        <ActivityIndicator color={getTheme().text} />
-                    ) : (
-                        <>
-                            <Icon name="checkmark-circle" size={20} color={getTheme().text} />
-                            <Text style={styles.buttonText}>Guardar Cambios</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                    style={[styles.button, styles.cancelButton]} 
+        <View style={styles.mainContainer}>
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity
+                    style={styles.backButton}
                     onPress={() => navigation.goBack()}
-                    disabled={isSubmitting}
                 >
-                    <Icon name="close-circle" size={20} color={getTheme().text} />
-                    <Text style={styles.buttonText}>Cancelar</Text>
+                    <Icon name="arrow-back" size={24} color={colors.SLATE[800]} />
                 </TouchableOpacity>
+                <Text style={styles.headerTitle}>Editar Perfil</Text>
+                <View style={{ width: 40 }} />
             </View>
-        </ScrollView>
+
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 40) }]}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.heroSection}>
+                    <View style={styles.avatarBox}>
+                        <LinearGradient
+                            colors={[colors.HONEY[100], colors.HONEY[50]]}
+                            style={styles.avatarGradient}
+                        >
+                            <Icon name="person" size={60} color={colors.HONEY[500]} />
+                        </LinearGradient>
+                    </View>
+                    <Text style={styles.heroTitle}>Información Personal</Text>
+                    <Text style={styles.heroSubtitle}>Actualiza tus datos de contacto</Text>
+                </View>
+
+                <View style={styles.formCard}>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Nombre completo</Text>
+                        <View style={styles.inputWrapper}>
+                            <Icon name="person-outline" size={20} color={colors.SLATE[400]} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Ingresa tu nombre"
+                                value={name}
+                                onChangeText={setName}
+                                autoCapitalize="words"
+                                editable={!isSubmitting}
+                                placeholderTextColor={colors.SLATE[300]}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.label}>Correo electrónico</Text>
+                        <View style={styles.inputWrapper}>
+                            <Icon name="mail-outline" size={20} color={colors.SLATE[400]} style={styles.inputIcon} />
+                            <TextInput
+                                style={styles.input}
+                                placeholder="tu@email.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                editable={!isSubmitting}
+                                placeholderTextColor={colors.SLATE[300]}
+                            />
+                        </View>
+                    </View>
+                </View>
+
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={[styles.saveButton, isSubmitting && styles.btnDisabled]}
+                        onPress={handleSave}
+                        disabled={isSubmitting}
+                        activeOpacity={0.8}
+                    >
+                        <LinearGradient
+                            colors={[colors.HONEY[500], colors.HONEY[600]]}
+                            style={styles.btnGradient}
+                        >
+                            {isSubmitting ? (
+                                <ActivityIndicator color={colors.WHITE} />
+                            ) : (
+                                <>
+                                    <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                                    <Icon name="checkmark-circle" size={20} color={colors.WHITE} />
+                                </>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={() => navigation.goBack()}
+                        disabled={isSubmitting}
+                    >
+                        <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: '#fafaf9',
+    },
     container: {
         flex: 1,
-        backgroundColor: getTheme().background,
-    },
-    centerContent: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    contentContainer: {
-        padding: 20,
-        paddingBottom: 40,
     },
     header: {
-        marginBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        backgroundColor: colors.WHITE,
+        paddingBottom: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
     },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: getTheme().text,
-        marginBottom: 8,
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f8fafc',
     },
-    subtitle: {
-        fontSize: 16,
-        color: getTheme().text,
-        opacity: 0.7,
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.SLATE[800],
     },
-    formContainer: {
-        marginBottom: 24,
+    contentContainer: {
+        padding: 24,
+    },
+    heroSection: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    avatarBox: {
+        marginBottom: 20,
+    },
+    avatarGradient: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: colors.HONEY[500],
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 5,
+    },
+    heroTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: colors.SLATE[900],
+        marginBottom: 4,
+    },
+    heroSubtitle: {
+        fontSize: 14,
+        color: colors.SLATE[500],
+    },
+    formCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: colors.SLATE[900],
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 20,
+        elevation: 4,
     },
     inputGroup: {
         marginBottom: 20,
     },
     label: {
         fontSize: 14,
-        fontWeight: '600',
-        color: getTheme().text,
-        marginBottom: 8,
+        fontWeight: '700',
+        color: colors.SLATE[700],
+        marginBottom: 10,
+        marginLeft: 4,
+    },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        paddingHorizontal: 16,
+    },
+    inputIcon: {
+        marginRight: 12,
     },
     input: {
-        width: '100%',
-        height: 50,
-        borderColor: getTheme().borders,
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        color: getTheme().text,
-        backgroundColor: getTheme().background,
+        flex: 1,
+        height: 56,
         fontSize: 16,
+        color: colors.SLATE[800],
+        fontWeight: '600',
     },
-    buttonContainer: {
-        gap: 12,
+    footer: {
+        marginTop: 32,
+        gap: 16,
     },
-    button: {
+    saveButton: {
+        borderRadius: 18,
+        overflow: 'hidden',
+        shadowColor: colors.HONEY[600],
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 8,
+    },
+    btnGradient: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 14,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        borderWidth: 1,
-        gap: 8,
+        paddingVertical: 18,
+        gap: 10,
     },
-    saveButton: {
-        backgroundColor: getTheme().background,
-        borderColor: getTheme().borders,
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.WHITE,
     },
     cancelButton: {
-        backgroundColor: 'transparent',
-        borderColor: getTheme().borders,
-        opacity: 0.7,
+        paddingVertical: 14,
+        alignItems: 'center',
     },
-    buttonDisabled: {
-        opacity: 0.5,
-    },
-    buttonText: {
+    cancelButtonText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: getTheme().text,
+        fontWeight: '700',
+        color: colors.SLATE[400],
+    },
+    btnDisabled: {
+        opacity: 0.6,
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fafaf9',
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: getTheme().text,
-        opacity: 0.7,
-    },
+        color: colors.SLATE[500],
+        fontWeight: '600',
+    }
 });
 
 export default EditProfileScreen;

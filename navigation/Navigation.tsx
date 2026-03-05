@@ -48,12 +48,15 @@ import NotificationScreen from '../screens/Home/NotificationsScreen';
 import AIChatScreen from '../screens/AI/AIChatScreen';
 import TasksScreen from '../screens/Tasks/TasksScreen';
 import TaskAddScreen from '../screens/Tasks/TaskAddScreen';
+import GuidesListScreen from '../screens/Guides/GuidesListScreen';
+import GuideDetailScreen from '../screens/Guides/GuideDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const ApiaryStack = createNativeStackNavigator();
 const ScannerStack = createNativeStackNavigator();
 const StatisticsStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const GuidesStack = createNativeStackNavigator();
 
 // Apiary Stack Navigator to group Apiary screens
 function ApiaryNavigator() {
@@ -92,24 +95,31 @@ function ScannerNavigator() {
 
 function StatisticsNavigator() {
     return (
-        <StatisticsStack.Navigator>
-            <StatisticsStack.Screen component={StatisticsScreen} name="StatisticsScreen" options={(navigation) => ApiaryHeader(navigation)} />
+        <StatisticsStack.Navigator screenOptions={{ headerShown: false }}>
+            <StatisticsStack.Screen component={StatisticsScreen} name="StatisticsScreen" />
         </StatisticsStack.Navigator>
     );
 }
 
 function ProfileNavigator() {
     return (
-        <ProfileStack.Navigator>
-            <ProfileStack.Screen component={ProfileScreen} name="ProfileScreen" options={(navigation) => ApiaryHeader(navigation)} />
-            <ProfileStack.Screen component={EditProfileScreen} name="EditProfileScreen" options={(navigation) => ApiaryHeader(navigation)} />
-            <ProfileStack.Screen component={ChangePasswordScreen} name="ChangePasswordScreen" options={(navigation) => ApiaryHeader(navigation)} />
-            <ProfileStack.Screen component={DevicesScreen} name="DevicesScreen" options={(navigation) => ApiaryHeader(navigation)} />
+        <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+            <ProfileStack.Screen component={ProfileScreen} name="ProfileScreen" />
+            <ProfileStack.Screen component={EditProfileScreen} name="EditProfileScreen" />
+            <ProfileStack.Screen component={ChangePasswordScreen} name="ChangePasswordScreen" />
+            <ProfileStack.Screen component={DevicesScreen} name="DevicesScreen" />
         </ProfileStack.Navigator>
     );
 }
 
-
+function GuidesNavigator() {
+    return (
+        <GuidesStack.Navigator screenOptions={{ headerShown: false }}>
+            <GuidesStack.Screen component={GuidesListScreen} name="GuidesListScreen" />
+            <GuidesStack.Screen component={GuideDetailScreen} name="GuideDetailScreen" />
+        </GuidesStack.Navigator>
+    );
+}
 
 
 // Componente interno para manejar navegación de notificaciones
@@ -132,13 +142,14 @@ export default function Navigation() {
                     // Main flow when user is logged in
                     <>
                         <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }} />
-                        <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={(navigation) => ApiaryHeader(navigation)}  />
+                        <Stack.Screen name="NotificationScreen" component={NotificationScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="AIChatScreen" component={AIChatScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="TasksScreen" component={TasksScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="TaskAddScreen" component={TaskAddScreen} options={{ headerShown: false }} />
                         <Stack.Screen name="Apiary" component={ApiaryNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Scanner" component={ScannerNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Statistics" component={StatisticsNavigator} options={{ headerShown: false }} />
+                        <Stack.Screen name="Guides" component={GuidesNavigator} options={{ headerShown: false }} />
                         <Stack.Screen name="Profile" component={ProfileNavigator} options={{ headerShown: false }} />
                     </>
                 ) : (

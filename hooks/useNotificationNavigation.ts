@@ -23,15 +23,15 @@ export const useNotificationNavigation = (isAuthenticated: boolean = true) => {
       (response) => {
         try {
           const data = response.notification.request.content.data;
-          
+
           console.log('Usuario tocó la notificación:', response);
-          
+
           // Verificar que navigation esté disponible antes de navegar
           if (!navigation || !navigation.navigate) {
             console.warn('Navigation not available when notification was tapped');
             return;
           }
-          
+
           // Navegar según el tipo de notificación
           if (data?.apiaryId) {
             // Navegar a la pantalla del apiario
@@ -51,7 +51,9 @@ export const useNotificationNavigation = (isAuthenticated: boolean = true) => {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        if (typeof notificationListener.current.remove === 'function') {
+          notificationListener.current.remove();
+        }
       }
     };
   }, [navigation, isAuthenticated]);

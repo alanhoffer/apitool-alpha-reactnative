@@ -38,8 +38,8 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
   return (
     <View style={styles.apiaryCard}>
       <View style={styles.apiaryImageContainer}>
-        <Image 
-          style={styles.apiaryImage} 
+        <Image
+          style={styles.apiaryImage}
           source={apiaryInfo.image ? { uri: `${APIARY_IMG_URL}${apiaryInfo.image}` } : require('../../assets/images/icons/beehive_box_general.png')}
           defaultSource={require('../../assets/images/icons/beehive_box_general.png')}
         />
@@ -74,14 +74,17 @@ export const ApiaryCard = ({ apiaryInfo }: any) => {
 
 const styles = StyleSheet.create({
   apiaryCard: {
-    marginVertical: 6,
+    marginVertical: 8,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.WHITE,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.GREY_LIGHT,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 5,
+    elevation: 2,
   },
   apiaryImageContainer: {
     position: 'relative',

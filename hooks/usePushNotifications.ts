@@ -34,10 +34,10 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     try {
       // Obtener información completa del dispositivo
       const deviceInfo = await getDeviceInfo();
-      
+
       // Registrar/actualizar dispositivo con el push token
       await registerDevice(deviceInfo, token);
-      
+
       logger.info('[usePushNotifications] Token FCM y dispositivo registrado en el backend exitosamente');
     } catch (error: any) {
       logger.error('[usePushNotifications] Error enviando token al backend:', error?.response?.data || error?.message);
@@ -72,12 +72,12 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     // Solicitar permisos
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    
+
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-    
+
     if (finalStatus !== 'granted') {
       Alert.alert(
         'Permisos necesarios',
@@ -86,7 +86,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       );
       return null;
     }
-    
+
     // Obtener el projectId de Expo
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     if (!projectId) {
@@ -116,7 +116,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       const expoToken = await Notifications.getExpoPushTokenAsync({
         projectId: projectId,
       });
-      
+
       if (expoToken?.data) {
         token = expoToken.data;
         logger.info('[usePushNotifications] Token Expo Push obtenido:', token);
@@ -147,11 +147,8 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       // Limpiar listeners al desmontar
       if (notificationListener.current) {
         try {
-          // El subscription tiene un método remove() en versiones recientes de expo-notifications
           if (typeof notificationListener.current.remove === 'function') {
             notificationListener.current.remove();
-          } else if (typeof Notifications.removeNotificationSubscription === 'function') {
-            Notifications.removeNotificationSubscription(notificationListener.current);
           }
         } catch (error) {
           console.warn('[usePushNotifications] Error al limpiar listener:', error);

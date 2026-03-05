@@ -5,13 +5,14 @@ import { ToastAndroid } from "react-native";
 import { transformSnakeToCamel } from '../../helpers/Apiary/snakeToCamel';
 import logger from '../../helpers/logger';
 import { addToQueue } from '../Offline/OfflineQueue';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const getApiarys = async (): Promise<IApiary[] | null> => {
   try {
     logger.api('apiarys', 'GET');
     const response = await apiClient.get<any>('apiarys');
     logger.debug('[getApiarys] Status:', response.status);
-    
+
     // Verificar si la respuesta viene envuelta en un objeto (ej: { data: [...] })
     let apiaryData: any[] = [];
     if (Array.isArray(response.data)) {
@@ -19,24 +20,43 @@ export const getApiarys = async (): Promise<IApiary[] | null> => {
     } else if (response.data && typeof response.data === 'object') {
       // Intentar diferentes posibles estructuras
       apiaryData = response.data.data || response.data.apiarys || response.data.items || [];
-      if (apiaryData.length === 0) {
+      if (apiaryData.length === 0 && response.data) {
         logger.warn('[getApiarys] No se encontró array en la respuesta. Estructura:', Object.keys(response.data));
       }
     }
-    
+
     logger.debug('[getApiarys] Apiarios extraídos:', apiaryData.length);
-    
+
     // Transformar de snake_case a camelCase
     const transformedData = transformSnakeToCamel<IApiary[]>(apiaryData);
-    
+
+    // Guardar en caché para modo offline
+    try {
+      await AsyncStorage.setItem('@apiarys_cache', JSON.stringify(transformedData));
+    } catch (e) {
+      logger.warn('[getApiarys] Error guardando caché', e);
+    }
+
     return transformedData;
   } catch (error: any) {
+    if (!error.response || error.code === 'ERR_NETWORK') {
+      try {
+        const cached = await AsyncStorage.getItem('@apiarys_cache');
+        if (cached) {
+          logger.info('[getApiarys] Obteniendo apiarios desde caché offline');
+          return JSON.parse(cached);
+        }
+      } catch (e) {
+        logger.warn('[getApiarys] Error leyendo caché', e);
+      }
+    }
+
     // Logging detallado del error para debugging
     const statusCode = error?.response?.status;
     const statusText = error?.response?.statusText;
     const errorMessage = error?.response?.data?.message || error?.response?.data?.error || error?.message;
     const errorData = error?.response?.data;
-    
+
     logger.error('[getApiarys] Error fetching apiarys:', {
       statusCode,
       statusText,
@@ -45,13 +65,13 @@ export const getApiarys = async (): Promise<IApiary[] | null> => {
       url: error?.config?.url,
       method: error?.config?.method,
     });
-    
+
     // Si es un error 500, loggear información adicional
     if (statusCode === 500) {
       logger.error('[getApiarys] Error 500 del servidor - El backend tiene un problema interno');
       logger.error('[getApiarys] Detalles del error del servidor:', errorData);
     }
-    
+
     return null;
   }
 };
@@ -59,8 +79,22 @@ export const getApiarys = async (): Promise<IApiary[] | null> => {
 export const getApiaryAndHivesCount = async () => {
   try {
     const response = await apiClient.get('apiarys/all/count');
+    if (response.data) {
+      try {
+        await AsyncStorage.setItem('@apiarys_count_cache', JSON.stringify(response.data));
+      } catch (e) { }
+    }
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    if (!error.response || error.code === 'ERR_NETWORK') {
+      try {
+        const cached = await AsyncStorage.getItem('@apiarys_count_cache');
+        if (cached) {
+          logger.info('[getApiaryAndHivesCount] Obteniendo contadores desde caché offline');
+          return JSON.parse(cached);
+        }
+      } catch (e) { }
+    }
     logger.error('Error fetching apiarys:', error);
     return null;
   }
@@ -96,18 +130,18 @@ export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryDat
   data.append('tFence', String(ApiaryData.tFence));
   data.append('tComment', ApiaryData.tComment);
   data.append('transhumance', String(ApiaryData.transhumance));
-  
+
   // Verificar y enviar coordenadas
   if (ApiaryData.latitude !== undefined && ApiaryData.latitude !== null && ApiaryData.latitude !== 0) {
     data.append('latitude', String(ApiaryData.latitude));
     logger.debug('[createApiary] Enviando latitude:', ApiaryData.latitude);
   }
-  
+
   if (ApiaryData.longitude !== undefined && ApiaryData.longitude !== null && ApiaryData.longitude !== 0) {
     data.append('longitude', String(ApiaryData.longitude));
     logger.debug('[createApiary] Enviando longitude:', ApiaryData.longitude);
   }
-  
+
   data.append('settings', JSON.stringify(ApiaryData.settings));
 
   try {
@@ -124,17 +158,17 @@ export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryDat
 }
 
 export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
-    try {
-        return await createApiaryImpl(profileImage, ApiaryData);
-    } catch (error: any) {
-        if (!error.response) { // Network error usually has no response
-            logger.info('[createApiary] Network error, adding to offline queue');
-            await addToQueue('createApiary', { profileImage, ApiaryData });
-            ToastAndroid.show('Sin conexión. Se guardó para sincronizar luego.', ToastAndroid.LONG);
-            return { status: 200, data: { offline: true } }; // Mock success
-        }
-        throw error;
+  try {
+    return await createApiaryImpl(profileImage, ApiaryData);
+  } catch (error: any) {
+    if (!error.response) { // Network error usually has no response
+      logger.info('[createApiary] Network error, adding to offline queue');
+      await addToQueue('createApiary', { profileImage, ApiaryData });
+      ToastAndroid.show('Sin conexión. Se guardó para sincronizar luego.', ToastAndroid.LONG);
+      return { status: 200, data: { offline: true } }; // Mock success
     }
+    throw error;
+  }
 }
 
 export const deleteApiaryImpl = async (apiaryId: number) => {
@@ -148,17 +182,17 @@ export const deleteApiaryImpl = async (apiaryId: number) => {
 };
 
 export const deleteApiary = async (apiaryId: number) => {
-    try {
-        return await deleteApiaryImpl(apiaryId);
-    } catch (error: any) {
-        if (!error.response) {
-            logger.info('[deleteApiary] Network error, adding to offline queue');
-            await addToQueue('deleteApiary', { apiaryId });
-            ToastAndroid.show('Sin conexión. Se eliminará al reconectar.', ToastAndroid.LONG);
-            return true; // Mock success
-        }
-        return false;
+  try {
+    return await deleteApiaryImpl(apiaryId);
+  } catch (error: any) {
+    if (!error.response) {
+      logger.info('[deleteApiary] Network error, adding to offline queue');
+      await addToQueue('deleteApiary', { apiaryId });
+      ToastAndroid.show('Sin conexión. Se eliminará al reconectar.', ToastAndroid.LONG);
+      return true; // Mock success
     }
+    return false;
+  }
 };
 
 export const updateApiaryImpl = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
@@ -178,21 +212,22 @@ export const updateApiaryImpl = async (profileImage: any, apiaryId: number, Apia
     // Añade los datos del apiario al FormData
     // Nota: Iteramos sobre las keys, pero para FormData necesitamos strings.
     // Además, ApiaryData ahora es Partial, puede tener undefined.
+    if (!ApiaryData) return false;
     const keys = Object.keys(ApiaryData) as Array<keyof IApiaryData>;
     keys.forEach(key => {
       const value = ApiaryData[key];
       if (value !== undefined && value !== null) {
-          if (key === 'settings') {
-             data.append(key, JSON.stringify(value));
-          } else if (key === 'latitude' || key === 'longitude') {
-             // Solo enviar coordenadas si son valores válidos (no 0)
-             if (value !== 0) {
-               data.append(key, String(value));
-               console.log(`[updateApiary] Enviando ${key}:`, value);
-             }
-          } else {
-             data.append(key, String(value));
+        if (key === 'settings') {
+          data.append(key, JSON.stringify(value));
+        } else if (key === 'latitude' || key === 'longitude') {
+          // Solo enviar coordenadas si son valores válidos (no 0)
+          if (value !== 0) {
+            data.append(key, String(value));
+            console.log(`[updateApiary] Enviando ${key}:`, value);
           }
+        } else {
+          data.append(key, String(value));
+        }
       }
     });
 
@@ -210,17 +245,17 @@ export const updateApiaryImpl = async (profileImage: any, apiaryId: number, Apia
 };
 
 export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryData: Partial<IApiaryData>) => {
-    try {
-        return await updateApiaryImpl(profileImage, apiaryId, ApiaryData);
-    } catch (error: any) {
-        if (!error.response) {
-            logger.info('[updateApiary] Network error, adding to offline queue');
-            await addToQueue('updateApiary', { profileImage, apiaryId, ApiaryData });
-            ToastAndroid.show('Sin conexión. Cambios guardados localmente.', ToastAndroid.LONG);
-            return true;
-        }
-        return false;
+  try {
+    return await updateApiaryImpl(profileImage, apiaryId, ApiaryData);
+  } catch (error: any) {
+    if (!error.response) {
+      logger.info('[updateApiary] Network error, adding to offline queue');
+      await addToQueue('updateApiary', { profileImage, apiaryId, ApiaryData });
+      ToastAndroid.show('Sin conexión. Cambios guardados localmente.', ToastAndroid.LONG);
+      return true;
     }
+    return false;
+  }
 };
 
 
@@ -235,17 +270,17 @@ export const updateSettingsImpl = async (settingsData: IApiarySettings) => {
 };
 
 export const updateSettings = async (settingsData: IApiarySettings) => {
-    try {
-        return await updateSettingsImpl(settingsData);
-    } catch (error: any) {
-        if (!error.response) {
-            logger.info('[updateSettings] Network error, adding to offline queue');
-            await addToQueue('updateSettings', { settingsData });
-            ToastAndroid.show('Sin conexión. Configuración guardada localmente.', ToastAndroid.LONG);
-            return true;
-        }
-        return false;
+  try {
+    return await updateSettingsImpl(settingsData);
+  } catch (error: any) {
+    if (!error.response) {
+      logger.info('[updateSettings] Network error, adding to offline queue');
+      await addToQueue('updateSettings', { settingsData });
+      ToastAndroid.show('Sin conexión. Configuración guardada localmente.', ToastAndroid.LONG);
+      return true;
     }
+    return false;
+  }
 };
 
 export const toggleHarvestAllImpl = async (harvesting: boolean) => {
@@ -265,15 +300,15 @@ export const toggleHarvestAllImpl = async (harvesting: boolean) => {
 };
 
 export const toggleHarvestAll = async (harvesting: boolean) => {
-    try {
-        await toggleHarvestAllImpl(harvesting);
-    } catch (error: any) {
-        if (!error.response) {
-            logger.info('[toggleHarvestAll] Network error, adding to offline queue');
-            await addToQueue('toggleHarvestAll', { harvesting });
-            ToastAndroid.show('Sin conexión. Se actualizará al reconectar.', ToastAndroid.LONG);
-        }
+  try {
+    await toggleHarvestAllImpl(harvesting);
+  } catch (error: any) {
+    if (!error.response) {
+      logger.info('[toggleHarvestAll] Network error, adding to offline queue');
+      await addToQueue('toggleHarvestAll', { harvesting });
+      ToastAndroid.show('Sin conexión. Se actualizará al reconectar.', ToastAndroid.LONG);
     }
+  }
 };
 
 export const getHistory = async (apiaryId: number) => {
@@ -353,19 +388,19 @@ export const getHarvestedCount = async (): Promise<number | null> => {
     // El endpoint puede retornar diferentes estructuras:
     // { count: number }, { harvestedBoxesCount: number }, o directamente un número
     const data = response.data;
-    
+
     if (typeof data === 'number') {
       return data;
     }
-    
+
     if (data?.count !== undefined) {
       return Number(data.count);
     }
-    
+
     if (data?.harvestedBoxesCount !== undefined) {
       return Number(data.harvestedBoxesCount);
     }
-    
+
     return null;
   } catch (error: any) {
     if (error?.response?.status === 404) {
