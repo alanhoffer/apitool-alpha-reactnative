@@ -7,7 +7,24 @@ export interface OfflineRequest {
   type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll' | 'createTask' | 'updateTask' | 'deleteTask';
   payload: any;
   timestamp: number;
+  attempts: number;
+  lastAttemptAt?: number;
+  nextRetryAt?: number;
+  lastError?: string;
 }
+
+const normalizeRequest = (request: Partial<OfflineRequest>): OfflineRequest => {
+  return {
+    id: request.id || Date.now().toString(),
+    type: request.type as OfflineRequest['type'],
+    payload: request.payload,
+    timestamp: request.timestamp || Date.now(),
+    attempts: typeof request.attempts === 'number' ? request.attempts : 0,
+    lastAttemptAt: request.lastAttemptAt,
+    nextRetryAt: request.nextRetryAt,
+    lastError: request.lastError,
+  };
+};
 
 export const addToQueue = async (type: OfflineRequest['type'], payload: any) => {
   try {
@@ -17,6 +34,7 @@ export const addToQueue = async (type: OfflineRequest['type'], payload: any) => 
       type,
       payload,
       timestamp: Date.now(),
+      attempts: 0,
     };
     currentQueue.push(newRequest);
     await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(currentQueue));
@@ -29,7 +47,8 @@ export const addToQueue = async (type: OfflineRequest['type'], payload: any) => 
 export const getQueue = async (): Promise<OfflineRequest[]> => {
   try {
     const json = await AsyncStorage.getItem(QUEUE_KEY);
-    return json ? JSON.parse(json) : [];
+    const parsed: Partial<OfflineRequest>[] = json ? JSON.parse(json) : [];
+    return parsed.map(normalizeRequest);
   } catch (error) {
     console.error('[OfflineQueue] Error getting queue:', error);
     return [];
@@ -53,4 +72,16 @@ export const clearQueue = async () => {
         console.error('[OfflineQueue] Error clearing queue:', error);
     }
 }
+
+export const updateQueueRequest = async (id: string, updates: Partial<OfflineRequest>) => {
+  try {
+    const currentQueue = await getQueue();
+    const newQueue = currentQueue.map(req =>
+      req.id === id ? normalizeRequest({ ...req, ...updates }) : req
+    );
+    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+  } catch (error) {
+    console.error('[OfflineQueue] Error updating queue request:', error);
+  }
+};
 

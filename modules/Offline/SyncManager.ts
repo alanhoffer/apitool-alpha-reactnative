@@ -1,4 +1,4 @@
-import { getQueue, removeFromQueue, OfflineRequest } from './OfflineQueue';
+import { getQueue, removeFromQueue, updateQueueRequest, OfflineRequest } from './OfflineQueue';
 import { 
     createApiaryImpl, 
     updateApiaryImpl, 
@@ -40,6 +40,36 @@ const hasConfirmedSuccess = (req: OfflineRequest, result: any): boolean => {
     }
 };
 
+const BASE_RETRY_DELAY_MS = 30_000;
+const MAX_RETRY_DELAY_MS = 30 * 60 * 1000;
+
+const getRetryDelayMs = (attempts: number): number => {
+    return Math.min(BASE_RETRY_DELAY_MS * Math.max(1, 2 ** Math.max(0, attempts - 1)), MAX_RETRY_DELAY_MS);
+};
+
+const shouldRetryNow = (req: OfflineRequest, now: number): boolean => {
+    return !req.nextRetryAt || req.nextRetryAt <= now;
+};
+
+const markRequestFailed = async (req: OfflineRequest, errorMessage: string) => {
+    const attempts = req.attempts + 1;
+    const lastAttemptAt = Date.now();
+    const nextRetryAt = lastAttemptAt + getRetryDelayMs(attempts);
+    await updateQueueRequest(req.id, {
+        attempts,
+        lastAttemptAt,
+        nextRetryAt,
+        lastError: errorMessage,
+    });
+    logger.warn('[SyncManager] syncPendingRequests: Reprogramando petición', {
+        id: req.id,
+        type: req.type,
+        attempts,
+        nextRetryAt,
+        errorMessage,
+    });
+};
+
 export const syncPendingRequests = async () => {
     logger.debug('[SyncManager] syncPendingRequests: Iniciando sincronización...');
     const queue = await getQueue();
@@ -55,8 +85,18 @@ export const syncPendingRequests = async () => {
 
     logger.debug(`[SyncManager] syncPendingRequests: Sincronizando ${queue.length} peticiones...`);
     let syncedCount = 0;
+    const now = Date.now();
 
     for (const req of queue) {
+        if (!shouldRetryNow(req, now)) {
+            logger.debug('[SyncManager] syncPendingRequests: Petición en backoff, se omite por ahora', {
+                id: req.id,
+                type: req.type,
+                nextRetryAt: req.nextRetryAt,
+            });
+            continue;
+        }
+
         logger.debug(`[SyncManager] syncPendingRequests: Procesando petición ${req.id} de tipo ${req.type}`);
         try {
             let result: any = null;
@@ -115,6 +155,7 @@ export const syncPendingRequests = async () => {
                     type: req.type,
                     result,
                 });
+                await markRequestFailed(req, 'sync-unconfirmed');
                 continue;
             }
 
@@ -129,6 +170,7 @@ export const syncPendingRequests = async () => {
                 stack: error.stack,
                 response: error.response?.data
             });
+            await markRequestFailed(req, error?.message || 'sync-error');
             // Si es error de red, se mantiene en la cola para el próximo intento
             if (isNetworkError(error)) {
                 logger.debug('[SyncManager] Error de red persistente, manteniendo en cola.');
