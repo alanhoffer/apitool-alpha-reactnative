@@ -5,7 +5,7 @@ const LAST_SUCCESSFUL_SYNC_KEY = 'offline_queue_last_successful_sync_at';
 
 export interface OfflineRequest {
   id: string;
-  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll' | 'createTask' | 'updateTask' | 'deleteTask';
+  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll' | 'createTask' | 'updateTask' | 'deleteTask' | 'createHive' | 'updateHive' | 'deleteHive';
   payload: any;
   timestamp: number;
   attempts: number;
@@ -106,6 +106,31 @@ const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): Offl
       }
       return [...queue, newRequest];
     }
+    case 'updateHive': {
+      const hiveId = newRequest.payload?.hiveId;
+      const existingIndex = queue.findIndex(req => req.type === 'updateHive' && req.payload?.hiveId === hiveId);
+      const hasPendingDelete = queue.some(req => req.type === 'deleteHive' && req.payload?.hiveId === hiveId);
+      if (hasPendingDelete) {
+        return queue;
+      }
+      if (existingIndex >= 0) {
+        const existing = queue[existingIndex];
+        const mergedRequest: OfflineRequest = normalizeRequest({
+          ...existing,
+          payload: {
+            ...existing.payload,
+            ...newRequest.payload,
+            hiveData: {
+              ...(existing.payload?.hiveData || {}),
+              ...(newRequest.payload?.hiveData || {}),
+            },
+          },
+          timestamp: newRequest.timestamp,
+        });
+        return queue.map((req, index) => index === existingIndex ? mergedRequest : req);
+      }
+      return [...queue, newRequest];
+    }
     case 'updateSettings': {
       const settingsId = newRequest.payload?.settingsData?.id;
       const existingIndex = queue.findIndex(req => req.type === 'updateSettings' && req.payload?.settingsData?.id === settingsId);
@@ -132,6 +157,14 @@ const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): Offl
       const filteredQueue = queue.filter(req => !(
         (req.type === 'updateTask' && req.payload?.id === taskId) ||
         (req.type === 'deleteTask' && req.payload?.id === taskId)
+      ));
+      return [...filteredQueue, newRequest];
+    }
+    case 'deleteHive': {
+      const hiveId = newRequest.payload?.hiveId;
+      const filteredQueue = queue.filter(req => !(
+        (req.type === 'updateHive' && req.payload?.hiveId === hiveId) ||
+        (req.type === 'deleteHive' && req.payload?.hiveId === hiveId)
       ));
       return [...filteredQueue, newRequest];
     }

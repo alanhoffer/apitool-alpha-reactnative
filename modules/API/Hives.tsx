@@ -3,6 +3,8 @@ import { IHive, IHiveData } from '../../constants/interfaces/Apiary/IHive';
 import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
 import { getApiErrorMessage } from '../../helpers/apiErrors';
 import logger from '../../helpers/logger';
+import { addToQueue } from '../Offline/OfflineQueue';
+import { ToastAndroid } from 'react-native';
 
 type HivePayload = Omit<IHiveData, 'settings'>;
 
@@ -65,13 +67,35 @@ export const getHiveById = async (hiveId: number, settings?: IApiarySettings): P
 };
 
 export const createHive = async (apiaryId: number, hiveData: IHiveData, settings?: IApiarySettings): Promise<IHive> => {
-  try {
-    const response = await apiClient.post<IHive>('hives', toCreatePayload(apiaryId, hiveData));
-    return normalizeHive(response.data, settings);
-  } catch (error) {
-    logger.error('[createHive] Error creating hive:', error);
-    throw new Error(getApiErrorMessage(error, 'Error al crear la colmena'));
-  }
+    try {
+        return await createHiveImpl(apiaryId, hiveData, settings);
+    } catch (error) {
+        if (!(error as any)?.response) {
+            logger.info('[createHive] Network error, adding to offline queue');
+            await addToQueue('createHive', { apiaryId, hiveData, settings });
+            ToastAndroid.show('Sin conexion. Colmena guardada localmente.', ToastAndroid.LONG);
+            return normalizeHive({
+                id: Date.now(),
+                apiaryId,
+                userId: settings?.apiaryUserId || 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                ...hiveData,
+            }, settings);
+        }
+        logger.error('[createHive] Error creating hive:', error);
+        throw new Error(getApiErrorMessage(error, 'Error al crear la colmena'));
+    }
+};
+
+export const createHiveImpl = async (apiaryId: number, hiveData: IHiveData, settings?: IApiarySettings): Promise<IHive> => {
+    try {
+        const response = await apiClient.post<IHive>('hives', toCreatePayload(apiaryId, hiveData));
+        return normalizeHive(response.data, settings);
+    } catch (error) {
+        logger.error('[createHiveImpl] Error creating hive:', error);
+        throw error;
+    }
 };
 
 export const updateHive = async (
@@ -79,23 +103,64 @@ export const updateHive = async (
   hiveData: Partial<IHiveData>,
   settings?: IApiarySettings
 ): Promise<IHive | null> => {
-  try {
-    const response = await apiClient.put<IHive>(`hives/${hiveId}`, toUpdatePayload(hiveData));
-    return normalizeHive(response.data, settings);
-  } catch (error) {
-    logger.error('[updateHive] Error updating hive:', error);
-    throw new Error(getApiErrorMessage(error, 'Error al actualizar la colmena'));
-  }
+    try {
+        return await updateHiveImpl(hiveId, hiveData, settings);
+    } catch (error) {
+        if (!(error as any)?.response) {
+            logger.info('[updateHive] Network error, adding to offline queue');
+            await addToQueue('updateHive', { hiveId, hiveData, settings });
+            ToastAndroid.show('Sin conexion. Cambio guardado localmente.', ToastAndroid.SHORT);
+            return normalizeHive({
+                id: hiveId,
+                apiaryId: 0,
+                userId: settings?.apiaryUserId || 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                ...hiveData,
+            }, settings);
+        }
+        logger.error('[updateHive] Error updating hive:', error);
+        throw new Error(getApiErrorMessage(error, 'Error al actualizar la colmena'));
+    }
+};
+
+export const updateHiveImpl = async (
+  hiveId: number,
+  hiveData: Partial<IHiveData>,
+  settings?: IApiarySettings
+): Promise<IHive | null> => {
+    try {
+        const response = await apiClient.put<IHive>(`hives/${hiveId}`, toUpdatePayload(hiveData));
+        return normalizeHive(response.data, settings);
+    } catch (error) {
+        logger.error('[updateHiveImpl] Error updating hive:', error);
+        throw error;
+    }
 };
 
 export const deleteHive = async (hiveId: number): Promise<boolean> => {
-  try {
-    const response = await apiClient.delete(`hives/${hiveId}`);
-    return response.status === 200;
-  } catch (error) {
-    logger.error('[deleteHive] Error deleting hive:', error);
-    return false;
-  }
+    try {
+        return await deleteHiveImpl(hiveId);
+    } catch (error: any) {
+        if (!error?.response) {
+            logger.info('[deleteHive] Network error, adding to offline queue');
+            await addToQueue('deleteHive', { hiveId });
+            ToastAndroid.show('Sin conexion. Se eliminara al reconectar.', ToastAndroid.SHORT);
+            return true;
+        }
+        logger.error('[deleteHive] Error deleting hive:', error);
+        return false;
+    }
+};
+
+export const deleteHiveImpl = async (hiveId: number): Promise<boolean> => {
+    try {
+        const response = await apiClient.delete(`hives/${hiveId}`);
+        return response.status === 200;
+    } catch (error) {
+        logger.error('[deleteHiveImpl] Error deleting hive:', error);
+        throw error;
+    }
 };
 
 export const checkHiveNameExists = async (
