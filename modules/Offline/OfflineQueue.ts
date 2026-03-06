@@ -44,6 +44,102 @@ const normalizeRequest = (request: Partial<OfflineRequest>): OfflineRequest => {
   };
 };
 
+const writeQueue = async (queue: OfflineRequest[]) => {
+  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+};
+
+const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): OfflineRequest[] => {
+  switch (newRequest.type) {
+    case 'toggleHarvestAll':
+      return [
+        ...queue.filter(req => req.type !== 'toggleHarvestAll'),
+        newRequest,
+      ];
+    case 'updateApiary': {
+      const apiaryId = newRequest.payload?.apiaryId;
+      const existingIndex = queue.findIndex(req => req.type === 'updateApiary' && req.payload?.apiaryId === apiaryId);
+      const hasPendingDelete = queue.some(req => req.type === 'deleteApiary' && req.payload?.apiaryId === apiaryId);
+      if (hasPendingDelete) {
+        return queue;
+      }
+      if (existingIndex >= 0) {
+        const existing = queue[existingIndex];
+        const mergedRequest: OfflineRequest = normalizeRequest({
+          ...existing,
+          payload: {
+            ...existing.payload,
+            ...newRequest.payload,
+            profileImage: newRequest.payload?.profileImage ?? existing.payload?.profileImage,
+            ApiaryData: {
+              ...(existing.payload?.ApiaryData || {}),
+              ...(newRequest.payload?.ApiaryData || {}),
+            },
+          },
+          timestamp: newRequest.timestamp,
+        });
+        return queue.map((req, index) => index === existingIndex ? mergedRequest : req);
+      }
+      return [...queue, newRequest];
+    }
+    case 'updateTask': {
+      const taskId = newRequest.payload?.id;
+      const existingIndex = queue.findIndex(req => req.type === 'updateTask' && req.payload?.id === taskId);
+      const hasPendingDelete = queue.some(req => req.type === 'deleteTask' && req.payload?.id === taskId);
+      if (hasPendingDelete) {
+        return queue;
+      }
+      if (existingIndex >= 0) {
+        const existing = queue[existingIndex];
+        const mergedRequest: OfflineRequest = normalizeRequest({
+          ...existing,
+          payload: {
+            ...existing.payload,
+            ...newRequest.payload,
+            taskData: {
+              ...(existing.payload?.taskData || {}),
+              ...(newRequest.payload?.taskData || {}),
+            },
+          },
+          timestamp: newRequest.timestamp,
+        });
+        return queue.map((req, index) => index === existingIndex ? mergedRequest : req);
+      }
+      return [...queue, newRequest];
+    }
+    case 'updateSettings': {
+      const settingsId = newRequest.payload?.settingsData?.id;
+      const existingIndex = queue.findIndex(req => req.type === 'updateSettings' && req.payload?.settingsData?.id === settingsId);
+      if (existingIndex >= 0) {
+        const mergedRequest: OfflineRequest = normalizeRequest({
+          ...queue[existingIndex],
+          payload: newRequest.payload,
+          timestamp: newRequest.timestamp,
+        });
+        return queue.map((req, index) => index === existingIndex ? mergedRequest : req);
+      }
+      return [...queue, newRequest];
+    }
+    case 'deleteApiary': {
+      const apiaryId = newRequest.payload?.apiaryId;
+      const filteredQueue = queue.filter(req => !(
+        (req.type === 'updateApiary' && req.payload?.apiaryId === apiaryId) ||
+        (req.type === 'deleteApiary' && req.payload?.apiaryId === apiaryId)
+      ));
+      return [...filteredQueue, newRequest];
+    }
+    case 'deleteTask': {
+      const taskId = newRequest.payload?.id;
+      const filteredQueue = queue.filter(req => !(
+        (req.type === 'updateTask' && req.payload?.id === taskId) ||
+        (req.type === 'deleteTask' && req.payload?.id === taskId)
+      ));
+      return [...filteredQueue, newRequest];
+    }
+    default:
+      return [...queue, newRequest];
+  }
+};
+
 export const addToQueue = async (type: OfflineRequest['type'], payload: any) => {
   try {
     const currentQueue = await getQueue();
@@ -54,9 +150,9 @@ export const addToQueue = async (type: OfflineRequest['type'], payload: any) => 
       timestamp: Date.now(),
       attempts: 0,
     };
-    currentQueue.push(newRequest);
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(currentQueue));
-    console.log(`[OfflineQueue] Request ${type} added to queue. Total: ${currentQueue.length}`);
+    const compactedQueue = compactQueue(currentQueue, newRequest);
+    await writeQueue(compactedQueue);
+    console.log(`[OfflineQueue] Request ${type} added to queue. Total: ${compactedQueue.length}`);
   } catch (error) {
     console.error('[OfflineQueue] Error adding to queue:', error);
   }
@@ -77,7 +173,7 @@ export const removeFromQueue = async (id: string) => {
   try {
     const currentQueue = await getQueue();
     const newQueue = currentQueue.filter(req => req.id !== id);
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+    await writeQueue(newQueue);
   } catch (error) {
     console.error('[OfflineQueue] Error removing from queue:', error);
   }
@@ -97,7 +193,7 @@ export const updateQueueRequest = async (id: string, updates: Partial<OfflineReq
     const newQueue = currentQueue.map(req =>
       req.id === id ? normalizeRequest({ ...req, ...updates }) : req
     );
-    await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(newQueue));
+    await writeQueue(newQueue);
   } catch (error) {
     console.error('[OfflineQueue] Error updating queue request:', error);
   }
