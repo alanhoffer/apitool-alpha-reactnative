@@ -1,6 +1,6 @@
 import { ToastAndroid } from 'react-native';
 
-import { createHiveImpl, deleteHiveImpl, updateHiveImpl } from '../API/Hives';
+import { createHiveImpl, deleteHiveImpl, setHiveIdMapping, updateHiveImpl } from '../API/Hives';
 import {
     createApiaryImpl,
     deleteApiaryImpl,
@@ -125,6 +125,10 @@ export const syncPendingRequests = async () => {
 
         try {
             const result = await processRequest(req);
+
+            if (req.type === 'createHive' && result?.id && req.payload?.tempHive?.id && result.id !== req.payload.tempHive.id) {
+                await setHiveIdMapping(req.payload.tempHive.id, result.id);
+            }
 
             if (!hasConfirmedSuccess(req, result)) {
                 logger.warn('[SyncManager] syncPendingRequests: Operacion sin confirmacion explicita, se mantiene en cola', {

@@ -1,4 +1,5 @@
 import apiClient from './client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IHive, IHiveData } from '../../constants/interfaces/Apiary/IHive';
 import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
 import { getApiErrorMessage } from '../../helpers/apiErrors';
@@ -7,6 +8,7 @@ import { addToQueue, getQueue } from '../Offline/OfflineQueue';
 import { ToastAndroid } from 'react-native';
 
 type HivePayload = Omit<IHiveData, 'settings'>;
+const HIVE_ID_MAPPINGS_KEY = '@offline_hive_id_mappings';
 
 interface HivesListResponse {
   data: IHive[];
@@ -31,6 +33,35 @@ const normalizeHive = (hive: any, settings?: IApiarySettings): IHive => ({
   syncAction: hive.syncAction,
   settings: settings ?? hive.settings ?? {},
 });
+
+const getHiveIdMappings = async (): Promise<Record<string, number>> => {
+  try {
+    const raw = await AsyncStorage.getItem(HIVE_ID_MAPPINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    logger.error('[getHiveIdMappings] Error reading hive ID mappings:', error);
+    return {};
+  }
+};
+
+const saveHiveIdMappings = async (mappings: Record<string, number>) => {
+  try {
+    await AsyncStorage.setItem(HIVE_ID_MAPPINGS_KEY, JSON.stringify(mappings));
+  } catch (error) {
+    logger.error('[saveHiveIdMappings] Error saving hive ID mappings:', error);
+  }
+};
+
+export const setHiveIdMapping = async (temporaryHiveId: number, realHiveId: number) => {
+  const mappings = await getHiveIdMappings();
+  mappings[String(temporaryHiveId)] = realHiveId;
+  await saveHiveIdMappings(mappings);
+};
+
+export const resolveHiveId = async (hiveId: number): Promise<number> => {
+  const mappings = await getHiveIdMappings();
+  return mappings[String(hiveId)] || hiveId;
+};
 
 const toCreatePayload = (apiaryId: number, hiveData: IHiveData) => {
   const { settings: _settings, ...payload } = hiveData;
@@ -165,14 +196,15 @@ export const getHivesByApiaryId = async (apiaryId: number, settings?: IApiarySet
 };
 
 export const getHiveById = async (hiveId: number, settings?: IApiarySettings): Promise<IHive | null> => {
+  const resolvedHiveId = await resolveHiveId(hiveId);
   try {
-    const response = await apiClient.get<IHive>(`hives/${hiveId}`);
+    const response = await apiClient.get<IHive>(`hives/${resolvedHiveId}`);
     const serverHive = normalizeHive(response.data, settings);
-    const pendingHive = await getPendingHiveById(hiveId, settings);
+    const pendingHive = await getPendingHiveById(resolvedHiveId, settings);
     return pendingHive ? normalizeHive({ ...serverHive, ...pendingHive }, settings) : serverHive;
   } catch (error) {
     logger.error('[getHiveById] Error fetching hive:', error);
-    return await getPendingHiveById(hiveId, settings);
+    return await getPendingHiveById(resolvedHiveId, settings);
   }
 };
 
@@ -207,16 +239,17 @@ export const updateHive = async (
   hiveData: Partial<IHiveData>,
   settings?: IApiarySettings
 ): Promise<IHive | null> => {
+    const resolvedHiveId = await resolveHiveId(hiveId);
     try {
-        return await updateHiveImpl(hiveId, hiveData, settings);
+        return await updateHiveImpl(resolvedHiveId, hiveData, settings);
     } catch (error) {
         if (!(error as any)?.response) {
             logger.info('[updateHive] Network error, adding to offline queue');
-            await addToQueue('updateHive', { hiveId, hiveData, settings });
+            await addToQueue('updateHive', { hiveId: resolvedHiveId, hiveData, settings });
             ToastAndroid.show('Sin conexion. Cambio guardado localmente.', ToastAndroid.SHORT);
-            const pendingHive = await getPendingHiveById(hiveId, settings);
+            const pendingHive = await getPendingHiveById(resolvedHiveId, settings);
             return normalizeHive({
-                ...(pendingHive || buildTemporaryHive(0, {}, settings, hiveId)),
+                ...(pendingHive || buildTemporaryHive(0, {}, settings, resolvedHiveId)),
                 ...hiveData,
                 updatedAt: new Date().toISOString(),
             }, settings);
@@ -241,12 +274,13 @@ export const updateHiveImpl = async (
 };
 
 export const deleteHive = async (hiveId: number): Promise<boolean> => {
+    const resolvedHiveId = await resolveHiveId(hiveId);
     try {
-        return await deleteHiveImpl(hiveId);
+        return await deleteHiveImpl(resolvedHiveId);
     } catch (error: any) {
         if (!error?.response) {
             logger.info('[deleteHive] Network error, adding to offline queue');
-            await addToQueue('deleteHive', { hiveId });
+            await addToQueue('deleteHive', { hiveId: resolvedHiveId });
             ToastAndroid.show('Sin conexion. Se eliminara al reconectar.', ToastAndroid.SHORT);
             return true;
         }
@@ -282,8 +316,9 @@ export const checkHiveNameExists = async (
 };
 
 export const getHiveHistory = async (hiveId: number): Promise<IHiveHistoryEntry[]> => {
+  const resolvedHiveId = await resolveHiveId(hiveId);
   try {
-    const response = await apiClient.get<IHiveHistoryEntry[]>(`hives/${hiveId}/history`);
+    const response = await apiClient.get<IHiveHistoryEntry[]>(`hives/${resolvedHiveId}/history`);
     return response.data ?? [];
   } catch (error) {
     logger.error('[getHiveHistory] Error fetching hive history:', error);
