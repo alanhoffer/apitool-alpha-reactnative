@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, RefreshControl, Dimensions, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, RefreshControl, Dimensions, Animated, Platform, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
@@ -14,7 +14,7 @@ import logger from '../../helpers/logger';
 import { HomeScreenProps } from '../../types/navigation';
 import { syncPendingRequests } from '../../modules/Offline/SyncManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getQueueStatus, OfflineQueueStatus } from '../../modules/Offline/OfflineQueue';
+import { getQueueStatus, getQueueSummaries, OfflineQueueItemSummary, OfflineQueueStatus } from '../../modules/Offline/OfflineQueue';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +31,9 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [weather, setWeather] = useState<any>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<OfflineQueueStatus>({ pendingCount: 0, retryingCount: 0 });
+  const [syncQueueItems, setSyncQueueItems] = useState<OfflineQueueItemSummary[]>([]);
+  const [syncModalVisible, setSyncModalVisible] = useState(false);
+  const [syncingNow, setSyncingNow] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -113,8 +116,12 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 
   const loadSyncStatus = useCallback(async () => {
     try {
-      const status = await getQueueStatus();
+      const [status, summaries] = await Promise.all([
+        getQueueStatus(),
+        getQueueSummaries(),
+      ]);
       setSyncStatus(status);
+      setSyncQueueItems(summaries);
     } catch (error) {
       logger.warn('[HomeScreen] Error obteniendo estado de sincronización:', error);
     }
@@ -178,6 +185,41 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     return `Reintento en ${hours} h`;
   };
 
+  const formatQueueType = (type: OfflineQueueItemSummary['type']) => {
+    switch (type) {
+      case 'createApiary':
+        return 'Crear apiario';
+      case 'updateApiary':
+        return 'Actualizar apiario';
+      case 'deleteApiary':
+        return 'Eliminar apiario';
+      case 'updateSettings':
+        return 'Actualizar configuracion';
+      case 'toggleHarvestAll':
+        return 'Cambiar cosecha global';
+      case 'createTask':
+        return 'Crear tarea';
+      case 'updateTask':
+        return 'Actualizar tarea';
+      case 'deleteTask':
+        return 'Eliminar tarea';
+      default:
+        return type;
+    }
+  };
+
+  const handleSyncNow = useCallback(async () => {
+    setSyncingNow(true);
+    try {
+      await syncPendingRequests();
+      await loadSyncStatus();
+    } catch (error) {
+      logger.warn('[HomeScreen] Error forzando sincronizacion manual:', error);
+    } finally {
+      setSyncingNow(false);
+    }
+  }, [loadSyncStatus]);
+
   // Animations
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -240,11 +282,13 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             </Text>
             <Text style={styles.userRole}>Apicultor Profesional</Text>
             {syncStatus.pendingCount > 0 && (
-              <View
+              <TouchableOpacity
                 style={[
                   styles.syncBadge,
                   syncStatus.retryingCount > 0 ? styles.syncBadgeRetrying : styles.syncBadgePending,
                 ]}
+                onPress={() => setSyncModalVisible(true)}
+                activeOpacity={0.85}
               >
                 <MaterialIcons
                   name={syncStatus.retryingCount > 0 ? 'sync-problem' : 'cloud-upload'}
@@ -264,7 +308,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
                     {formatRetryText(syncStatus.nextRetryAt)}
                   </Text>
                 )}
-              </View>
+              </TouchableOpacity>
             )}
           </View>
           <TouchableOpacity
@@ -439,6 +483,90 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         </Animated.View>
       </ScrollView>
 
+      <Modal
+        visible={syncModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSyncModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.syncModalOverlay}
+          activeOpacity={1}
+          onPress={() => setSyncModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.syncModalCard}
+            activeOpacity={1}
+            onPress={() => { }}
+          >
+            <View style={styles.syncModalHeader}>
+              <View>
+                <Text style={styles.syncModalTitle}>Sincronizacion offline</Text>
+                <Text style={styles.syncModalSubtitle}>
+                  {syncStatus.pendingCount} cambio{syncStatus.pendingCount === 1 ? '' : 's'} pendiente{syncStatus.pendingCount === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setSyncModalVisible(false)} activeOpacity={0.7}>
+                <MaterialIcons name="close" size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.syncSummaryRow}>
+              <View style={styles.syncSummaryItem}>
+                <Text style={styles.syncSummaryLabel}>En backoff</Text>
+                <Text style={styles.syncSummaryValue}>{syncStatus.retryingCount}</Text>
+              </View>
+              <View style={styles.syncSummaryItem}>
+                <Text style={styles.syncSummaryLabel}>Proximo retry</Text>
+                <Text style={styles.syncSummaryValueSmall}>{formatRetryText(syncStatus.nextRetryAt) || 'Disponible ahora'}</Text>
+              </View>
+            </View>
+
+            {syncStatus.lastError && (
+              <View style={styles.syncErrorBox}>
+                <Text style={styles.syncErrorLabel}>Ultimo error</Text>
+                <Text style={styles.syncErrorText}>{syncStatus.lastError}</Text>
+              </View>
+            )}
+
+            <ScrollView style={styles.syncItemsList} showsVerticalScrollIndicator={false}>
+              {syncQueueItems.map((item) => (
+                <View key={item.id} style={styles.syncItemCard}>
+                  <View style={styles.syncItemTopRow}>
+                    <Text style={styles.syncItemTitle}>{formatQueueType(item.type)}</Text>
+                    <Text style={styles.syncItemAttempts}>Intentos: {item.attempts}</Text>
+                  </View>
+                  <Text style={styles.syncItemMeta}>
+                    {item.nextRetryAt ? formatRetryText(item.nextRetryAt) : 'Listo para sincronizar'}
+                  </Text>
+                  {item.lastError && (
+                    <Text style={styles.syncItemError} numberOfLines={2}>
+                      {item.lastError}
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.syncNowButton, syncingNow && styles.syncNowButtonDisabled]}
+              onPress={handleSyncNow}
+              disabled={syncingNow}
+              activeOpacity={0.8}
+            >
+              {syncingNow ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <MaterialIcons name="sync" size={16} color="#ffffff" />
+                  <Text style={styles.syncNowButtonText}>Sincronizar ahora</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Bottom Navigation */}
       <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <View style={styles.bottomNavItems}>
@@ -560,6 +688,141 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#92400e',
     marginLeft: 8,
+  },
+  syncModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  syncModalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: '78%',
+  },
+  syncModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  syncModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  syncModalSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#64748b',
+  },
+  syncSummaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  syncSummaryItem: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  syncSummaryLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  syncSummaryValue: {
+    marginTop: 6,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  syncSummaryValueSmall: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  syncErrorBox: {
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  syncErrorLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9a3412',
+    textTransform: 'uppercase',
+  },
+  syncErrorText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#9a3412',
+  },
+  syncItemsList: {
+    maxHeight: 260,
+    marginBottom: 16,
+  },
+  syncItemCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 10,
+  },
+  syncItemTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  syncItemTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginRight: 8,
+  },
+  syncItemAttempts: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  syncItemMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#334155',
+  },
+  syncItemError: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#b45309',
+  },
+  syncNowButton: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#0f172a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  syncNowButtonDisabled: {
+    opacity: 0.7,
+  },
+  syncNowButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   bellButton: {
     width: 40,

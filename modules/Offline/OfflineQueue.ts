@@ -20,6 +20,15 @@ export interface OfflineQueueStatus {
   lastError?: string;
 }
 
+export interface OfflineQueueItemSummary {
+  id: string;
+  type: OfflineRequest['type'];
+  attempts: number;
+  nextRetryAt?: number;
+  lastError?: string;
+  timestamp: number;
+}
+
 const normalizeRequest = (request: Partial<OfflineRequest>): OfflineRequest => {
   return {
     id: request.id || Date.now().toString(),
@@ -109,5 +118,19 @@ export const getQueueStatus = async (): Promise<OfflineQueueStatus> => {
     nextRetryAt,
     lastError,
   };
+};
+
+export const getQueueSummaries = async (): Promise<OfflineQueueItemSummary[]> => {
+  const queue = await getQueue();
+  return queue
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .map(req => ({
+      id: req.id,
+      type: req.type,
+      attempts: req.attempts,
+      nextRetryAt: req.nextRetryAt,
+      lastError: req.lastError,
+      timestamp: req.timestamp,
+    }));
 };
 
