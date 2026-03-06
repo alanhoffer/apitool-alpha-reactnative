@@ -5,7 +5,7 @@ import { useIsFocused } from '@react-navigation/native';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import getProfile from '../../modules/API/User';
-import { getApiaryAndHivesCount } from '../../modules/API/Apiarys';
+import { getApiaryAndHivesCount, getHarvestingCount } from '../../modules/API/Apiarys';
 import { capitalizeFirstLetter } from '../../helpers/Apiary/capitalizeFirstLetter';
 import { getGreetingMessage } from '../../helpers/Home/getGreetingMessage';
 import * as Location from 'expo-location';
@@ -15,6 +15,7 @@ import { HomeScreenProps } from '../../types/navigation';
 import { syncPendingRequests } from '../../modules/Offline/SyncManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getQueueStatus, getQueueSummaries, OfflineQueueItemSummary, OfflineQueueStatus } from '../../modules/Offline/OfflineQueue';
+import { getTasks } from '../../modules/API/Tasks';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +25,8 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [profile, setProfile] = useState<any>(null);
   const [hives, setHives] = useState(0);
   const [apiaries, setApiaries] = useState(0);
+  const [pendingTasks, setPendingTasks] = useState(0);
+  const [harvestingApiaries, setHarvestingApiaries] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<any>(null);
@@ -96,8 +99,12 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 
   const fetchUserInfo = useCallback(async () => {
     try {
-      const countFetched = await getApiaryAndHivesCount();
-      const profileFetched = await getProfile();
+      const [countFetched, profileFetched, tasksFetched, harvestingCountFetched] = await Promise.all([
+        getApiaryAndHivesCount(),
+        getProfile(),
+        getTasks(),
+        getHarvestingCount(),
+      ]);
 
       if (countFetched) {
         setHives(countFetched.hiveCount);
@@ -106,6 +113,14 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 
       if (profileFetched) {
         setProfile(profileFetched);
+      }
+
+      if (tasksFetched) {
+        setPendingTasks(tasksFetched.filter(task => !task.completed).length);
+      }
+
+      if (typeof harvestingCountFetched === 'number') {
+        setHarvestingApiaries(harvestingCountFetched);
       }
     } catch (error) {
       logger.error('[HomeScreen] Error fetching user info:', error);
@@ -413,6 +428,69 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
                 </View>
               </View>
             )}
+          </View>
+        </Animated.View>
+
+        <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Estado Operativo</Text>
+            <Text style={styles.sectionCaption}>Panel rapido del dia</Text>
+          </View>
+
+          <View style={styles.operationalGrid}>
+            <View style={styles.operationalCard}>
+              <View style={[styles.operationalIcon, { backgroundColor: '#ecfdf5' }]}>
+                <FontAwesome5 name="check-circle" size={16} color="#059669" solid />
+              </View>
+              <Text style={styles.operationalLabel}>Tareas pendientes</Text>
+              <Text style={styles.operationalValue}>{pendingTasks}</Text>
+              <Text style={styles.operationalHint}>
+                {pendingTasks === 0 ? 'Todo al dia' : 'Requieren seguimiento'}
+              </Text>
+            </View>
+
+            <View style={styles.operationalCard}>
+              <View style={[styles.operationalIcon, { backgroundColor: '#fff7ed' }]}>
+                <FontAwesome5 name="seedling" size={16} color="#d97706" solid />
+              </View>
+              <Text style={styles.operationalLabel}>Apiarios en cosecha</Text>
+              <Text style={styles.operationalValue}>{harvestingApiaries}</Text>
+              <Text style={styles.operationalHint}>
+                {harvestingApiaries === 0 ? 'Sin actividad de cosecha' : 'Con actividad actual'}
+              </Text>
+            </View>
+
+            <View style={styles.operationalCardWide}>
+              <View style={styles.operationalWideHeader}>
+                <View style={[styles.operationalIcon, { backgroundColor: syncStatus.pendingCount > 0 ? '#fef3c7' : '#dcfce7' }]}>
+                  <MaterialIcons
+                    name={syncStatus.pendingCount > 0 ? 'cloud-off' : 'cloud-done'}
+                    size={16}
+                    color={syncStatus.pendingCount > 0 ? '#b45309' : '#15803d'}
+                  />
+                </View>
+                <View style={styles.operationalWideText}>
+                  <Text style={styles.operationalLabel}>Estado de sincronizacion</Text>
+                  <Text style={styles.operationalValueInline}>
+                    {syncStatus.pendingCount > 0
+                      ? `${syncStatus.pendingCount} pendientes`
+                      : 'Todo sincronizado'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.operationalHint}>
+                {syncStatus.pendingCount > 0
+                  ? (formatRetryText(syncStatus.nextRetryAt) || 'Listo para sincronizar')
+                  : formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}
+              </Text>
+              <TouchableOpacity
+                style={styles.operationalAction}
+                onPress={() => setSyncModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.operationalActionText}>Ver detalle</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
 
@@ -1019,11 +1097,101 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 0,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#0f172a',
     marginBottom: 8,
+  },
+  sectionCaption: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  operationalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  operationalCard: {
+    width: '48%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+    marginBottom: 12,
+  },
+  operationalCardWide: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+    marginBottom: 8,
+  },
+  operationalIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  operationalLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  operationalValue: {
+    marginTop: 8,
+    fontSize: 28,
+    color: '#0f172a',
+    fontWeight: '700',
+    letterSpacing: -0.8,
+  },
+  operationalValueInline: {
+    marginTop: 2,
+    fontSize: 16,
+    color: '#0f172a',
+    fontWeight: '700',
+  },
+  operationalHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 18,
+  },
+  operationalWideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  operationalWideText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  operationalAction: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  operationalActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
   },
   menuGrid: {
     flexDirection: 'row',
