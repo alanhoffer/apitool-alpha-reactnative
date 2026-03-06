@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import colors from "../../constants/colors";
 import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
-import { getHiveHistory, IHiveHistoryEntry } from "../../modules/Mock/HiveHistoryMock";
+import { getHiveHistory, IHiveHistoryEntry } from "../../modules/API/Hives";
 import Capitalize from "../../modules/Capitalize";
 
 function HiveHistoryScreen({ route, navigation }: any) {

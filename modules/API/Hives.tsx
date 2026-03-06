@@ -10,6 +10,17 @@ interface HivesListResponse {
   data: IHive[];
 }
 
+export interface IHiveHistoryEntry {
+  id: number;
+  hiveId: number;
+  apiaryId: number;
+  userId: number;
+  createdBy: number;
+  changes: Partial<IHiveData>;
+  comment?: string;
+  date: string;
+}
+
 const normalizeHive = (hive: any, settings?: IApiarySettings): IHive => ({
   ...hive,
   createdAt: hive.createdAt ? new Date(hive.createdAt) : new Date(),
@@ -101,4 +112,14 @@ export const checkHiveNameExists = async (
       hive.name.trim().toUpperCase() === normalizedName &&
       (!excludeHiveId || hive.id !== excludeHiveId)
   );
+};
+
+export const getHiveHistory = async (hiveId: number): Promise<IHiveHistoryEntry[]> => {
+  try {
+    const response = await apiClient.get<IHiveHistoryEntry[]>(`hives/${hiveId}/history`);
+    return response.data ?? [];
+  } catch (error) {
+    logger.error('[getHiveHistory] Error fetching hive history:', error);
+    return [];
+  }
 };
