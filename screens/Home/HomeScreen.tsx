@@ -185,6 +185,20 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     return `Reintento en ${hours} h`;
   };
 
+  const formatLastSyncText = (timestamp?: number) => {
+    if (!timestamp) return 'Sin sincronizacion exitosa todavia';
+    const diffMs = Date.now() - timestamp;
+    const totalMinutes = Math.floor(diffMs / 60000);
+    if (totalMinutes < 1) return 'Sincronizado hace instantes';
+    if (totalMinutes === 1) return 'Sincronizado hace 1 min';
+    if (totalMinutes < 60) return `Sincronizado hace ${totalMinutes} min`;
+    const hours = Math.floor(totalMinutes / 60);
+    if (hours === 1) return 'Sincronizado hace 1 h';
+    if (hours < 24) return `Sincronizado hace ${hours} h`;
+    const days = Math.floor(hours / 24);
+    return days === 1 ? 'Sincronizado hace 1 dia' : `Sincronizado hace ${days} dias`;
+  };
+
   const formatQueueType = (type: OfflineQueueItemSummary['type']) => {
     switch (type) {
       case 'createApiary':
@@ -325,7 +339,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         <Animated.View style={[styles.statsCard, { opacity: fadeAnim }]}>
           <View style={styles.statsHeader}>
             <Text style={styles.statsTitle}>Resumen</Text>
-            <Text style={styles.statsUpdate}>Actualizado hace 5 min</Text>
+            <Text style={styles.statsUpdate}>{formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}</Text>
           </View>
 
           <View style={styles.statsRow}>
@@ -520,6 +534,13 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
                 <Text style={styles.syncSummaryLabel}>Proximo retry</Text>
                 <Text style={styles.syncSummaryValueSmall}>{formatRetryText(syncStatus.nextRetryAt) || 'Disponible ahora'}</Text>
               </View>
+            </View>
+
+            <View style={styles.syncLastSuccessRow}>
+              <MaterialIcons name="cloud-done" size={15} color="#14532d" />
+              <Text style={styles.syncLastSuccessText}>
+                {formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}
+              </Text>
             </View>
 
             {syncStatus.lastError && (
@@ -721,6 +742,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
+  },
+  syncLastSuccessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
+  syncLastSuccessText: {
+    marginLeft: 8,
+    fontSize: 12,
+    color: '#14532d',
+    fontWeight: '600',
   },
   syncSummaryItem: {
     flex: 1,

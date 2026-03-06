@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const QUEUE_KEY = 'offline_queue';
+const LAST_SUCCESSFUL_SYNC_KEY = 'offline_queue_last_successful_sync_at';
 
 export interface OfflineRequest {
   id: string;
@@ -18,6 +19,7 @@ export interface OfflineQueueStatus {
   retryingCount: number;
   nextRetryAt?: number;
   lastError?: string;
+  lastSuccessfulSyncAt?: number;
 }
 
 export interface OfflineQueueItemSummary {
@@ -103,6 +105,7 @@ export const updateQueueRequest = async (id: string, updates: Partial<OfflineReq
 
 export const getQueueStatus = async (): Promise<OfflineQueueStatus> => {
   const queue = await getQueue();
+  const lastSuccessfulSyncAt = await getLastSuccessfulSyncAt();
   const now = Date.now();
   const retryingItems = queue.filter(req => req.nextRetryAt && req.nextRetryAt > now);
   const nextRetryAt = retryingItems.length > 0
@@ -117,6 +120,7 @@ export const getQueueStatus = async (): Promise<OfflineQueueStatus> => {
     retryingCount: retryingItems.length,
     nextRetryAt,
     lastError,
+    lastSuccessfulSyncAt,
   };
 };
 
@@ -132,5 +136,25 @@ export const getQueueSummaries = async (): Promise<OfflineQueueItemSummary[]> =>
       lastError: req.lastError,
       timestamp: req.timestamp,
     }));
+};
+
+export const setLastSuccessfulSyncAt = async (timestamp: number) => {
+  try {
+    await AsyncStorage.setItem(LAST_SUCCESSFUL_SYNC_KEY, String(timestamp));
+  } catch (error) {
+    console.error('[OfflineQueue] Error saving last successful sync:', error);
+  }
+};
+
+export const getLastSuccessfulSyncAt = async (): Promise<number | undefined> => {
+  try {
+    const value = await AsyncStorage.getItem(LAST_SUCCESSFUL_SYNC_KEY);
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  } catch (error) {
+    console.error('[OfflineQueue] Error reading last successful sync:', error);
+    return undefined;
+  }
 };
 

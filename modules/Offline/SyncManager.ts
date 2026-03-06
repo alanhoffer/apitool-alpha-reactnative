@@ -1,4 +1,4 @@
-import { getQueue, removeFromQueue, updateQueueRequest, OfflineRequest } from './OfflineQueue';
+import { getQueue, removeFromQueue, setLastSuccessfulSyncAt, updateQueueRequest, OfflineRequest } from './OfflineQueue';
 import { 
     createApiaryImpl, 
     updateApiaryImpl, 
@@ -186,6 +186,7 @@ export const syncPendingRequests = async () => {
     });
 
     if (syncedCount > 0) {
+        await setLastSuccessfulSyncAt(Date.now());
         ToastAndroid.show(`${syncedCount} cambios sincronizados con la nube.`, ToastAndroid.LONG);
     }
 };
