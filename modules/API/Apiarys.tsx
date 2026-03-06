@@ -319,6 +319,16 @@ export const toggleHarvestAll = async (harvesting: boolean) => {
   }
 };
 
+export const getApiaryById = async (apiaryId: number): Promise<IApiary | null> => {
+  try {
+    const response = await apiClient.get<IApiary>(`apiarys/${apiaryId}`);
+    return response.data;
+  } catch (error) {
+    logger.error('[getApiaryById] Error fetching apiary:', error);
+    return null;
+  }
+};
+
 export const getHistory = async (apiaryId: number) => {
   try {
     const response = await apiClient.get(`apiarys/history/${apiaryId}`);

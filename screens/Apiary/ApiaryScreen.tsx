@@ -15,9 +15,8 @@ import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { IHive } from "../../constants/interfaces/Apiary/IHive";
-import { updateApiary, getHarvestTotals } from "../../modules/API/Apiarys";
+import { updateApiary, getHarvestTotals, getApiaryById } from "../../modules/API/Apiarys";
 import { getHivesByApiaryId, deleteHive } from "../../modules/API/Hives";
-import { getMockApiaryById } from "../../modules/Mock/ApiaryMock";
 import logger from "../../helpers/logger";
 import { ApiaryScreenProps } from "../../types/navigation";
 
@@ -40,19 +39,6 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
         const loadApiaryInfo = async () => {
             if (!apiaryInfoState && route.params?.apiaryInfo) {
                 const newApiaryInfo = route.params.apiaryInfo;
-
-                // Si es apiario mockeado, recargar desde el mock para tener datos actualizados
-                if (newApiaryInfo.managementType === 'individual' && newApiaryInfo.id) {
-                    try {
-                        const updatedApiary = await getMockApiaryById(newApiaryInfo.id);
-                        if (updatedApiary) {
-                            setApiaryInfoState(updatedApiary);
-                            return;
-                        }
-                    } catch (error) {
-                        logger.error('[ApiaryScreen] Error loading mock apiary:', error);
-                    }
-                }
 
                 setApiaryInfoState(newApiaryInfo);
             }
@@ -119,6 +105,27 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
             setLoadingHives(false);
         }
     };
+
+    useEffect(() => {
+        const refreshApiary = async () => {
+            if (!apiaryInfoState?.id) {
+                return;
+            }
+
+            try {
+                const refreshedApiary = await getApiaryById(apiaryInfoState.id);
+                if (refreshedApiary) {
+                    setApiaryInfoState(refreshedApiary);
+                }
+            } catch (error) {
+                logger.error('[ApiaryScreen] Error refreshing apiary:', error);
+            }
+        };
+
+        if (isFocused && apiaryInfoState?.id) {
+            refreshApiary();
+        }
+    }, [isFocused, apiaryInfoState?.id]);
 
     useEffect(() => {
         if (isFocused && apiaryInfoState?.id && apiaryInfoState?.managementType === 'individual') {
