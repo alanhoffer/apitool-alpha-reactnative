@@ -1,14 +1,10 @@
-// React Imports //
 import React, { useEffect, useState } from "react";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { View, StyleSheet, Text, TouchableOpacity, Image, Dimensions, ScrollView } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity, Image, ScrollView } from "react-native";
 import Icon from 'react-native-vector-icons/Ionicons';
-import colors from "../../constants/colors";
 
-const { width } = Dimensions.get('window');
-
-// Component Imports //
 import VisitApiaryButton from "../../components/buttons/HeaderNoIconButton";
+import colors from "../../constants/colors";
 
 type ManagementType = 'apiary' | 'individual';
 
@@ -23,14 +19,66 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
 
     useEffect(() => {
         navigation.setOptions({
-            headerRight: () =>
+            headerRight: () => (
                 <VisitApiaryButton
                     text='Siguiente'
                     move={handleContinue}
                     disabled={!selectedType}
-                />,
+                />
+            ),
         });
-    }, [selectedType]);
+    }, [navigation, selectedType]);
+
+    const renderOption = (
+        type: ManagementType,
+        title: string,
+        description: string,
+        iconName: string,
+        iconColor: string,
+        iconBackground: string
+    ) => {
+        const selected = selectedType === type;
+
+        return (
+            <TouchableOpacity
+                style={[
+                    styles.optionCard,
+                    selected && styles.optionCardSelected,
+                ]}
+                onPress={() => setSelectedType(type)}
+                activeOpacity={0.7}
+            >
+                <View style={[
+                    styles.optionIconContainer,
+                    selected ? styles.optionIconContainerSelected : { backgroundColor: iconBackground }
+                ]}>
+                    <Icon
+                        name={iconName}
+                        size={32}
+                        color={selected ? colors.YELLOW : iconColor}
+                    />
+                </View>
+                <View style={styles.optionTextContainer}>
+                    <Text style={[
+                        styles.optionTitle,
+                        selected && styles.optionTitleSelected,
+                    ]}>
+                        {title}
+                    </Text>
+                    <Text style={styles.optionDescription}>
+                        {description}
+                    </Text>
+                </View>
+                {selected ? (
+                    <View style={styles.radioContainerSelected}>
+                        <View style={styles.radioInner} />
+                    </View>
+                ) : (
+                    <View style={styles.radioContainer} />
+                )}
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -47,72 +95,28 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
                     <View style={styles.titleContainer}>
                         <Text style={styles.title}>Tipo de Manejo</Text>
                         <Text style={styles.subtitle}>
-                            Selecciona cómo quieres manejar la información de este apiario
+                            Selecciona como quieres manejar la informacion de este apiario
                         </Text>
                     </View>
 
                     <View style={styles.optionsContainer}>
-                        {/* Opción: Apiario (Conjunto) */}
-                        <TouchableOpacity
-                            style={[
-                                styles.optionCard,
-                                selectedType === 'apiary' && styles.optionCardSelected
-                            ]}
-                            onPress={() => setSelectedType('apiary')}
-                            activeOpacity={0.7}
-                        >
-                            <View style={[
-                                styles.optionIconContainer,
-                                selectedType === 'apiary' ? styles.optionIconContainerSelected : { backgroundColor: colors.BLUE_LIGHT + '20' }
-                            ]}>
-                                <Icon
-                                    name="grid-outline"
-                                    size={32}
-                                    color={selectedType === 'apiary' ? colors.YELLOW : colors.BLUE_LIGHT}
-                                />
-                            </View>
-                            <View style={styles.optionTextContainer}>
-                                <Text style={[
-                                    styles.optionTitle,
-                                    selectedType === 'apiary' && styles.optionTitleSelected
-                                ]}>
-                                    Apiario (Conjunto)
-                                </Text>
-                                <Text style={styles.optionDescription}>
-                                    Gestión unificada de todas las colmenas. Ideal para la mayoría de apicultores.
-                                </Text>
-                            </View>
-                            {selectedType === 'apiary' ? (
-                                <View style={styles.radioContainerSelected}>
-                                    <View style={styles.radioInner} />
-                                </View>
-                            ) : (
-                                <View style={styles.radioContainer} />
-                            )}
-                        </TouchableOpacity>
+                        {renderOption(
+                            'apiary',
+                            'Apiario (Conjunto)',
+                            'Gestion unificada de todas las colmenas. Ideal para la mayoria de apicultores.',
+                            'grid-outline',
+                            colors.BLUE_LIGHT,
+                            colors.BLUE_LIGHT + '20'
+                        )}
 
-                        {/* Opción: Por Colmena Individual */}
-                        <View style={[styles.optionCard, styles.optionCardDisabled]}>
-                            <View style={[styles.optionIconContainer, { backgroundColor: '#F0F0F0' }]}>
-                                <Icon
-                                    name="cube-outline"
-                                    size={32}
-                                    color={colors.GREY}
-                                />
-                            </View>
-                            <View style={styles.optionTextContainer}>
-                                <Text style={[styles.optionTitle, styles.optionTitleDisabled]}>
-                                    Colmena Individual
-                                </Text>
-                                <Text style={styles.optionDescriptionDisabled}>
-                                    Seguimiento específico de cada colmena de forma independiente.
-                                </Text>
-                                <View style={styles.badge}>
-                                    <Icon name="time-outline" size={12} color="#888888" style={{ marginRight: 4 }} />
-                                    <Text style={styles.badgeText}>PRÓXIMAMENTE</Text>
-                                </View>
-                            </View>
-                        </View>
+                        {renderOption(
+                            'individual',
+                            'Colmena Individual',
+                            'Seguimiento especifico de cada colmena de forma independiente.',
+                            'cube-outline',
+                            colors.YELLOW,
+                            colors.YELLOW + '20'
+                        )}
                     </View>
                 </View>
             </ScrollView>
@@ -193,14 +197,6 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         elevation: 5,
     },
-    optionCardDisabled: {
-        opacity: 0.7,
-        backgroundColor: '#F8F9FA',
-        borderColor: '#EFEFEF',
-        borderWidth: 1,
-        shadowOpacity: 0,
-        elevation: 0,
-    },
     optionIconContainer: {
         width: 60,
         height: 60,
@@ -225,17 +221,9 @@ const styles = StyleSheet.create({
     optionTitleSelected: {
         color: colors.BLACK,
     },
-    optionTitleDisabled: {
-        color: '#9E9E9E',
-    },
     optionDescription: {
         fontSize: 13,
         color: '#555555',
-        lineHeight: 18,
-    },
-    optionDescriptionDisabled: {
-        fontSize: 13,
-        color: '#A0A0A0',
         lineHeight: 18,
     },
     radioContainer: {
@@ -261,22 +249,6 @@ const styles = StyleSheet.create({
         height: 14,
         borderRadius: 7,
         backgroundColor: colors.YELLOW,
-    },
-    badge: {
-        backgroundColor: '#EAEAEA',
-        paddingHorizontal: 8,
-        paddingVertical: 5,
-        borderRadius: 12,
-        alignSelf: 'flex-start',
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    badgeText: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#777777',
-        letterSpacing: 0.5,
     },
 });
 

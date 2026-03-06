@@ -118,6 +118,7 @@ export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryDat
   data.append("image", ApiaryData.image);
   data.append('name', ApiaryData.name);
   data.append('hives', String(ApiaryData.hives));
+  data.append('managementType', ApiaryData.managementType || 'apiary');
   data.append('status', ApiaryData.status);
   data.append('honey', String(ApiaryData.honey));
   data.append('levudex', String(ApiaryData.levudex));
@@ -220,6 +221,8 @@ export const updateApiaryImpl = async (profileImage: any, apiaryId: number, Apia
       if (value !== undefined && value !== null) {
         if (key === 'settings') {
           data.append(key, JSON.stringify(value));
+        } else if (key === 'managementType') {
+          data.append(key, String(value));
         } else if (key === 'latitude' || key === 'longitude') {
           // Solo enviar coordenadas si son valores válidos (no 0)
           if (value !== 0) {

@@ -3,11 +3,8 @@ import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, T
 import ApiarySlider from '../../components/apiary/apiarySlider';
 import ApiaryTreatment from '../../components/apiary/ApiaryTreatment';
 import { useEffect, useState } from 'react';
-import { useIsFocused } from '@react-navigation/native';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
-import { createMockApiary } from "../../modules/Mock/ApiaryMock";
-import { getProfile } from "../../modules/API/User";
 import ImagePick from "../../components/imagePicker";
 import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
@@ -29,7 +26,6 @@ import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
 import { getApiaryStatusLabel } from "../../helpers/Apiary/getApiaryStatusLabel";
 
 function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
-    const isFocused = useIsFocused();
     const apiarySettings = route.params?.apiarySettings;
     const managementType = route.params?.managementType || 'apiary'; // Por defecto 'apiary' (conjunto)
     const [apiaryStatus, setApiaryStatus] = useState(0)
@@ -123,32 +119,12 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                 managementType: managementType,
             };
 
-            // Si es manejo individual, usar mock. Si es conjunto, usar API
-            if (managementType === 'individual') {
-                // Mock: Crear apiario en AsyncStorage
-                try {
-                    const profile = await getProfile();
-                    if (!profile || !profile.id) {
-                        ToastAndroid.show('Error: No se pudo obtener el usuario', ToastAndroid.SHORT);
-                        return;
-                    }
-                    
-                    await createMockApiary(profile.id, apiaryDataWithType);
-                    ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
-                    navigation.navigate('ApiaryListScreen');
-                } catch (mockError: any) {
-                    ToastAndroid.show(`Error al crear apiario: ${mockError?.message || 'Error desconocido'}`, ToastAndroid.SHORT);
-                    logger.error('[ApiaryAddScreen] Error al crear apiario mockeado:', mockError);
-                }
+            const response = await createApiary(apiaryImage, apiaryDataWithType);
+            if (response && (response.status === 200 || response.status === 201)) {
+                ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
+                navigation.navigate('ApiaryListScreen');
             } else {
-                // API: Crear apiario usando la API real
-                const response = await createApiary(apiaryImage, apiaryDataWithType);
-                if (response && (response.status === 200 || response.status === 201)) {
-                    ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
-                    navigation.navigate('ApiaryListScreen');
-                } else {
-                    ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
-                }
+                ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
             }
         } catch (error: any) {
             const errorMessage = getApiErrorMessage(error, 'Error desconocido');
