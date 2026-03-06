@@ -108,6 +108,27 @@ const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): Offl
     }
     case 'updateHive': {
       const hiveId = newRequest.payload?.hiveId;
+      const existingCreateIndex = queue.findIndex(req => req.type === 'createHive' && req.payload?.tempHive?.id === hiveId);
+      if (existingCreateIndex >= 0) {
+        const existing = queue[existingCreateIndex];
+        const mergedRequest: OfflineRequest = normalizeRequest({
+          ...existing,
+          payload: {
+            ...existing.payload,
+            hiveData: {
+              ...(existing.payload?.hiveData || {}),
+              ...(newRequest.payload?.hiveData || {}),
+            },
+            tempHive: {
+              ...(existing.payload?.tempHive || {}),
+              ...(newRequest.payload?.hiveData || {}),
+              updatedAt: new Date(newRequest.timestamp).toISOString(),
+            },
+          },
+          timestamp: newRequest.timestamp,
+        });
+        return queue.map((req, index) => index === existingCreateIndex ? mergedRequest : req);
+      }
       const existingIndex = queue.findIndex(req => req.type === 'updateHive' && req.payload?.hiveId === hiveId);
       const hasPendingDelete = queue.some(req => req.type === 'deleteHive' && req.payload?.hiveId === hiveId);
       if (hasPendingDelete) {
@@ -162,6 +183,10 @@ const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): Offl
     }
     case 'deleteHive': {
       const hiveId = newRequest.payload?.hiveId;
+      const pendingCreateIndex = queue.findIndex(req => req.type === 'createHive' && req.payload?.tempHive?.id === hiveId);
+      if (pendingCreateIndex >= 0) {
+        return queue.filter((_, index) => index !== pendingCreateIndex);
+      }
       const filteredQueue = queue.filter(req => !(
         (req.type === 'updateHive' && req.payload?.hiveId === hiveId) ||
         (req.type === 'deleteHive' && req.payload?.hiveId === hiveId)

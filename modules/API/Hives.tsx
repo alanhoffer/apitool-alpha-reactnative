@@ -3,7 +3,7 @@ import { IHive, IHiveData } from '../../constants/interfaces/Apiary/IHive';
 import { IApiarySettings } from '../../constants/interfaces/Apiary/IApiarySettings';
 import { getApiErrorMessage } from '../../helpers/apiErrors';
 import logger from '../../helpers/logger';
-import { addToQueue } from '../Offline/OfflineQueue';
+import { addToQueue, getQueue } from '../Offline/OfflineQueue';
 import { ToastAndroid } from 'react-native';
 
 type HivePayload = Omit<IHiveData, 'settings'>;
@@ -43,26 +43,130 @@ const toUpdatePayload = (hiveData: Partial<IHiveData>): Partial<HivePayload> => 
   return payload;
 };
 
+const buildTemporaryHive = (apiaryId: number, hiveData: Partial<IHiveData>, settings?: IApiarySettings, hiveId?: number): IHive => {
+  const timestamp = new Date().toISOString();
+  return normalizeHive({
+    id: hiveId ?? Date.now(),
+    apiaryId,
+    userId: settings?.apiaryUserId || 0,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    image: '',
+    status: 'Malo',
+    honey: 0,
+    levudex: 0,
+    sugar: 0,
+    tOxalic: 0,
+    tAmitraz: 0,
+    tFlumetrine: 0,
+    disease: '',
+    box: 0,
+    boxMedium: 0,
+    boxSmall: 0,
+    production: 0,
+    queenStatus: 'unknown',
+    population: 0,
+    broodFrames: 0,
+    honeyFrames: 0,
+    pollenFrames: 0,
+    hiveStrength: 'medium',
+    swarming: false,
+    lastInspection: '',
+    tComment: '',
+    ...hiveData,
+  }, settings);
+};
+
+const applyPendingHiveRequests = async (serverHives: IHive[], apiaryId: number, settings?: IApiarySettings): Promise<IHive[]> => {
+  const queue = await getQueue();
+  let mergedHives = [...serverHives];
+
+  for (const req of queue) {
+    switch (req.type) {
+      case 'createHive': {
+        if (req.payload?.apiaryId !== apiaryId) {
+          break;
+        }
+        const tempHive = req.payload?.tempHive
+          ? normalizeHive(req.payload.tempHive, settings)
+          : buildTemporaryHive(apiaryId, req.payload?.hiveData || {}, settings);
+        mergedHives = [tempHive, ...mergedHives.filter(hive => hive.id !== tempHive.id)];
+        break;
+      }
+      case 'updateHive': {
+        const hiveId = req.payload?.hiveId;
+        mergedHives = mergedHives.map(hive =>
+          hive.id === hiveId
+            ? normalizeHive({
+                ...hive,
+                ...req.payload?.hiveData,
+                updatedAt: new Date().toISOString(),
+              }, settings)
+            : hive
+        );
+        break;
+      }
+      case 'deleteHive': {
+        const hiveId = req.payload?.hiveId;
+        mergedHives = mergedHives.filter(hive => hive.id !== hiveId);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return mergedHives;
+};
+
+const getPendingHiveById = async (hiveId: number, settings?: IApiarySettings): Promise<IHive | null> => {
+  const queue = await getQueue();
+  let pendingHive: IHive | null = null;
+
+  for (const req of queue) {
+    if (req.type === 'createHive' && req.payload?.tempHive?.id === hiveId) {
+      pendingHive = normalizeHive(req.payload.tempHive, settings);
+    }
+
+    if (req.type === 'updateHive' && req.payload?.hiveId === hiveId) {
+      pendingHive = normalizeHive({
+        ...(pendingHive || buildTemporaryHive(req.payload?.apiaryId || 0, {}, settings, hiveId)),
+        ...req.payload?.hiveData,
+        updatedAt: new Date().toISOString(),
+      }, settings);
+    }
+
+    if (req.type === 'deleteHive' && req.payload?.hiveId === hiveId) {
+      return null;
+    }
+  }
+
+  return pendingHive;
+};
+
 export const getHivesByApiaryId = async (apiaryId: number, settings?: IApiarySettings): Promise<IHive[]> => {
   try {
     const response = await apiClient.get<HivesListResponse>('hives', {
       params: { apiary_id: apiaryId },
     });
 
-    return (response.data?.data ?? []).map((hive) => normalizeHive(hive, settings));
+    const serverHives = (response.data?.data ?? []).map((hive) => normalizeHive(hive, settings));
+    return await applyPendingHiveRequests(serverHives, apiaryId, settings);
   } catch (error) {
     logger.error('[getHivesByApiaryId] Error fetching hives:', error);
-    return [];
+    return await applyPendingHiveRequests([], apiaryId, settings);
   }
 };
 
 export const getHiveById = async (hiveId: number, settings?: IApiarySettings): Promise<IHive | null> => {
   try {
     const response = await apiClient.get<IHive>(`hives/${hiveId}`);
-    return normalizeHive(response.data, settings);
+    const serverHive = normalizeHive(response.data, settings);
+    const pendingHive = await getPendingHiveById(hiveId, settings);
+    return pendingHive ? normalizeHive({ ...serverHive, ...pendingHive }, settings) : serverHive;
   } catch (error) {
     logger.error('[getHiveById] Error fetching hive:', error);
-    return null;
+    return await getPendingHiveById(hiveId, settings);
   }
 };
 
@@ -72,16 +176,10 @@ export const createHive = async (apiaryId: number, hiveData: IHiveData, settings
     } catch (error) {
         if (!(error as any)?.response) {
             logger.info('[createHive] Network error, adding to offline queue');
-            await addToQueue('createHive', { apiaryId, hiveData, settings });
+            const tempHive = buildTemporaryHive(apiaryId, hiveData, settings);
+            await addToQueue('createHive', { apiaryId, hiveData, settings, tempHive });
             ToastAndroid.show('Sin conexion. Colmena guardada localmente.', ToastAndroid.LONG);
-            return normalizeHive({
-                id: Date.now(),
-                apiaryId,
-                userId: settings?.apiaryUserId || 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                ...hiveData,
-            }, settings);
+            return tempHive;
         }
         logger.error('[createHive] Error creating hive:', error);
         throw new Error(getApiErrorMessage(error, 'Error al crear la colmena'));
@@ -110,13 +208,11 @@ export const updateHive = async (
             logger.info('[updateHive] Network error, adding to offline queue');
             await addToQueue('updateHive', { hiveId, hiveData, settings });
             ToastAndroid.show('Sin conexion. Cambio guardado localmente.', ToastAndroid.SHORT);
+            const pendingHive = await getPendingHiveById(hiveId, settings);
             return normalizeHive({
-                id: hiveId,
-                apiaryId: 0,
-                userId: settings?.apiaryUserId || 0,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                ...(pendingHive || buildTemporaryHive(0, {}, settings, hiveId)),
                 ...hiveData,
+                updatedAt: new Date().toISOString(),
             }, settings);
         }
         logger.error('[updateHive] Error updating hive:', error);
