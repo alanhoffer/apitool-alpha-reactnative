@@ -194,6 +194,14 @@ function HiveScreen({ route, navigation }: any) {
                 {/* Header Title */}
                 <View style={styles.headerContainer}>
                     <Text style={styles.hiveName}>{Capitalize(hiveInfo.name)}</Text>
+                    {hiveInfo.syncPending && (
+                        <View style={styles.pendingBadge}>
+                            <Ionicons name="cloud-offline-outline" size={14} color={colors.AMBER[600]} />
+                            <Text style={styles.pendingBadgeText}>
+                                {hiveInfo.syncAction === 'create' ? 'Pendiente de crear' : 'Pendiente de sincronizar'}
+                            </Text>
+                        </View>
+                    )}
                     <Text style={styles.apiaryName}>Apiario: {Capitalize(apiaryInfo?.name || '')}</Text>
                 </View>
 
@@ -237,6 +245,23 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         color: colors.GREY,
         marginBottom: 10,
+    },
+    pendingBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.AMBER[50],
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: colors.AMBER[500],
+        marginBottom: 10,
+    },
+    pendingBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.AMBER[600],
     },
     hiveInfoContainer: {
         width: '80%',

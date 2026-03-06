@@ -6,6 +6,8 @@ export interface IHive extends IHiveData {
     userId: number;
     createdAt: Date;
     updatedAt: Date;
+    syncPending?: boolean;
+    syncAction?: 'create' | 'update' | 'delete';
 }
 
 export interface IHiveData {

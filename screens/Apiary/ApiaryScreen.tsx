@@ -280,6 +280,14 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                     onLongPress={() => handleDeleteHive(item)}
                     activeOpacity={0.7}
                 >
+                    {item.syncPending && (
+                        <View style={styles.hivePendingBadge}>
+                            <Ionicons name="cloud-offline-outline" size={10} color={colors.AMBER[600]} />
+                            <Text style={styles.hivePendingBadgeText}>
+                                {item.syncAction === 'create' ? 'Nueva' : 'Pend.'}
+                            </Text>
+                        </View>
+                    )}
                     <Text style={styles.hiveCardGridName} numberOfLines={1}>{item.name}</Text>
                     <View style={[styles.hiveStatusBadgeGrid, { backgroundColor: getStatusColor(item.status) }]}>
                         <Text style={styles.hiveStatusTextGrid}>{item.status}</Text>
@@ -1353,6 +1361,26 @@ const styles = StyleSheet.create({
         borderColor: '#EEEEEE',
         minHeight: 120,
         justifyContent: 'space-between',
+        position: 'relative',
+    },
+    hivePendingBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: colors.AMBER[50],
+        borderRadius: 999,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: colors.AMBER[500],
+    },
+    hivePendingBadgeText: {
+        fontSize: 9,
+        fontWeight: '700',
+        color: colors.AMBER[600],
     },
     hiveCardGridName: {
         fontSize: 14,

@@ -27,6 +27,8 @@ const normalizeHive = (hive: any, settings?: IApiarySettings): IHive => ({
   ...hive,
   createdAt: hive.createdAt ? new Date(hive.createdAt) : new Date(),
   updatedAt: hive.updatedAt ? new Date(hive.updatedAt) : new Date(),
+  syncPending: hive.syncPending ?? false,
+  syncAction: hive.syncAction,
   settings: settings ?? hive.settings ?? {},
 });
 
@@ -88,8 +90,8 @@ const applyPendingHiveRequests = async (serverHives: IHive[], apiaryId: number, 
           break;
         }
         const tempHive = req.payload?.tempHive
-          ? normalizeHive(req.payload.tempHive, settings)
-          : buildTemporaryHive(apiaryId, req.payload?.hiveData || {}, settings);
+          ? normalizeHive({ ...req.payload.tempHive, syncPending: true, syncAction: 'create' }, settings)
+          : normalizeHive({ ...buildTemporaryHive(apiaryId, req.payload?.hiveData || {}, settings), syncPending: true, syncAction: 'create' }, settings);
         mergedHives = [tempHive, ...mergedHives.filter(hive => hive.id !== tempHive.id)];
         break;
       }
@@ -101,6 +103,8 @@ const applyPendingHiveRequests = async (serverHives: IHive[], apiaryId: number, 
                 ...hive,
                 ...req.payload?.hiveData,
                 updatedAt: new Date().toISOString(),
+                syncPending: true,
+                syncAction: hive.syncAction === 'create' ? 'create' : 'update',
               }, settings)
             : hive
         );
@@ -133,6 +137,8 @@ const getPendingHiveById = async (hiveId: number, settings?: IApiarySettings): P
         ...(pendingHive || buildTemporaryHive(req.payload?.apiaryId || 0, {}, settings, hiveId)),
         ...req.payload?.hiveData,
         updatedAt: new Date().toISOString(),
+        syncPending: true,
+        syncAction: pendingHive?.syncAction === 'create' ? 'create' : 'update',
       }, settings);
     }
 
