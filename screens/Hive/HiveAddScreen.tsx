@@ -9,7 +9,7 @@ import { VoiceNoteRecorder } from "../../components/general/VoiceNoteRecorder";
 import colors from "../../constants/colors";
 import { IHiveData } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
-import { createHive, checkHiveNameExists } from "../../modules/Mock/HiveMock";
+import { createHive, checkHiveNameExists } from "../../modules/API/Hives";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -103,7 +103,7 @@ function HiveAddScreen({ route, navigation }: any) {
         }
 
         // Validar que el código sea único
-        const nameExists = await checkHiveNameExists(apiaryInfo.id, hiveData.name);
+        const nameExists = await checkHiveNameExists(apiaryInfo.id, hiveData.name, undefined, apiarySettings);
         if (nameExists) {
             ToastAndroid.show('Ya existe una colmena con este código en este apiario', ToastAndroid.SHORT);
             return;
@@ -111,7 +111,7 @@ function HiveAddScreen({ route, navigation }: any) {
 
         setIsSubmitting(true);
         try {
-            const newHive = await createHive(apiaryInfo.id, apiaryInfo.userId, hiveData);
+            await createHive(apiaryInfo.id, hiveData, apiarySettings);
             ToastAndroid.show('Colmena creada exitosamente', ToastAndroid.SHORT);
             navigation.goBack();
         } catch (error: any) {

@@ -9,7 +9,7 @@ import colors from "../../constants/colors";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
-import { getHiveById } from "../../modules/Mock/HiveMock";
+import { getHiveById } from "../../modules/API/Hives";
 import { useIsFocused } from '@react-navigation/native';
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -26,7 +26,7 @@ function HiveScreen({ route, navigation }: any) {
     useEffect(() => {
         const reloadHive = async () => {
             if (initialHiveInfo?.id) {
-                const updatedHive = await getHiveById(initialHiveInfo.id);
+                const updatedHive = await getHiveById(initialHiveInfo.id, apiaryInfo?.settings);
                 if (updatedHive) {
                     setHiveInfo(updatedHive);
                 }

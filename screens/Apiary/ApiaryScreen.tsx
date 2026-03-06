@@ -16,7 +16,7 @@ import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { updateApiary, getHarvestTotals } from "../../modules/API/Apiarys";
-import { getHivesByApiaryId, initializeMockHives, deleteHive } from "../../modules/Mock/HiveMock";
+import { getHivesByApiaryId, deleteHive } from "../../modules/API/Hives";
 import { getMockApiaryById } from "../../modules/Mock/ApiaryMock";
 import logger from "../../helpers/logger";
 import { ApiaryScreenProps } from "../../types/navigation";
@@ -111,15 +111,7 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
 
         setLoadingHives(true);
         try {
-            // Inicializar colmenas mockeadas si no existen
-            await initializeMockHives(
-                apiaryInfoState.id,
-                apiaryInfoState.userId,
-                apiaryInfoState.settings
-            );
-
-            // Cargar colmenas
-            const apiaryHives = await getHivesByApiaryId(apiaryInfoState.id);
+            const apiaryHives = await getHivesByApiaryId(apiaryInfoState.id, apiaryInfoState.settings);
             setHives(apiaryHives);
         } catch (error) {
             logger.error('[ApiaryScreen] Error loading hives:', error);
