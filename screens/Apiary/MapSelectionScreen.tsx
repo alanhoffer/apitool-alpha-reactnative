@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Alert, Platform } from 'react-native';
-import MapView, { Marker, MAP_TYPES, PROVIDER_DEFAULT, Region, UrlTile } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT, Region, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import colors from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import logger from '../../helpers/logger';
 import { MapSelectionScreenProps } from '../../types/navigation';
+import { APP_MAP_ATTRIBUTION, APP_MAP_MAXIMUM_Z, APP_MAP_TILE_URL_TEMPLATE } from '../../constants/appConfig';
+import { DEFAULT_MAP_REGION, isValidCoordinate } from '../../helpers/Apiary/mapCoordinates';
 
 const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -24,7 +26,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
         try {
             const lat = Number(initialLocation.latitude);
             const lon = Number(initialLocation.longitude);
-            if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+            if (isValidCoordinate(lat, lon)) {
                 normalizedInitialLocation = {
                     latitude: lat,
                     longitude: lon
@@ -37,8 +39,8 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
     }
     
     const [region, setRegion] = useState<Region>({
-        latitude: normalizedInitialLocation?.latitude || -37.11108,
-        longitude: normalizedInitialLocation?.longitude || -56.86523,
+        latitude: normalizedInitialLocation?.latitude || DEFAULT_MAP_REGION.latitude,
+        longitude: normalizedInitialLocation?.longitude || DEFAULT_MAP_REGION.longitude,
         latitudeDelta: 0.05,
         longitudeDelta: 0.05,
     });
@@ -101,25 +103,13 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                     } catch (timeoutError) {
                         logger.debug("[MapSelectionScreen] Timeout o error obteniendo ubicación, usando ubicación por defecto");
                         // Usar ubicación por defecto sin esperar más
-                        setSelectedLocation({
-                            latitude: region.latitude,
-                            longitude: region.longitude
-                        });
                     }
                 } else {
                     // Si no hay permisos, usar ubicación por defecto inmediatamente
-                    setSelectedLocation({
-                        latitude: region.latitude,
-                        longitude: region.longitude
-                    });
                 }
             } catch (e) {
                 logger.error("[MapSelectionScreen] Error getting initial map location", e);
                 // En caso de error, usar la ubicación por defecto
-                setSelectedLocation({
-                    latitude: region.latitude,
-                    longitude: region.longitude
-                });
             }
         })();
     }, []);
@@ -136,7 +126,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
             const lat = Number(coordinate.latitude);
             const lon = Number(coordinate.longitude);
             
-            if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+            if (isValidCoordinate(lat, lon)) {
                 setSelectedLocation({
                     latitude: lat,
                     longitude: lon
@@ -181,7 +171,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
         const lat = Number(selectedLocation.latitude);
         const lon = Number(selectedLocation.longitude);
         
-        if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) {
+        if (!isValidCoordinate(lat, lon)) {
             logger.error('[MapSelectionScreen] Coordenadas no son números válidos');
             Alert.alert('Error', 'La ubicación seleccionada no es válida. Por favor selecciona otra ubicación.');
             return;
@@ -190,30 +180,21 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
         // Obtener el nombre de la pantalla anterior desde los params
         const returnScreen = route.params?.returnScreen;
         const apiaryInfo = route.params?.apiaryInfo; // Obtener apiaryInfo si existe
+        const returnParams = route.params?.returnParams || {};
+        const selectedParams = {
+            ...returnParams,
+            ...(apiaryInfo ? { apiaryInfo } : {}),
+            selectedLocation: {
+                latitude: lat,
+                longitude: lon
+            },
+            confirmed: true
+        };
         
         logger.debug(`[MapSelectionScreen] Navegando a: ${returnScreen}`);
         
         if (returnScreen) {
-            // Si hay apiaryInfo, preservarlo al navegar de vuelta
-            if (apiaryInfo) {
-                navigation.navigate(returnScreen, {
-                    apiaryInfo: apiaryInfo, // Preservar apiaryInfo
-                    selectedLocation: {
-                        latitude: lat,
-                        longitude: lon
-                    },
-                    confirmed: true
-                });
-            } else {
-                // Si no hay apiaryInfo, solo pasar selectedLocation
-                navigation.navigate(returnScreen, {
-                    selectedLocation: {
-                        latitude: lat,
-                        longitude: lon
-                    },
-                    confirmed: true
-                });
-            }
+            navigation.navigate(returnScreen as any, selectedParams as any);
         } else {
             // Si no hay returnScreen, simplemente volver atrás
             navigation.goBack();
@@ -244,6 +225,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                 onPress={handleMapPress}
                 onRegionChangeComplete={handleRegionChange}
                 provider={PROVIDER_DEFAULT}
+                mapType={Platform.OS === 'android' ? 'none' : 'standard'}
                 showsUserLocation={true}
                 showsMyLocationButton={Platform.OS === 'android'}
                 loadingEnabled={true}
@@ -261,12 +243,10 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                     }
                 }}
             >
-                {/* CartoDB Positron Tiles - 100% Gratuito, sin API key */}
-                {/* Solo en Android para evitar problemas en iOS */}
                 {Platform.OS === 'android' ? (
                     <UrlTile
-                        urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                        maximumZ={19}
+                        urlTemplate={APP_MAP_TILE_URL_TEMPLATE}
+                        maximumZ={APP_MAP_MAXIMUM_Z}
                         flipY={false}
                         tileSize={256}
                     />
@@ -287,7 +267,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                                 const lat = Number(coordinate.latitude);
                                 const lon = Number(coordinate.longitude);
                                 
-                                if (!isNaN(lat) && !isNaN(lon) && lat !== 0 && lon !== 0) {
+                                if (isValidCoordinate(lat, lon)) {
                                     setSelectedLocation({
                                         latitude: lat,
                                         longitude: lon
@@ -312,6 +292,12 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                     </Marker>
                 )}
             </MapView>
+
+            {Platform.OS === 'android' ? (
+                <View style={styles.attribution}>
+                    <Text style={styles.attributionText}>{APP_MAP_ATTRIBUTION}</Text>
+                </View>
+            ) : null}
             
             <View style={[styles.footer, { bottom: 20 + insets.bottom }]}>
                 <View style={styles.infoContainer}>
@@ -349,6 +335,19 @@ const styles = StyleSheet.create({
     map: {
         width: '100%',
         height: '100%',
+    },
+    attribution: {
+        position: 'absolute',
+        left: 8,
+        top: 8,
+        backgroundColor: 'rgba(255,255,255,0.85)',
+        borderRadius: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+    },
+    attributionText: {
+        fontSize: 10,
+        color: colors.SLATE[600],
     },
     footer: {
         position: 'absolute',

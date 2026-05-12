@@ -8,10 +8,12 @@ import { updateApiary } from "../../modules/API/Apiarys";
 import Capitalize from "../../modules/Capitalize";
 import { ITreatment } from "../../constants/interfaces/Apiary/ITreatment";
 import ImagePick from "../../components/imagePicker";
+import ApiaryLocationPicker from "../../components/apiary/ApiaryLocationPicker";
 import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryVisitScreenProps } from "../../types/navigation";
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Importar SafeAreaInsets
+import { isValidCoordinate } from "../../helpers/Apiary/mapCoordinates";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -45,6 +47,24 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         longitude: apiaryNavData.longitude || 0
     });
     const [apiaryImage, setApiaryImage] = useState()
+
+    const openLocationPicker = () => {
+        const currentLocation = isValidCoordinate(apiaryData.latitude, apiaryData.longitude)
+            ? {
+                latitude: Number(apiaryData.latitude),
+                longitude: Number(apiaryData.longitude),
+            }
+            : null;
+
+        navigation.navigate('MapSelectionScreen', {
+            initialLocation: currentLocation,
+            returnScreen: 'ApiaryVisitScreen',
+            apiaryInfo: apiaryNavData,
+            returnParams: {
+                apiaryNavData,
+            },
+        });
+    };
 
     const renderTreatments = () => {
         // Filtrar los ítems de tratamiento
@@ -138,6 +158,20 @@ function ApiaryVisitScreen({ route, navigation }: any) {
         })
     }, [apiaryData, isSubmitting])
 
+    useEffect(() => {
+        const selectedLocation = route.params?.selectedLocation;
+
+        if (!selectedLocation || !isValidCoordinate(selectedLocation.latitude, selectedLocation.longitude)) {
+            return;
+        }
+
+        setApiaryData((prev: any) => ({
+            ...prev,
+            latitude: Number(selectedLocation.latitude),
+            longitude: Number(selectedLocation.longitude),
+        }));
+    }, [route.params?.selectedLocation?.latitude, route.params?.selectedLocation?.longitude]);
+
     const getStatusColor = (status: number) => {
         switch (status) {
             case 0: return colors.RED_LIGHT;
@@ -184,6 +218,12 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                             {Capitalize(apiaryNavData.name)}
                         </Text>
                     </View>
+
+                    <ApiaryLocationPicker
+                        latitude={apiaryData.latitude}
+                        longitude={apiaryData.longitude}
+                        onPress={openLocationPicker}
+                    />
 
                     {/* CANTIDAD DE COLMENAS */}
                     <ApiarySlider

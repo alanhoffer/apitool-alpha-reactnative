@@ -6,9 +6,11 @@ import { useEffect, useState } from 'react';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import { createApiary } from "../../modules/API/Apiarys";
 import ImagePick from "../../components/imagePicker";
+import ApiaryLocationPicker from "../../components/apiary/ApiaryLocationPicker";
 import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryAddScreenProps } from "../../types/navigation";
+import { isValidCoordinate } from "../../helpers/Apiary/mapCoordinates";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -52,6 +54,24 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
 
     const [apiaryImage, setApiaryImage] = useState()
+
+    const openLocationPicker = () => {
+        const currentLocation = isValidCoordinate(apiaryData.latitude, apiaryData.longitude)
+            ? {
+                latitude: Number(apiaryData.latitude),
+                longitude: Number(apiaryData.longitude),
+            }
+            : null;
+
+        navigation.navigate('MapSelectionScreen', {
+            initialLocation: currentLocation,
+            returnScreen: 'ApiaryAddScreen',
+            returnParams: {
+                apiarySettings,
+                managementType,
+            },
+        });
+    };
 
     const renderTreatments = () => {
         // Filtrar los ítems de tratamiento
@@ -146,6 +166,20 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
         })
     }, [apiaryData, isSubmitting])
 
+    useEffect(() => {
+        const selectedLocation = route.params?.selectedLocation;
+
+        if (!selectedLocation || !isValidCoordinate(selectedLocation.latitude, selectedLocation.longitude)) {
+            return;
+        }
+
+        setApiaryData((prevState) => ({
+            ...prevState,
+            latitude: Number(selectedLocation.latitude),
+            longitude: Number(selectedLocation.longitude),
+        }));
+    }, [route.params?.selectedLocation?.latitude, route.params?.selectedLocation?.longitude]);
+
 
     const getStatusColor = (status: number) => {
         switch (status) {
@@ -192,6 +226,12 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                         />
                     </View>
 
+                    <ApiaryLocationPicker
+                        latitude={apiaryData.latitude}
+                        longitude={apiaryData.longitude}
+                        onPress={openLocationPicker}
+                    />
+
                     {/* CANTIDAD DE COLMENAS */}
                     <ApiarySlider
                         max={1000}
@@ -231,6 +271,12 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                         placeholderTextColor={colors.GREY}
                     />
                 </View>
+
+                <ApiaryLocationPicker
+                    latitude={apiaryData.latitude}
+                    longitude={apiaryData.longitude}
+                    onPress={openLocationPicker}
+                />
 
 
 

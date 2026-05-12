@@ -9,6 +9,9 @@ type ExtraConfig = {
   supportUrl?: string;
   subscriptionWebUrl?: string;
   revenueCatEntitlement?: string;
+  mapTileUrlTemplate?: string;
+  mapAttribution?: string;
+  mapMaximumZ?: number | string;
 };
 
 const extra = (Constants.expoConfig?.extra ?? {}) as ExtraConfig;
@@ -38,3 +41,11 @@ export const isNativePurchasePlatform =
 
 export const isRevenueCatEnabled =
   isNativePurchasePlatform && Boolean(APP_REVENUECAT_API_KEY);
+
+export const APP_MAP_TILE_URL_TEMPLATE =
+  extra.mapTileUrlTemplate || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+export const APP_MAP_ATTRIBUTION =
+  extra.mapAttribution || '\u00A9 OpenStreetMap contributors';
+
+export const APP_MAP_MAXIMUM_Z = Number(extra.mapMaximumZ || 19);

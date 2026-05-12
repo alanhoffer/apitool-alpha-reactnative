@@ -28,6 +28,8 @@ import ApiaryVisitScreen from '../screens/Apiary/ApiaryVisitScreen';
 import ApiaryHistoryScreen from '../screens/Apiary/ApiaryHistoryScreen';
 // import ApiaryMapScreen from '../screens/Apiary/ApiaryMapScreen'; // Comentado - no se usa mapa por ahora
 // import MapSelectionScreen from '../screens/Apiary/MapSelectionScreen'; // Comentado - no se usa mapa por ahora
+import ApiaryMapScreen from '../screens/Apiary/ApiaryMapScreen';
+import MapSelectionScreen from '../screens/Apiary/MapSelectionScreen';
 
 
 import ApiarySettingsScreen from '../screens/Apiary/ApiarySettingsScreen';
@@ -66,6 +68,7 @@ function ApiaryNavigator() {
     return (
         <ApiaryStack.Navigator>
             <ApiaryStack.Screen name="ApiaryListScreen" component={ApiaryListScreen as any} options={(navigation) => ApiaryListHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryMapScreen" component={ApiaryMapScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             {/* <ApiaryStack.Screen name="ApiaryMapScreen" component={ApiaryMapScreen} options={(navigation) => ApiaryHeader(navigation)} /> Comentado - no se usa mapa por ahora */}
             <ApiaryStack.Screen name="ApiaryScreen" component={ApiaryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryVisitScreen" component={ApiaryVisitScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
@@ -79,6 +82,7 @@ function ApiaryNavigator() {
             <ApiaryStack.Screen name="HiveScreen" component={HiveScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="HiveVisitScreen" component={HiveVisitScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
             <ApiaryStack.Screen name="HiveHistoryScreen" component={HiveHistoryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
+            <ApiaryStack.Screen name="MapSelectionScreen" component={MapSelectionScreen as any} options={{ title: 'Seleccionar ubicacion' }} />
             {/* <ApiaryStack.Screen name="MapSelectionScreen" component={MapSelectionScreen} options={{ title: 'Seleccionar Ubicación' }} /> Comentado - no se usa mapa por ahora */}
         </ApiaryStack.Navigator>
     );

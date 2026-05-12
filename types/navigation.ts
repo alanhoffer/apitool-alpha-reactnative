@@ -30,7 +30,7 @@ export type RootStackParamList = {
     confirmed?: boolean;
     returnScreen?: string;
   };
-  ApiaryVisitScreen: { apiaryNavData: IApiary };
+  ApiaryVisitScreen: { apiaryNavData: IApiary; selectedLocation?: { latitude: number; longitude: number } };
   ApiaryHistoryScreen: { apiaryInfo: IApiary };
   ApiaryMapScreen: undefined;
   ApiarySettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
@@ -48,6 +48,7 @@ export type RootStackParamList = {
     initialLocation?: { latitude: number; longitude: number } | null;
     returnScreen: keyof RootStackParamList;
     apiaryInfo?: IApiary;
+    returnParams?: Record<string, any>;
   };
 
   // Scanner
