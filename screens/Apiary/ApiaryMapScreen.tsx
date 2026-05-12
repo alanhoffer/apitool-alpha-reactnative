@@ -22,12 +22,14 @@ import {
 import logger from '../../helpers/logger';
 import { ApiaryMapScreenProps } from '../../types/navigation';
 
-const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
+const ApiaryMapScreen = ({ navigation, route }: ApiaryMapScreenProps) => {
     const insets = useSafeAreaInsets();
     const mapRef = useRef<MapView>(null);
     const isFocused = useIsFocused();
+    const targetApiaryId = route.params?.apiaryId;
 
     const [apiaries, setApiaries] = useState<IApiary[]>([]);
+    const [missingApiaryCount, setMissingApiaryCount] = useState(0);
     const [initialRegion, setInitialRegion] = useState<MapRegion | null>(null);
     const [selectedApiary, setSelectedApiary] = useState<IApiary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -111,14 +113,19 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
                 const coordinates = data
                     .map(getApiaryCoordinate)
                     .filter(Boolean) as { latitude: number; longitude: number }[];
+                const targetApiary = targetApiaryId ? data.find((apiary) => apiary.id === targetApiaryId) || null : null;
+                const targetCoordinate = targetApiary ? getApiaryCoordinate(targetApiary) : null;
 
                 setApiaries(data);
-                setInitialRegion(buildRegionForCoordinates(coordinates, userRegion));
+                setMissingApiaryCount(Math.max(allApiaries.length - data.length, 0));
+                setSelectedApiary(targetApiary);
+                setInitialRegion(buildRegionForCoordinates(targetCoordinate ? [targetCoordinate] : coordinates, userRegion));
                 logger.debug(`[ApiaryMapScreen] Apiarios con ubicacion: ${data.length}/${allApiaries.length}`);
             } catch (error) {
                 logger.error('Error loading map data:', error);
                 Alert.alert('Error', 'No se pudieron cargar los apiarios');
                 setApiaries([]);
+                setMissingApiaryCount(0);
                 setInitialRegion(DEFAULT_MAP_REGION);
             } finally {
                 setLoading(false);
@@ -128,7 +135,7 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
         if (isFocused) {
             loadMapData();
         }
-    }, [isFocused]);
+    }, [isFocused, targetApiaryId]);
 
     const isValidRegion = initialRegion && isValidCoordinate(initialRegion.latitude, initialRegion.longitude);
 
@@ -178,7 +185,9 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
                     }}
                     onMapReady={() => {
                         setMapError(null);
-                        setTimeout(() => fitApiariesOnMap(false), 250);
+                        if (!targetApiaryId) {
+                            setTimeout(() => fitApiariesOnMap(false), 250);
+                        }
                     }}
                 >
                     {Platform.OS === 'android' ? (
@@ -232,7 +241,9 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
                 <View style={[styles.summaryBar, { top: 12 + insets.top }]}>
                     <View>
                         <Text style={styles.summaryTitle}>Mapa de apiarios</Text>
-                        <Text style={styles.summarySubtitle}>{apiaries.length} con ubicacion</Text>
+                        <Text style={styles.summarySubtitle}>
+                            {apiaries.length} ubicados{missingApiaryCount > 0 ? `, ${missingApiaryCount} sin ubicar` : ''}
+                        </Text>
                     </View>
                     <TouchableOpacity
                         style={[styles.summaryButton, apiaries.length < 2 && styles.summaryButtonDisabled]}
@@ -293,6 +304,22 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
                             >
                                 <Text style={styles.viewDetailsText}>Ver apiario</Text>
                                 <MaterialIcons name="arrow-forward" size={18} color={colors.WHITE} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.editLocationButton}
+                                onPress={() => {
+                                    const coordinate = getApiaryCoordinate(selectedApiary);
+                                    navigation.navigate('MapSelectionScreen', {
+                                        initialLocation: coordinate,
+                                        returnScreen: 'ApiaryScreen',
+                                        apiaryInfo: selectedApiary,
+                                        returnParams: { apiaryInfo: selectedApiary },
+                                    });
+                                }}
+                                activeOpacity={0.85}
+                            >
+                                <Text style={styles.editLocationText}>Editar ubicacion</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -495,6 +522,19 @@ const styles = StyleSheet.create({
     viewDetailsText: {
         color: colors.WHITE,
         fontSize: 15,
+        fontWeight: '800',
+    },
+    editLocationButton: {
+        height: 38,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 8,
+        borderRadius: 12,
+        backgroundColor: colors.SLATE[100],
+    },
+    editLocationText: {
+        color: colors.SLATE[700],
+        fontSize: 13,
         fontWeight: '800',
     },
     markerContainer: {

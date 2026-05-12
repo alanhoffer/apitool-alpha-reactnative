@@ -22,7 +22,11 @@ export type RootStackParamList = {
   // Apiary
   Apiary: NavigatorScreenParams<any>;
   ApiaryListScreen: undefined;
-  ApiaryScreen: { apiaryInfo: IApiary };
+  ApiaryScreen: {
+    apiaryInfo: IApiary;
+    selectedLocation?: { latitude: number; longitude: number };
+    confirmed?: boolean;
+  };
   ApiaryAddScreen: {
     apiarySettings?: any;
     managementType?: 'apiary' | 'individual';
@@ -32,7 +36,7 @@ export type RootStackParamList = {
   };
   ApiaryVisitScreen: { apiaryNavData: IApiary; selectedLocation?: { latitude: number; longitude: number } };
   ApiaryHistoryScreen: { apiaryInfo: IApiary };
-  ApiaryMapScreen: undefined;
+  ApiaryMapScreen: { apiaryId?: number } | undefined;
   ApiarySettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
   ApiaryIndividualSettingsScreen: { apiaryInfo: IApiary; apiarySettings?: any };
   ApiaryAddSettingsScreen: {

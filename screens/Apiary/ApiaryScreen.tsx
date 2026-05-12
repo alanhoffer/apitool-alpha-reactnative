@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import BlankImage from '../../assets/images/blank-image.jpg'
 import Capitalize from "../../modules/Capitalize";
 import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
-import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
+import ApiaryLocationCard from "../../components/apiary/ApiaryLocationCard";
 import { resolveApiaryImageUrl } from "../../constants/api";
 import colors from "../../constants/colors";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
@@ -21,6 +21,7 @@ import { getTasks, updateTask } from "../../modules/API/Tasks";
 import { ITask } from "../../constants/interfaces/Task/ITask";
 import logger from "../../helpers/logger";
 import { ApiaryScreenProps } from "../../types/navigation";
+import { isValidCoordinate } from "../../helpers/Apiary/mapCoordinates";
 
 function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     const insets = useSafeAreaInsets();
@@ -35,6 +36,9 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [apiaryTasks, setApiaryTasks] = useState<ITask[]>([]);
     const pendingApiaryTasks = useMemo(() => apiaryTasks.filter(task => !task.completed), [apiaryTasks]);
+    const hasApiaryLocation = apiaryInfoState
+        ? isValidCoordinate(apiaryInfoState.latitude, apiaryInfoState.longitude)
+        : false;
 
     // ... (rest of the logic remains same for now)
 
@@ -155,6 +159,103 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
             });
         }
     }, [isFocused, apiaryInfoState?.id]);
+
+    useEffect(() => {
+        const selectedLocation = route.params?.selectedLocation;
+
+        if (!selectedLocation || !apiaryInfoState?.id) {
+            return;
+        }
+
+        const latitude = Number(selectedLocation.latitude);
+        const longitude = Number(selectedLocation.longitude);
+
+        if (!isValidCoordinate(latitude, longitude)) {
+            navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
+            return;
+        }
+
+        const sameLocation =
+            Math.abs(Number(apiaryInfoState.latitude || 0) - latitude) < 0.000001 &&
+            Math.abs(Number(apiaryInfoState.longitude || 0) - longitude) < 0.000001;
+
+        if (sameLocation) {
+            navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
+            return;
+        }
+
+        let cancelled = false;
+
+        const saveLocation = async () => {
+            try {
+                const updated = await updateApiary(undefined, apiaryInfoState.id, { latitude, longitude });
+                if (cancelled) {
+                    return;
+                }
+
+                if (updated) {
+                    setApiaryInfoState((prev) => prev ? { ...prev, latitude, longitude } : prev);
+                    ToastAndroid.show('Ubicacion guardada', ToastAndroid.SHORT);
+                } else {
+                    ToastAndroid.show('No se pudo guardar la ubicacion', ToastAndroid.SHORT);
+                }
+            } catch (error) {
+                logger.error('[ApiaryScreen] Error saving apiary location:', error);
+                if (!cancelled) {
+                    ToastAndroid.show('Error al guardar la ubicacion', ToastAndroid.SHORT);
+                }
+            } finally {
+                if (!cancelled) {
+                    navigation.setParams({ selectedLocation: undefined, confirmed: undefined });
+                }
+            }
+        };
+
+        saveLocation();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        route.params?.selectedLocation?.latitude,
+        route.params?.selectedLocation?.longitude,
+        apiaryInfoState?.id,
+        apiaryInfoState?.latitude,
+        apiaryInfoState?.longitude,
+    ]);
+
+    const openLocationPicker = () => {
+        if (!apiaryInfoState) {
+            return;
+        }
+
+        const currentLocation = hasApiaryLocation
+            ? {
+                latitude: Number(apiaryInfoState.latitude),
+                longitude: Number(apiaryInfoState.longitude),
+            }
+            : null;
+
+        navigation.navigate('MapSelectionScreen', {
+            initialLocation: currentLocation,
+            returnScreen: 'ApiaryScreen',
+            apiaryInfo: apiaryInfoState,
+            returnParams: { apiaryInfo: apiaryInfoState },
+        });
+    };
+
+    const openApiaryMap = () => {
+        if (!apiaryInfoState) {
+            return;
+        }
+
+        if (!hasApiaryLocation) {
+            openLocationPicker();
+            return;
+        }
+
+        navigation.navigate('ApiaryMapScreen', { apiaryId: apiaryInfoState.id });
+    };
 
     const renderApiaryInfo = () => {
         if (!apiaryInfoState) {
@@ -481,6 +582,15 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             </View>
                         </View>
 
+                            <View style={styles.locationCardWrapper}>
+                                <ApiaryLocationCard
+                                    latitude={apiaryInfoState.latitude}
+                                    longitude={apiaryInfoState.longitude}
+                                    onOpenMap={openApiaryMap}
+                                    onEditLocation={openLocationPicker}
+                                />
+                            </View>
+
                             {/* Ordenamiento */}
                             <View style={[styles.sortContainer, { paddingHorizontal: 24, width: '100%', marginBottom: 16, marginTop: 12 }]}>
                                 <Text style={styles.sortLabel}>Ordenar por:</Text>
@@ -632,6 +742,15 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             <Text style={styles.actionBtnLabel}>Ajustes</Text>
                         </TouchableOpacity>
                     </View>
+                </View>
+
+                <View style={styles.locationCardWrapper}>
+                    <ApiaryLocationCard
+                        latitude={apiaryInfoState.latitude}
+                        longitude={apiaryInfoState.longitude}
+                        onOpenMap={openApiaryMap}
+                        onEditLocation={openLocationPicker}
+                    />
                 </View>
 
                 {/* Content Section */}
@@ -1077,6 +1196,10 @@ const styles = StyleSheet.create({
         marginTop: -30,
         zIndex: 20,
         marginBottom: 24,
+    },
+    locationCardWrapper: {
+        paddingHorizontal: 24,
+        width: '100%',
     },
     glassCard: {
         backgroundColor: colors.WHITE,

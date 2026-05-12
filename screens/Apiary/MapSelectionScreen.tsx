@@ -84,6 +84,10 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
 
                     try {
                         const location = await Promise.race([locationPromise, timeoutPromise]) as any;
+                        if (!isValidCoordinate(location.coords.latitude, location.coords.longitude)) {
+                            return;
+                        }
+
                         const newRegion = {
                             latitude: location.coords.latitude,
                             longitude: location.coords.longitude,
@@ -310,7 +314,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                         </Text>
                     ) : (
                         <Text style={styles.infoText}>
-                            Toca el mapa o arrastra el marcador para seleccionar la ubicación
+                            Toca el mapa o arrastra el marcador para elegir la ubicacion
                         </Text>
                     )}
                 </View>
@@ -320,7 +324,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                     disabled={!selectedLocation}
                     activeOpacity={0.7}
                 >
-                    <Text style={styles.confirmButtonText}>OK</Text>
+                    <Text style={styles.confirmButtonText}>Guardar ubicacion</Text>
                 </TouchableOpacity>
             </View>
         </View>

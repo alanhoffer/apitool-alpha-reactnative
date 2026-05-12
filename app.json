@@ -56,6 +56,9 @@
     },
     "extra": {
       "apiBaseUrl": "http://192.99.145.170:7757/",
+      "mapTileUrlTemplate": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "mapAttribution": "\u00A9 OpenStreetMap contributors",
+      "mapMaximumZ": 19,
       "subscriptionWebUrl": "https://cabanahofferapp.com.ar/suscripcion",
       "revenueCatEntitlement": "Apitool Pro",
       "revenueCatAppleApiKey": "",
