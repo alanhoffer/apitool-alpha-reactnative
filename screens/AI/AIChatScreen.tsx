@@ -15,16 +15,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { sendAIMessage, transcribeAudio, AIChatMessage } from '../../modules/API/AIChat';
+import { sendAIMessage, sendAIAudio, AIChatMessage } from '../../modules/API/AIChat';
 import colors from '../../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../../helpers/logger';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 
 const CHAT_ID_STORAGE_KEY = 'ai_chat_id';
 const CHAT_HISTORY_STORAGE_KEY = 'ai_chat_history';
 
 const AIChatScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
+  const { canUseAI } = useSubscription();
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -182,18 +184,44 @@ const AIChatScreen = ({ navigation }: any) => {
       }
       setTranscribing(true);
       try {
-        const transcript = await transcribeAudio(uri);
-        if (transcript) {
-          await sendMessageToAPI(transcript);
+        let currentChatId: string | undefined = chatId ?? undefined;
+        if (currentChatId && currentChatId.startsWith('chat_')) {
+          currentChatId = undefined;
+          setChatId(null);
+        }
+
+        const aiResponse = await sendAIAudio(uri, currentChatId);
+        const transcript = (aiResponse.transcript || '').trim();
+        const userText = transcript.length ? transcript : 'Audio';
+
+        const userMessage: AIChatMessage = {
+          role: 'user',
+          content: userText,
+          timestamp: new Date(),
+        };
+        const assistantMessage: AIChatMessage = {
+          role: 'assistant',
+          content: aiResponse.response,
+          timestamp: new Date(),
+        };
+        const updatedMessages = [...messages, userMessage, assistantMessage];
+        setMessages(updatedMessages);
+
+        if (aiResponse.chatId && !aiResponse.chatId.startsWith('chat_')) {
+          setChatId(aiResponse.chatId);
+          await saveChatHistory(updatedMessages, aiResponse.chatId);
+        } else if (aiResponse.chatId) {
+          setChatId(aiResponse.chatId);
+          await saveChatHistory(updatedMessages, aiResponse.chatId);
         } else {
-          Alert.alert('Sin texto', 'No se pudo transcribir el audio. Probá de nuevo.');
+          await saveChatHistory(updatedMessages, '');
         }
       } catch (err: any) {
-        Alert.alert('Error', err.message || 'No se pudo transcribir el audio.');
+        Alert.alert('Error', err.message || 'No se pudo procesar el audio.');
       } finally {
         setTranscribing(false);
       }
-    } catch (err: any) {
+} catch (err: any) {
       logger.error('[AIChatScreen] Error al procesar audio:', err);
       setIsRecordingAudio(false);
       recordingRef.current = null;
@@ -245,6 +273,30 @@ const AIChatScreen = ({ navigation }: any) => {
       minute: '2-digit',
     });
   };
+
+  if (!canUseAI()) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+        <View style={{ paddingTop: insets.top }} />
+        <Ionicons name="lock-closed" size={56} color={colors.YELLOW} style={{ marginBottom: 16 }} />
+        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.TEXT_PRIMARY, textAlign: 'center', marginBottom: 8 }}>
+          Asistente IA
+        </Text>
+        <Text style={{ fontSize: 15, color: colors.TEXT_SECONDARY, textAlign: 'center', marginBottom: 28 }}>
+          El asistente IA está disponible desde el plan Apicultor. Actualizá tu suscripción para acceder.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.YELLOW, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14 }}
+          onPress={() => navigation.navigate('Profile', { screen: 'SubscriptionScreen' })}
+        >
+          <Text style={{ color: colors.WHITE, fontWeight: '700', fontSize: 16 }}>Ver planes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ marginTop: 16 }} onPress={() => navigation.goBack()}>
+          <Text style={{ color: colors.TEXT_SECONDARY, fontSize: 14 }}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

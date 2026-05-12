@@ -22,22 +22,20 @@ export default function ImagePick(props: Props) {
         ImagePicker.requestMediaLibraryPermissionsAsync().then(res => {
             setHasGalleryPermission(res.status === 'granted')
         })
-    })
+    }, [])
 
     async function pickImage() {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            base64: true,
-            quality: 1,
+            quality: 0.82,
         });
 
         if (!result.canceled) {
             setImage(result.assets[0].uri)
             props.uploadImage(result.assets[0])
             props.imageChange(result.assets[0].uri, 'image')
-            console.log(result.assets[0].uri, 'image')
         }
     };
 

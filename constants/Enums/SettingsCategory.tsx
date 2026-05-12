@@ -1,6 +1,6 @@
 export enum SettingsCategory {
     Food = 'food',
     Treatment = 'treatment',
-    Harvesting = 'harvesting',
+    Harvest = 'harvest',
     Others = 'others',
 }

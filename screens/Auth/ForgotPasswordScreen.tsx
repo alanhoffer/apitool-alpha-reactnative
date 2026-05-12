@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    TextInput,
+    ToastAndroid,
+    TouchableOpacity,
+    StyleSheet,
+    Image,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import getTheme from '../../constants/themes';
+import Icon from 'react-native-vector-icons/Ionicons';
+import colors from '../../constants/colors';
 import { getApiErrorMessage } from '../../helpers/apiErrors';
 import { isValidEmail } from '../../helpers/validation';
 import logger from '../../helpers/logger';
@@ -33,6 +46,11 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
                 ToastAndroid.show('No se pudo enviar el enlace. Intenta nuevamente.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
+            if (error?.response?.status === 503) {
+                ToastAndroid.show('La recuperacion de contrasena no esta disponible por ahora.', ToastAndroid.SHORT);
+                logger.warn('[ForgotPasswordScreen] Recuperacion de contrasena no disponible en backend');
+                return;
+            }
             const errorMessage = getApiErrorMessage(error, 'Error al enviar el enlace de recuperacion');
             ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
             logger.error('[ForgotPasswordScreen] Error enviando enlace de recuperacion:', error);
@@ -43,193 +61,330 @@ const ForgotPasswordScreen = ({ navigation, route }: ForgotPasswordScreenProps) 
 
     const loading = isSubmitting;
 
-    if (emailSent) {
-        return (
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                <Image
-                    source={{
-                        uri: 'https://i.imgur.com/BWBW8rW.png',
-                    }}
-                    style={styles.logo}
-                />
-
-                <View style={styles.successContainer}>
-                    <Text style={styles.successTitle}>Email enviado</Text>
-                    <Text style={styles.successMessage}>
-                        Hemos enviado un enlace de recuperacion a{'\n'}
-                        <Text style={styles.emailText}>{email}</Text>
-                    </Text>
-                    <Text style={styles.successSubMessage}>
-                        Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contrasena.
-                    </Text>
-
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => navigation.navigate('LoginScreen')}
-                    >
-                        <Text style={styles.buttonText}>Volver al Login</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    }
-
     return (
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-            <Image
-                source={{
-                    uri: 'https://i.imgur.com/BWBW8rW.png',
-                }}
-                style={styles.logo}
-            />
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+            <ScrollView
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    {
+                        paddingTop: Math.max(insets.top, 18),
+                        paddingBottom: Math.max(insets.bottom, 20) + 20,
+                    },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => navigation.goBack()}
+                    activeOpacity={0.7}
+                >
+                    <Icon name="arrow-back" size={20} color={colors.TEXT_PRIMARY} />
+                </TouchableOpacity>
 
-            <View style={styles.inputsContainer}>
-                <View style={styles.titleContainer}>
-                    <Text style={styles.title}>Recuperar Contrasena</Text>
-                    <Text style={styles.subtitle}>
-                        Ingresa tu email y te enviaremos un enlace para restablecer tu contrasena
-                    </Text>
+                <View style={styles.heroHeader}>
+                    <View style={styles.logoShell}>
+                        <Image
+                            source={require('../../assets/images/logos/logo-yellow-white.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
+                    </View>
+
+                    <View style={styles.heroTextBlock}>
+                        <View style={styles.liveBadge}>
+                            <Text style={styles.liveBadgeText}>Apitool</Text>
+                        </View>
+                        <Text style={styles.heroTitle}>Restablecer contrasena</Text>
+                        <Text style={styles.heroSubtitle}>
+                            Te enviaremos un enlace para recuperar el acceso a tu cuenta.
+                        </Text>
+                    </View>
                 </View>
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    onChangeText={setEmail}
-                    value={email}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    editable={!loading}
-                    autoFocus={!initialEmail}
-                />
-            </View>
+                {emailSent ? (
+                    <View style={styles.formCard}>
+                        <View style={styles.successIconBadge}>
+                            <Icon name="mail-open-outline" size={22} color={colors.SUCCESS_DARK} />
+                        </View>
+                        <Text style={styles.formTitle}>Email enviado</Text>
+                        <Text style={styles.successText}>
+                            Enviamos el enlace de recuperacion a <Text style={styles.emailHighlight}>{email}</Text>.
+                        </Text>
+                        <Text style={styles.formSubtitle}>
+                            Revisa tu bandeja de entrada y sigue las instrucciones para restablecer tu contrasena.
+                        </Text>
 
-            <TouchableOpacity
-                style={[styles.button, loading && styles.buttonDisabled]}
-                onPress={handleSendResetLink}
-                disabled={loading}
-            >
-                {loading ? (
-                    <ActivityIndicator color={getTheme().text} />
+                        <TouchableOpacity
+                            style={styles.primaryButton}
+                            onPress={() => navigation.navigate('LoginScreen')}
+                            activeOpacity={0.85}
+                        >
+                            <Text style={styles.primaryButtonText}>Volver al login</Text>
+                            <Icon name="arrow-forward" size={16} color={colors.WHITE} />
+                        </TouchableOpacity>
+                    </View>
                 ) : (
-                    <Text style={styles.buttonText}>ENVIAR ENLACE</Text>
-                )}
-            </TouchableOpacity>
+                    <>
+                        <View style={styles.formCard}>
+                            <View style={styles.formHeader}>
+                                <Text style={styles.formTitle}>Recuperacion</Text>
+                                <Text style={styles.formSubtitle}>Ingresa tu correo para recibir el enlace.</Text>
+                            </View>
 
-            <TouchableOpacity
-                onPress={() => navigation.navigate('LoginScreen')}
-                style={styles.loginLink}
-            >
-                <Text style={styles.loginLinkText}>
-                    Recordaste tu contrasena? <Text style={styles.loginLinkBold}>Inicia sesion</Text>
-                </Text>
-            </TouchableOpacity>
-        </View>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.label}>Correo electronico</Text>
+                                <View style={styles.inputContainer}>
+                                    <View style={styles.inputIconBadge}>
+                                        <Icon name="mail-outline" size={16} color={colors.SLATE[700]} />
+                                    </View>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="tu@email.com"
+                                        placeholderTextColor={colors.TEXT_TERTIARY}
+                                        onChangeText={setEmail}
+                                        value={email}
+                                        autoCapitalize="none"
+                                        keyboardType="email-address"
+                                        editable={!loading}
+                                        autoFocus={!initialEmail}
+                                    />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                                onPress={handleSendResetLink}
+                                disabled={loading}
+                                activeOpacity={0.85}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color={colors.WHITE} size="small" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.primaryButtonText}>Enviar enlace</Text>
+                                        <Icon name="arrow-forward" size={16} color={colors.WHITE} />
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.secondaryCard}>
+                            <Text style={styles.secondaryTitle}>Recordaste tu contrasena?</Text>
+                            <Text style={styles.secondaryText}>Vuelve al acceso principal para iniciar sesion.</Text>
+
+                            <TouchableOpacity
+                                style={styles.secondaryButton}
+                                onPress={() => navigation.navigate('LoginScreen')}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.secondaryButtonText}>Ir a iniciar sesion</Text>
+                                <Icon name="arrow-forward" size={16} color={colors.TEXT_PRIMARY} />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: colors.BG_APP,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.WHITE,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 20,
-        backgroundColor: getTheme().background,
+        marginBottom: 12,
+    },
+    heroHeader: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 14,
+    },
+    logoShell: {
+        width: 96,
+        height: 96,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
     },
     logo: {
-        width: 80,
-        height: 80,
-        resizeMode: 'contain',
-        marginBottom: 20,
+        width: 74,
+        height: 74,
     },
-    titleContainer: {
-        width: '100%',
-        alignItems: 'flex-start',
-        marginBottom: 16,
+    heroTextBlock: {
+        alignItems: 'center',
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: getTheme().text,
+    liveBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 8,
     },
-    subtitle: {
-        fontSize: 16,
-        marginBottom: 16,
-        color: getTheme().text,
-        textAlign: 'left',
+    liveBadgeText: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.WARNING_COLOR,
+        letterSpacing: 0.1,
     },
-    inputsContainer: {
-        width: '100%',
-        marginBottom: 16,
+    heroTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        letterSpacing: -0.6,
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    heroSubtitle: {
+        fontSize: 12,
+        lineHeight: 18,
+        color: colors.TEXT_SECONDARY,
+        textAlign: 'center',
+    },
+    formCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        padding: 16,
+        marginBottom: 12,
+    },
+    formHeader: {
+        marginBottom: 14,
+    },
+    formTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 2,
+    },
+    formSubtitle: {
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+        lineHeight: 18,
+    },
+    inputGroup: {
+        marginBottom: 12,
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.TEXT_LABEL,
+        marginBottom: 8,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        minHeight: 52,
+        borderRadius: 14,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        paddingHorizontal: 10,
+    },
+    inputIconBadge: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.SLATE[100],
+        marginRight: 10,
     },
     input: {
-        width: '100%',
-        height: 50,
-        borderColor: getTheme().borders,
-        borderWidth: 1,
-        borderRadius: 3,
-        paddingHorizontal: 16,
-        marginBottom: 16,
-        color: getTheme().text,
-        backgroundColor: getTheme().background,
+        flex: 1,
+        color: colors.TEXT_PRIMARY,
+        fontSize: 14,
+        paddingVertical: 14,
     },
-    button: {
-        backgroundColor: getTheme().background,
-        borderColor: getTheme().borders,
+    successIconBadge: {
+        width: 46,
+        height: 46,
+        borderRadius: 14,
+        backgroundColor: colors.SUCCESS_BG,
         borderWidth: 1,
-        paddingHorizontal: 48,
-        paddingVertical: 12,
-        borderRadius: 8,
-        minWidth: 150,
+        borderColor: colors.EMERALD[500],
         alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 14,
+    },
+    successText: {
+        fontSize: 13,
+        lineHeight: 20,
+        color: colors.TEXT_DARK,
+        marginBottom: 10,
+    },
+    emailHighlight: {
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+    },
+    primaryButton: {
+        height: 50,
+        borderRadius: 14,
+        backgroundColor: colors.SLATE[900],
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    primaryButtonText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.WHITE,
     },
     buttonDisabled: {
         opacity: 0.7,
     },
-    buttonText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: getTheme().text,
+    secondaryCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        padding: 16,
     },
-    loginLink: {
-        marginTop: 20,
+    secondaryTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 4,
     },
-    loginLinkText: {
-        fontSize: 14,
-        color: getTheme().text,
+    secondaryText: {
+        fontSize: 12,
+        lineHeight: 18,
+        color: colors.TEXT_SECONDARY,
+        marginBottom: 12,
     },
-    loginLinkBold: {
-        fontWeight: '600',
-        color: getTheme().primary,
-    },
-    successContainer: {
-        width: '100%',
+    secondaryButton: {
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: colors.HONEY[100],
+        borderWidth: 1,
+        borderColor: colors.HONEY[200],
         alignItems: 'center',
-        paddingHorizontal: 20,
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
     },
-    successTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: getTheme().text,
-        marginBottom: 16,
-        textAlign: 'center',
-    },
-    successMessage: {
-        fontSize: 16,
-        color: getTheme().text,
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    emailText: {
-        fontWeight: '600',
-        color: getTheme().primary,
-    },
-    successSubMessage: {
+    secondaryButtonText: {
         fontSize: 14,
-        color: getTheme().text,
-        marginBottom: 32,
-        textAlign: 'center',
-        opacity: 0.8,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
     },
 });
 

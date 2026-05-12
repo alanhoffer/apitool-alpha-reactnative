@@ -1,6 +1,6 @@
 import { Text, View, StyleSheet, ScrollView } from "react-native";
 import { getHistory } from "../../modules/API/Apiarys";
-import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
+import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { useState, useEffect } from 'react';
 import { valueToPretty, variableToPretty } from "../../modules/Apiary/ApiaryVariable";
 import colors from "../../constants/colors";
@@ -9,142 +9,206 @@ import logger from "../../helpers/logger";
 import { ApiaryHistoryScreenProps } from "../../types/navigation";
 import { Ionicons } from '@expo/vector-icons';
 
-export default function ApiaryHistoryScreen({ route, navigation }: ApiaryHistoryScreenProps) {
+// Orden y categorías de campos
+const FIELD_ORDER: Record<string, { category: string; color: string; priority: number }> = {
+    status:         { category: 'General',      color: colors.SLATE[500],   priority: 0 },
+    hives:          { category: 'General',      color: colors.SLATE[500],   priority: 1 },
+    managementType: { category: 'General',      color: colors.SLATE[500],   priority: 2 },
+    honey:          { category: 'Alimentación', color: colors.HONEY[600],   priority: 10 },
+    sugar:          { category: 'Alimentación', color: colors.HONEY[600],   priority: 11 },
+    levudex:        { category: 'Alimentación', color: colors.HONEY[600],   priority: 12 },
+    box:            { category: 'Alzas',        color: colors.INDIGO[600],  priority: 20 },
+    boxMedium:      { category: 'Alzas',        color: colors.INDIGO[600],  priority: 21 },
+    boxSmall:       { category: 'Alzas',        color: colors.INDIGO[600],  priority: 22 },
+    tOxalic:        { category: 'Tratamientos', color: colors.EMERALD[600], priority: 30 },
+    tAmitraz:       { category: 'Tratamientos', color: colors.EMERALD[600], priority: 31 },
+    tFlumetrine:    { category: 'Tratamientos', color: colors.EMERALD[600], priority: 32 },
+    tFence:         { category: 'Tratamientos', color: colors.EMERALD[600], priority: 33 },
+    transhumance:   { category: 'Traslado',     color: colors.AMBER[600],   priority: 40 },
+    latitude:       { category: 'Ubicación',    color: colors.BLUE,         priority: 50 },
+    longitude:      { category: 'Ubicación',    color: colors.BLUE,         priority: 51 },
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+    'General':      colors.SLATE[500],
+    'Alimentación': colors.HONEY[600],
+    'Alzas':        colors.INDIGO[600],
+    'Tratamientos': colors.EMERALD[600],
+    'Traslado':     colors.AMBER[600],
+    'Ubicación':    colors.BLUE,
+    'Otros':        colors.GREY,
+};
+
+const isValidChange = (obj: any) => {
+    const label = variableToPretty(obj.field);
+    const value = valueToPretty(obj.field, obj.newValue);
+    return (
+        label &&
+        obj.newValue !== null &&
+        obj.newValue !== undefined &&
+        obj.newValue !== '' &&
+        value !== null &&
+        value !== undefined &&
+        value !== ''
+    );
+};
+
+function sortAndGroupChanges(history: any[]) {
+    const sorted = [...history]
+        .filter(isValidChange)
+        .sort((a, b) => {
+            const pa = FIELD_ORDER[a.field]?.priority ?? 99;
+            const pb = FIELD_ORDER[b.field]?.priority ?? 99;
+            return pa - pb;
+        });
+
+    const groups: Record<string, any[]> = {};
+    sorted.forEach((item) => {
+        const cat = FIELD_ORDER[item.field]?.category ?? 'Otros';
+        if (!groups[cat]) groups[cat] = [];
+        groups[cat].push(item);
+    });
+    return groups;
+}
+
+export default function ApiaryHistoryScreen({ route }: ApiaryHistoryScreenProps) {
     const insets = useSafeAreaInsets();
     const apiaryData = route.params.apiaryInfo;
-
-    const [historyByDate, setHistoryByDate] = useState({});
-
+    const [historyByDate, setHistoryByDate] = useState<Record<string, any[]>>({});
 
     const formatDate = (dateString: string) => {
         const dateObj = new Date(dateString);
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
-        
         const dateOnly = dateObj.toISOString().split('T')[0];
-        const todayOnly = today.toISOString().split('T')[0];
-        const yesterdayOnly = yesterday.toISOString().split('T')[0];
-        
-        if (dateOnly === todayOnly) {
-            return 'Hoy';
-        } else if (dateOnly === yesterdayOnly) {
-            return 'Ayer';
-        } else {
-            return dateObj.toLocaleDateString('es-ES', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-            });
-        }
+        if (dateOnly === today.toISOString().split('T')[0]) return 'Hoy';
+        if (dateOnly === yesterday.toISOString().split('T')[0]) return 'Ayer';
+        return dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
     const formatTime = (dateString: string) => {
         const dateObj = new Date(dateString);
-        return dateObj.toLocaleTimeString('es-ES', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
+        return dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     };
 
     async function dateFilter() {
         const arreglo = await getHistory(apiaryData.id);
-
-        const temporalHistory: any = {};
-
+        const temporalHistory: Record<string, any[]> = {};
         arreglo.forEach((obj: any) => {
             const dateObj = new Date(obj.changeDate);
-            const date = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
-            const time = dateObj.toTimeString().slice(0, 5);  // HH:MM
-
-            const dateTime = `${date} ${time}`; // Combina fecha y hora con minutos
-
-            if (!temporalHistory[dateTime]) {
-                temporalHistory[dateTime] = [];
-            }
+            const date = dateObj.toISOString().split('T')[0];
+            const time = dateObj.toTimeString().slice(0, 5);
+            const dateTime = `${date} ${time}`;
+            if (!temporalHistory[dateTime]) temporalHistory[dateTime] = [];
             temporalHistory[dateTime].push(obj);
         });
         logger.debug('[ApiaryHistoryScreen] Historial procesado:', Object.keys(temporalHistory).length, 'fechas');
-
         setHistoryByDate(temporalHistory);
     }
 
-    useEffect(() => {
-        dateFilter()
-    }, []);
+    useEffect(() => { dateFilter(); }, []);
+
+    const entries = Object.entries(historyByDate).reverse();
 
     return (
-        <ScrollView 
-            style={styles.historyScrollContainer}
+        <ScrollView
+            style={styles.scrollContainer}
             contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
         >
-            <View style={styles.historyContainer}>
+            <View style={styles.container}>
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Historial</Text>
-                    <Text style={styles.headerSubtitle}>Todos los cambios realizados en este apiario</Text>
+                    <Text style={styles.headerSubtitle}>Cambios registrados en este apiario</Text>
                 </View>
-                <View style={styles.historyContainerList}>
-                    {Object.keys(historyByDate).length === 0 ? (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="time-outline" size={80} color={colors.GREY_LIGHT} />
-                            <Text style={styles.emptyText}>No hay historial disponible</Text>
-                            <Text style={styles.emptySubText}>Realiza cambios en tu apiario para verlos aquí</Text>
-                        </View>
-                    ) : (
-                        Object.entries(historyByDate).reverse().map(([date, history]: any, index, array) => {
-                        const dateObj = new Date(date.split(' ')[0]);
-                        const formattedDate = formatDate(date);
-                        const formattedTime = formatTime(date);
-                        
+
+                {entries.length === 0 ? (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="time-outline" size={64} color={colors.GREY_LIGHT} />
+                        <Text style={styles.emptyText}>Sin historial</Text>
+                        <Text style={styles.emptySubText}>Los cambios aparecerán aquí</Text>
+                    </View>
+                ) : (
+                    entries.map(([date, history], index) => {
+                        const groups = sortAndGroupChanges(history);
                         return (
-                            <View key={date} style={styles.historyCard}>
+                            <View key={date} style={styles.entry}>
                                 {/* Timeline */}
-                                <View style={styles.timelineContainer}>
-                                    <View style={styles.timelineCircle}>
-                                        <Ionicons name="time-outline" size={14} color={colors.YELLOW} />
+                                <View style={styles.timeline}>
+                                    <View style={styles.timelineDot}>
+                                        <Ionicons name="time-outline" size={13} color={colors.YELLOW} />
                                     </View>
-                                    {index !== array.length - 1 && <View style={styles.timelineLine} />}
+                                    {index !== entries.length - 1 && <View style={styles.timelineLine} />}
                                 </View>
 
-                                {/* Card Content */}
-                                <View style={styles.cardContent}>
+                                {/* Card */}
+                                <View style={styles.card}>
+                                    {/* Card Header */}
                                     <View style={styles.cardHeader}>
                                         <View>
-                                            <Text style={styles.cardDate}>{formattedDate}</Text>
-                                            <Text style={styles.cardTime}>{formattedTime}</Text>
+                                            <Text style={styles.cardDate}>{formatDate(date)}</Text>
+                                            <View style={styles.cardMeta}>
+                                                <Ionicons name="time-outline" size={11} color={colors.TEXT_TERTIARY} />
+                                                <Text style={styles.cardTime}>{formatTime(date)}</Text>
+                                                {history[0]?.userName && (
+                                                    <>
+                                                        <Text style={styles.cardMetaDot}>·</Text>
+                                                        <Ionicons name="person-outline" size={11} color={colors.TEXT_TERTIARY} />
+                                                        <Text style={styles.cardTime}>{history[0].userName}</Text>
+                                                    </>
+                                                )}
+                                            </View>
                                         </View>
-                                        <View style={styles.changeCountBadge}>
-                                            <Text style={styles.changeCountText}>{history.length}</Text>
+                                        <View style={styles.badge}>
+                                            <Text style={styles.badgeText}>{history.length}</Text>
                                         </View>
                                     </View>
 
-                                    <View style={styles.changesList}>
-                                        {history.map((obj: any, changeIndex: number) => (
-                                            <View key={obj.id} style={styles.changeItem}>
-                                                <View style={styles.changeContent}>
-                                                    <Text style={styles.changeLabel}>{variableToPretty(obj.field)}</Text>
-                                                    <Text style={styles.changeValue}>{valueToPretty(obj.field, obj.newValue)}</Text>
-                                                </View>
+                                    {/* Cambios agrupados */}
+                                    {Object.entries(groups).filter(([, items]) => items.length > 0).map(([category, items]) => (
+                                        <View key={category} style={styles.categoryBlock}>
+                                            <View style={styles.categoryHeader}>
+                                                <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[category] ?? colors.GREY }]} />
+                                                <Text style={styles.categoryTitle}>{category}</Text>
                                             </View>
-                                        ))}
-                                    </View>
+                                            {items.map((obj: any, i: number, arr: any[]) => (
+                                                <View key={obj.id} style={[styles.changeRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
+                                                    <Text style={styles.changeField} numberOfLines={1}>
+                                                        {variableToPretty(obj.field)}
+                                                    </Text>
+                                                    <View style={styles.changeRight}>
+                                                        {obj.previousValue !== null && obj.previousValue !== undefined && obj.previousValue !== '' && (
+                                                            <>
+                                                                <Text style={styles.changePrev} numberOfLines={1}>
+                                                                    {valueToPretty(obj.field, obj.previousValue)}
+                                                                </Text>
+                                                                <Text style={styles.changeArrow}>→</Text>
+                                                            </>
+                                                        )}
+                                                        <Text style={styles.changeNew} numberOfLines={1}>
+                                                            {valueToPretty(obj.field, obj.newValue)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    ))}
                                 </View>
                             </View>
                         );
-                    }))}
-                </View>
+                    })
+                )}
             </View>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    historyScrollContainer: {
+    scrollContainer: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.BG_SECTION,
     },
-    historyContainer: {
-        flex: 1,
+    container: {
         paddingHorizontal: 20,
         paddingTop: 20,
     },
@@ -152,53 +216,46 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     headerTitle: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: 'bold',
-        color: colors.BLACK,
-        marginBottom: 8,
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 4,
     },
     headerSubtitle: {
-        fontSize: 16,
-        color: colors.BLACK_TRANSPARENT,
-    },
-    historyContainerList: {
-        flex: 1,
-        position: 'relative',
+        fontSize: 14,
+        color: colors.TEXT_SECONDARY,
     },
     emptyContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: hp('10%'),
-        opacity: 0.8
+        marginTop: hp('15%'),
     },
     emptyText: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
         color: colors.BLACK_LIGHT,
         marginTop: 16,
     },
     emptySubText: {
-        fontSize: 16,
+        fontSize: 14,
         color: colors.GREY,
-        marginTop: 8,
-        textAlign: 'center',
-        width: '80%',
+        marginTop: 6,
     },
-    historyCard: {
+
+    // Timeline
+    entry: {
         flexDirection: 'row',
         marginBottom: 16,
-        width: '100%',
     },
-    timelineContainer: {
+    timeline: {
         alignItems: 'center',
-        marginRight: 16,
-        position: 'relative',
+        marginRight: 14,
     },
-    timelineCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.YELLOW + '20',
+    timelineDot: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: colors.YELLOW + '22',
         borderWidth: 2,
         borderColor: colors.YELLOW,
         justifyContent: 'center',
@@ -206,76 +263,123 @@ const styles = StyleSheet.create({
         zIndex: 2,
     },
     timelineLine: {
-        position: 'absolute',
         width: 2,
-        backgroundColor: colors.GREY_LIGHT,
-        top: 32,
-        bottom: -20,
+        flex: 1,
+        backgroundColor: colors.BORDER,
+        marginTop: 4,
+        marginBottom: -16,
         zIndex: 1,
     },
-    cardContent: {
-        backgroundColor: colors.WHITE,
-        borderRadius: 10,
-        padding: 12,
-        paddingBottom: 12,
-        borderWidth: 1,
-        borderColor: colors.GREY_LIGHT,
+
+    // Card
+    card: {
         flex: 1,
+        backgroundColor: colors.WHITE,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        overflow: 'hidden',
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 8,
-        paddingBottom: 8,
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: colors.GREY_LIGHT,
+        borderBottomColor: colors.BORDER,
+        backgroundColor: colors.BG_CARD,
     },
     cardDate: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.BLACK,
-        marginBottom: 2,
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 3,
+    },
+    cardMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    cardMetaDot: {
+        color: colors.TEXT_TERTIARY,
+        fontSize: 12,
     },
     cardTime: {
-        fontSize: 13,
-        color: colors.BLACK_TRANSPARENT,
+        fontSize: 12,
+        color: colors.TEXT_TERTIARY,
     },
-    changeCountBadge: {
+    badge: {
         backgroundColor: colors.YELLOW,
         borderRadius: 10,
         paddingHorizontal: 8,
-        paddingVertical: 3,
-        minWidth: 28,
+        paddingVertical: 2,
+        minWidth: 26,
         alignItems: 'center',
-        justifyContent: 'center',
     },
-    changeCountText: {
+    badgeText: {
         fontSize: 12,
         fontWeight: 'bold',
         color: colors.BLACK,
     },
-    changesList: {
-        gap: 4,
+
+    // Categorías
+    categoryBlock: {
+        paddingHorizontal: 14,
+        paddingTop: 10,
+        paddingBottom: 4,
     },
-    changeItem: {
-        paddingVertical: 2,
+    categoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 6,
     },
-    changeContent: {
+    categoryDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    categoryTitle: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.TEXT_SECONDARY,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+
+    // Filas de cambio
+    changeRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingVertical: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.BORDER_XLIGHT,
     },
-    changeLabel: {
-        fontSize: 15,
-        color: colors.BLACK_TRANSPARENT,
+    changeField: {
+        fontSize: 13,
+        color: colors.TEXT_SECONDARY,
         flex: 1,
     },
-    changeValue: {
-        fontSize: 15,
+    changeRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        flexShrink: 0,
+    },
+    changePrev: {
+        fontSize: 12,
+        color: colors.TEXT_TERTIARY,
+        textDecorationLine: 'line-through',
+    },
+    changeArrow: {
+        fontSize: 11,
+        color: colors.TEXT_TERTIARY,
+    },
+    changeNew: {
+        fontSize: 13,
         fontWeight: '600',
-        color: colors.BLACK,
-        flex: 1,
-        textAlign: 'right',
+        color: colors.TEXT_PRIMARY,
     },
 });

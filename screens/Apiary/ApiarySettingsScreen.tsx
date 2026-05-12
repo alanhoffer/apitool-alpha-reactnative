@@ -14,10 +14,17 @@ import { SettingCategory } from "../../components/apiary/ApiarySettingCategory";
 import { settingsItems } from "../../constants/Apiary/settingsItems";
 import { UISettingsItem } from "../../constants/interfaces/UI/Settings/UISettings";
 import { SettingItem } from "../../components/apiary/ApiarySettingItem";
+import colors from "../../constants/colors";
 
+
+const DEFAULT_SETTINGS: IApiarySettingsItems = {
+    honey: false, levudex: false, sugar: false, box: false, boxMedium: false,
+    boxSmall: false, tOxalic: false, tAmitraz: false, tFlumetrine: false,
+    tFence: false, transhumance: false, tasks: false,
+};
 
 function ApiarySettingsScreen({ route, navigation }: any) {
-    const prevSettings = route.params.apiarySettings;
+    const prevSettings = route.params.apiarySettings ?? DEFAULT_SETTINGS;
     const categories = settingsItems();
 
     const [settings, setSetting] = useState<IApiarySettingsItems>(prevSettings)
@@ -32,7 +39,7 @@ function ApiarySettingsScreen({ route, navigation }: any) {
             const updatedSuccessful = await updateSettings(settings as any);
             if (updatedSuccessful) {
                 ToastAndroid.show('Configuración cambiada', ToastAndroid.SHORT);
-                navigation.navigate('ApiaryListScreen');
+                navigation.goBack();
             } else {
                 ToastAndroid.show('No se puede cambiar', ToastAndroid.SHORT);
             }
@@ -66,7 +73,7 @@ function ApiarySettingsScreen({ route, navigation }: any) {
                     let categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
                     if (category === 'food') categoryTitle = 'Alimento';
                     if (category === 'treatment') categoryTitle = 'Tratamiento';
-                    if (category === 'harvesting') categoryTitle = 'Cosecha';
+                    if (category === 'harvest') categoryTitle = 'Cosecha';
                     if (category === 'others') categoryTitle = 'Otros';
                     
                     return (
@@ -91,7 +98,7 @@ function ApiarySettingsScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: colors.BG_SECTION
     },
     container: {
         alignItems: 'center',
@@ -103,12 +110,12 @@ const styles = StyleSheet.create({
     settingsTitleText: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#2E3A59',
+        color: colors.TEXT_LINK,
         marginBottom: 8,
         letterSpacing: 0.5,
     },
     settingsSubTitleText: {
-        color: '#8F9BB3',
+        color: colors.TEXT_MUTED,
         fontSize: 16,
         fontWeight: '400',
         lineHeight: 24,

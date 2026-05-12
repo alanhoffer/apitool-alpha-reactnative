@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, type ComponentProps } from "react";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { View, StyleSheet, Text, TouchableOpacity, Image, ScrollView } from "react-native";
-import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import VisitApiaryButton from "../../components/buttons/HeaderNoIconButton";
 import colors from "../../constants/colors";
 
 type ManagementType = 'apiary' | 'individual';
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 function ApiaryManagementTypeScreen({ navigation }: any) {
     const [selectedType, setSelectedType] = useState<ManagementType | null>(null);
@@ -33,7 +34,7 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
         type: ManagementType,
         title: string,
         description: string,
-        iconName: string,
+        iconName: IconName,
         iconColor: string,
         iconBackground: string
     ) => {
@@ -52,10 +53,10 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
                     styles.optionIconContainer,
                     selected ? styles.optionIconContainerSelected : { backgroundColor: iconBackground }
                 ]}>
-                    <Icon
+                    <MaterialCommunityIcons
                         name={iconName}
                         size={32}
-                        color={selected ? colors.YELLOW : iconColor}
+                        color={selected ? colors.SLATE[900] : iconColor}
                     />
                 </View>
                 <View style={styles.optionTextContainer}>
@@ -104,18 +105,18 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
                             'apiary',
                             'Apiario (Conjunto)',
                             'Gestion unificada de todas las colmenas. Ideal para la mayoria de apicultores.',
-                            'grid-outline',
-                            colors.BLUE_LIGHT,
-                            colors.BLUE_LIGHT + '20'
+                            'beehive-outline',
+                            colors.SLATE[600],
+                            colors.SLATE[100]
                         )}
 
                         {renderOption(
                             'individual',
                             'Colmena Individual',
                             'Seguimiento especifico de cada colmena de forma independiente.',
-                            'cube-outline',
-                            colors.YELLOW,
-                            colors.YELLOW + '20'
+                            'hexagon-multiple-outline',
+                            colors.SLATE[600],
+                            colors.SLATE[100]
                         )}
                     </View>
                 </View>
@@ -191,8 +192,8 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     optionCardSelected: {
-        borderColor: colors.YELLOW,
-        backgroundColor: '#FFFDF5',
+        borderColor: colors.SLATE[900],
+        backgroundColor: colors.SLATE[50],
         shadowOpacity: 0.1,
         shadowRadius: 10,
         elevation: 5,
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
         marginRight: 16,
     },
     optionIconContainerSelected: {
-        backgroundColor: colors.YELLOW + '25',
+        backgroundColor: colors.SLATE[200],
     },
     optionTextContainer: {
         flex: 1,
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
         height: 26,
         borderRadius: 13,
         borderWidth: 2,
-        borderColor: colors.YELLOW,
+        borderColor: colors.SLATE[900],
         justifyContent: 'center',
         alignItems: 'center',
         marginLeft: 8,
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
         width: 14,
         height: 14,
         borderRadius: 7,
-        backgroundColor: colors.YELLOW,
+        backgroundColor: colors.SLATE[900],
     },
 });
 

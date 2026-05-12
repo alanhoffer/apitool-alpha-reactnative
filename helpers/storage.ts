@@ -3,30 +3,68 @@ import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'access_token';
 
-// SecureStore no funciona en web, así que necesitamos un fallback o manejo condicional
-const isWeb = Platform.OS === 'web';
+let inMemoryWebToken: string | null = null;
+
+type WebSessionStorage = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
+};
+
+const getWebSessionStorage = (): WebSessionStorage | null => {
+  if (Platform.OS !== 'web' || typeof globalThis.window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return globalThis.window.sessionStorage;
+  } catch {
+    return null;
+  }
+};
 
 export const setToken = async (token: string) => {
-  if (isWeb) {
-    localStorage.setItem(TOKEN_KEY, token);
-  } else {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  if (Platform.OS === 'web') {
+    const sessionStorage = getWebSessionStorage();
+
+    if (sessionStorage) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+      inMemoryWebToken = null;
+      return;
+    }
+
+    inMemoryWebToken = token;
+    return;
   }
+
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
 };
 
 export const getToken = async (): Promise<string | null> => {
-  if (isWeb) {
-    return localStorage.getItem(TOKEN_KEY);
-  } else {
-    return await SecureStore.getItemAsync(TOKEN_KEY);
+  if (Platform.OS === 'web') {
+    const sessionStorage = getWebSessionStorage();
+
+    if (sessionStorage) {
+      return sessionStorage.getItem(TOKEN_KEY);
+    }
+
+    return inMemoryWebToken;
   }
+
+  return await SecureStore.getItemAsync(TOKEN_KEY);
 };
 
 export const removeToken = async () => {
-  if (isWeb) {
-    localStorage.removeItem(TOKEN_KEY);
-  } else {
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
-  }
-};
+  if (Platform.OS === 'web') {
+    const sessionStorage = getWebSessionStorage();
 
+    if (sessionStorage) {
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+
+    inMemoryWebToken = null;
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
+};

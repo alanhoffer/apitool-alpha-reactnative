@@ -1,0 +1,15 @@
+node_modules
+.expo
+dist
+coverage
+*.log
+
+android/.gradle
+android/build
+android/app/build
+android/app/.cxx
+android/.cxx
+android/**/.cxx
+
+ios/build
+web-build

@@ -9,9 +9,7 @@ interface NotificationBellProps {
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) => {
-  const { unreadCount } = useNotifications(true);
-
-  console.log('[NotificationBell] Renderizando, unreadCount:', unreadCount);
+  const { unreadCount } = useNotifications({ countOnly: true, refreshIntervalMs: 120000 });
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.container}>

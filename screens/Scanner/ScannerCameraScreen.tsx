@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, Animated, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import colors from '../../constants/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import colors from '../../constants/colors';
 
 const CameraScreen: React.FC = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -29,25 +30,26 @@ const CameraScreen: React.FC = ({ navigation }: any) => {
   }, [scanLineAnim]);
 
   if (!permission) {
-    // Permisos aún cargando
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.BLUE} />
+        <ActivityIndicator size="large" color={colors.WARNING_COLOR} />
         <Text style={styles.loadingText}>Cargando cámara...</Text>
       </View>
     );
   }
 
   if (!permission.granted) {
-    // Permisos no otorgados
     return (
       <View style={[styles.container, styles.centerContent]}>
         <View style={styles.permissionContainer}>
+          <View style={styles.permissionIcon}>
+            <FontAwesome5 name="camera" size={28} color={colors.TEXT_SECONDARY} />
+          </View>
           <Text style={styles.permissionTitle}>Acceso a la Cámara</Text>
           <Text style={styles.permissionText}>
             Necesitamos acceso a tu cámara para escanear los códigos de barras de los tambores.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission} activeOpacity={0.85}>
             <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
           </TouchableOpacity>
         </View>
@@ -178,69 +180,72 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: colors.WHITE_DARK,
+    backgroundColor: colors.BG_APP,
   },
   loadingText: {
-    color: colors.BLACK,
-    marginTop: 20,
-    fontSize: 18,
+    color: colors.TEXT_SECONDARY,
+    marginTop: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   permissionContainer: {
     backgroundColor: colors.WHITE,
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     maxWidth: 340,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  permissionIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    backgroundColor: colors.BG_CARD,
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   permissionTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: colors.BLACK,
-    marginBottom: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
+    marginBottom: 10,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   permissionText: {
-    fontSize: 17,
-    color: colors.BLACK_TRANSPARENT,
+    fontSize: 14,
+    color: colors.TEXT_SECONDARY,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 26,
+    marginBottom: 24,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   permissionButton: {
-    backgroundColor: colors.BLUE,
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderRadius: 14,
-    minWidth: 220,
+    backgroundColor: colors.BG_DARK,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    minWidth: 200,
     alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.BLUE,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    shadowColor: colors.BG_DARK,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   permissionButtonText: {
     color: colors.WHITE,
-    fontSize: 17,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '700',
   },
   overlay: {
     position: 'absolute',
@@ -250,7 +255,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: colors.OVERLAY_BLACK_40,
   },
   scanArea: {
     width: 300,
@@ -321,7 +326,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     textAlign: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: colors.OVERLAY_BLACK_75,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 16,

@@ -20,6 +20,7 @@ export interface IHiveHistoryEntry {
   apiaryId: number;
   userId: number;
   createdBy: number;
+  createdByName?: string;
   changes: Partial<IHiveData>;
   comment?: string;
   date: string;

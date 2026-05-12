@@ -9,7 +9,7 @@ import BlankImage from '../../assets/images/blank-image.jpg'
 import Capitalize from "../../modules/Capitalize";
 import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
-import { APIARY_IMG_URL } from "../../constants/api";
+import { resolveApiaryImageUrl } from "../../constants/api";
 import colors from "../../constants/colors";
 import ApiaryInfo from "../../components/apiary/ApiaryInfo";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
@@ -17,6 +17,8 @@ import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { updateApiary, getHarvestTotals, getApiaryById } from "../../modules/API/Apiarys";
 import { getHivesByApiaryId, deleteHive } from "../../modules/API/Hives";
+import { getTasks, updateTask } from "../../modules/API/Tasks";
+import { ITask } from "../../constants/interfaces/Task/ITask";
 import logger from "../../helpers/logger";
 import { ApiaryScreenProps } from "../../types/navigation";
 
@@ -31,6 +33,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     const [loadingHives, setLoadingHives] = useState(false);
     const [sortBy, setSortBy] = useState<'name' | 'status' | 'lastInspection' | 'production'>('name');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [apiaryTasks, setApiaryTasks] = useState<ITask[]>([]);
+    const pendingApiaryTasks = useMemo(() => apiaryTasks.filter(task => !task.completed), [apiaryTasks]);
 
     // ... (rest of the logic remains same for now)
 
@@ -144,6 +148,14 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
         return unsubscribe;
     }, [navigation, apiaryInfoState?.id, apiaryInfoState?.managementType]);
 
+    useEffect(() => {
+        if (isFocused && apiaryInfoState?.id) {
+            getTasks({ apiary_id: apiaryInfoState.id }).then(data => {
+                setApiaryTasks(data || []);
+            });
+        }
+    }, [isFocused, apiaryInfoState?.id]);
+
     const renderApiaryInfo = () => {
         if (!apiaryInfoState) {
             return null;
@@ -199,6 +211,37 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     }
 
     // Función para eliminar colmena
+    const getHealthTone = (status?: string) => {
+        if (status === 'critica') {
+            return {
+                background: colors.DANGER_BG,
+                border: colors.DANGER_BORDER,
+                badge: colors.DANGER,
+                badgeText: colors.WHITE,
+                title: 'Crítica',
+                icon: 'alert-circle' as const,
+            };
+        }
+        if (status === 'atencion') {
+            return {
+                background: colors.WARNING_BG,
+                border: colors.WARNING_BG_LIGHT,
+                badge: colors.WARNING_COLOR,
+                badgeText: colors.WHITE,
+                title: 'Atención',
+                icon: 'alert' as const,
+            };
+        }
+        return {
+            background: colors.SUCCESS_BG,
+            border: '#86efac',
+            badge: colors.SUCCESS,
+            badgeText: colors.WHITE,
+            title: 'Estable',
+            icon: 'checkmark-circle' as const,
+        };
+    };
+
     const handleDeleteHive = (hive: IHive) => {
         Alert.alert(
             'Eliminar Colmena',
@@ -292,6 +335,21 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                     <View style={[styles.hiveStatusBadgeGrid, { backgroundColor: getStatusColor(item.status) }]}>
                         <Text style={styles.hiveStatusTextGrid}>{item.status}</Text>
                     </View>
+                    {item.healthSummary && (
+                        <View
+                            style={[
+                                styles.hiveHealthBadge,
+                                {
+                                    backgroundColor: getHealthTone(item.healthSummary.status).background,
+                                    borderColor: getHealthTone(item.healthSummary.status).border,
+                                },
+                            ]}
+                        >
+                            <Text style={[styles.hiveHealthBadgeText, { color: getHealthTone(item.healthSummary.status).badge }]}>
+                                {getHealthTone(item.healthSummary.status).title} {item.healthSummary.score}
+                            </Text>
+                        </View>
+                    )}
                     <View style={styles.hiveCardGridContent}>
                         {item.settings?.queenStatus && (
                             <View style={styles.hiveGridInfoRow}>
@@ -336,7 +394,7 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             <View style={styles.heroSection}>
                                 <Image
                                     style={styles.heroImage}
-                                    source={apiaryInfoState.image ? { uri: `${APIARY_IMG_URL}${apiaryInfoState.image}` } : BlankImage}
+                                    source={resolveApiaryImageUrl(apiaryInfoState.image, apiaryInfoState.imageUrl) ? { uri: resolveApiaryImageUrl(apiaryInfoState.image, apiaryInfoState.imageUrl) as string } : BlankImage}
                                 />
                                 <LinearGradient
                                     colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)']}
@@ -378,31 +436,50 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             </View>
 
                             {/* Quick Actions Card */}
-                            <View style={styles.quickActionsWrapper}>
+                            <View style={[styles.quickActionsWrapper, { width: '100%' }]}>
                                 <View style={styles.glassCard}>
                                     <View style={styles.quickActionBtn}>
-                                        <View style={[styles.actionIconBox, { backgroundColor: colors.HONEY[100] }]}>
-                                            <Ionicons name="cube" size={24} color={colors.HONEY[600]} />
+                                        <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                            <Ionicons name="cube" size={24} color={colors.SLATE[600]} />
                                         </View>
                                         <Text style={styles.actionBtnLabel}>{filteredHives.length} Activas</Text>
                                     </View>
                                     <View style={styles.actionDivider} />
                                     <TouchableOpacity
                                         style={styles.quickActionBtn}
+                                        onPress={() => apiaryInfoState && navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}
+                                    >
+                                        <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                            <Ionicons name="time" size={24} color={colors.SLATE[600]} />
+                                        </View>
+                                        <Text style={styles.actionBtnLabel}>Historial</Text>
+                                    </TouchableOpacity>
+                                    {apiaryInfoState?.id && (
+                                        <>
+                                            <View style={styles.actionDivider} />
+                                            <TouchableOpacity
+                                                style={styles.quickActionBtn}
+                                                onPress={() => navigation.navigate('TaskAddScreen', { apiaryId: apiaryInfoState.id })}
+                                            >
+                                                <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                                    <Ionicons name="checkmark-circle-outline" size={24} color={colors.SLATE[600]} />
+                                                </View>
+                                                <Text style={styles.actionBtnLabel}>Tareas</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
+                                    <View style={styles.actionDivider} />
+                                    <TouchableOpacity
+                                        style={styles.quickActionBtn}
                                         onPress={() => navigation.navigate('ApiaryIndividualSettingsScreen', { apiaryInfo: apiaryInfoState, apiarySettings: apiaryInfoState.settings })}
                                     >
                                         <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                            <Ionicons name="settings-sharp" size={24} color={colors.SLATE[600]} />
+                                            <Ionicons name="options" size={24} color={colors.SLATE[600]} />
                                         </View>
                                         <Text style={styles.actionBtnLabel}>Ajustes</Text>
                                     </TouchableOpacity>
-                                </View>
                             </View>
-
-                            {/* Apiary Quick Summary */}
-                            <View style={[styles.contentPadding, { width: '100%', paddingBottom: 0 }]}>
-                                {apiaryInfoState && renderApiaryInfo()}
-                            </View>
+                        </View>
 
                             {/* Ordenamiento */}
                             <View style={[styles.sortContainer, { paddingHorizontal: 24, width: '100%', marginBottom: 16, marginTop: 12 }]}>
@@ -476,7 +553,7 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                 <View style={styles.heroSection}>
                     <Image
                         style={styles.heroImage}
-                        source={apiaryInfoState?.image ? { uri: `${APIARY_IMG_URL}${apiaryInfoState.image}` } : BlankImage}
+                        source={resolveApiaryImageUrl(apiaryInfoState?.image, apiaryInfoState?.imageUrl) ? { uri: resolveApiaryImageUrl(apiaryInfoState?.image, apiaryInfoState?.imageUrl) as string } : BlankImage}
                     />
                     <LinearGradient
                         colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)']}
@@ -522,11 +599,26 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             style={styles.quickActionBtn}
                             onPress={() => apiaryInfoState && navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}
                         >
-                            <View style={[styles.actionIconBox, { backgroundColor: colors.HONEY[100] }]}>
-                                <Ionicons name="time" size={24} color={colors.HONEY[600]} />
+                            <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                <Ionicons name="time" size={24} color={colors.SLATE[600]} />
                             </View>
                             <Text style={styles.actionBtnLabel}>Historial</Text>
                         </TouchableOpacity>
+
+                        {apiaryInfoState?.id && (
+                            <>
+                                <View style={styles.actionDivider} />
+                                <TouchableOpacity
+                                    style={styles.quickActionBtn}
+                                    onPress={() => navigation.navigate('TaskAddScreen', { apiaryId: apiaryInfoState.id })}
+                                >
+                                    <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                        <Ionicons name="checkmark-circle-outline" size={24} color={colors.SLATE[600]} />
+                                    </View>
+                                    <Text style={styles.actionBtnLabel}>Tareas</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
 
                         <View style={styles.actionDivider} />
 
@@ -545,22 +637,6 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                 {/* Content Section */}
                 <View style={styles.contentPadding}>
 
-                    {/* Status Overview */}
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Estado General</Text>
-                    </View>
-
-                    <View style={styles.statusCard}>
-                        <View style={styles.statusIconCircle}>
-                            <Ionicons name="checkmark-circle" size={28} color={colors.STATUS.GOOD} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.statusMainText}>Buen estado</Text>
-                            <Text style={styles.statusSubText}>Última revisión: hace 2 días</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={20} color={colors.STATUS.GOOD} />
-                    </View>
-
                     {/* Alimentación */}
                     {apiaryInfoState?.settings && (apiaryInfoState.settings.honey || apiaryInfoState.settings.sugar || apiaryInfoState.settings.levudex) && (
                         <>
@@ -570,8 +646,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                 {apiaryInfoState.settings.honey && (
                                     <View style={styles.gridCard}>
                                         <View style={styles.gridCardHeader}>
-                                            <View style={[styles.gridIconBox, { backgroundColor: colors.HONEY[100] }]}>
-                                                <FontAwesome6 name="jar" size={18} color={colors.HONEY[600]} />
+                                            <View style={[styles.gridIconBox, { backgroundColor: colors.SLATE[100] }]}>
+                                                <FontAwesome6 name="jar" size={18} color={colors.SLATE[600]} />
                                             </View>
                                             <View>
                                                 <Text style={styles.gridValue}>
@@ -580,9 +656,9 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                                 <Text style={styles.gridLabelSmall}>Reserva</Text>
                                             </View>
                                         </View>
-                                        <View style={[styles.miniLabelBox, { backgroundColor: colors.HONEY[50] }]}>
-                                            <Ionicons name="water" size={14} color={colors.HONEY[600]} />
-                                            <Text style={[styles.miniLabelText, { color: colors.HONEY[600] }]}>Nivel óptimo</Text>
+                                        <View style={styles.miniLabelBox}>
+                                            <Ionicons name="water" size={14} color={colors.SLATE[600]} />
+                                            <Text style={styles.miniLabelText}>Nivel óptimo</Text>
                                         </View>
                                     </View>
                                 )}
@@ -804,29 +880,69 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                         </>
                     )}
 
-                    {/* Comments Section */}
-                    {apiaryInfoState?.settings?.tComment && apiaryInfoState?.tComment && (
+                    {/* Tasks Section */}
+                    {apiaryInfoState?.id && (
                         <>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Comentarios</Text>
-                                <View style={styles.countBadge}>
-                                    <Text style={styles.countBadgeText}>1</Text>
-                                </View>
+                                <Text style={styles.sectionTitle}>Tareas</Text>
+                                {pendingApiaryTasks.length > 0 && (
+                                    <View style={styles.countBadge}>
+                                        <Text style={styles.countBadgeText}>{pendingApiaryTasks.length}</Text>
+                                    </View>
+                                )}
                             </View>
-                            <View style={styles.commentsCard}>
-                                <View style={styles.commentRow}>
-                                    <View style={styles.avatarCircle}>
-                                        <Text style={styles.avatarText}>U</Text>
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.commentBody}>{apiaryInfoState.tComment}</Text>
-                                        <Text style={styles.commentTime}>Hoy</Text>
-                                    </View>
+                            <View style={styles.tasksCard}>
+                                {pendingApiaryTasks.slice(0, 5).map(task => (
+                                    <TouchableOpacity
+                                        key={task.id}
+                                        style={styles.taskRow}
+                                        onPress={() => navigation.navigate('TaskAddScreen', { task, apiaryId: apiaryInfoState.id })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <TouchableOpacity
+                                            onPress={async () => {
+                                                setApiaryTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: true } : t));
+                                                await updateTask(task.id, { completed: true });
+                                            }}
+                                            activeOpacity={0.7}
+                                        >
+                                            <View style={styles.taskCheckbox} />
+                                        </TouchableOpacity>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.taskTitle} numberOfLines={1}>{task.title}</Text>
+                                            {task.due_date && (
+                                                <Text style={styles.taskDue}>
+                                                    {new Date(task.due_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                                                </Text>
+                                            )}
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color={colors.TEXT_TERTIARY} />
+                                    </TouchableOpacity>
+                                ))}
+                                {pendingApiaryTasks.length === 0 && (
+                                    <Text style={styles.tasksEmpty}>Sin tareas pendientes</Text>
+                                )}
+                                <View style={styles.tasksActions}>
+                                    {pendingApiaryTasks.length > 5 && (
+                                        <TouchableOpacity
+                                            onPress={() => navigation.navigate('TasksScreen', {
+                                                apiaryId: apiaryInfoState.id,
+                                                apiaryName: apiaryInfoState.name,
+                                            })}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.tasksViewAll}>Ver todas ({pendingApiaryTasks.length})</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity
+                                        style={styles.addTaskBtn}
+                                        onPress={() => navigation.navigate('TaskAddScreen', { apiaryId: apiaryInfoState.id })}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Ionicons name="add" size={18} color={colors.SLATE[600]} />
+                                        <Text style={styles.addTaskText}>Nueva tarea</Text>
+                                    </TouchableOpacity>
                                 </View>
-                                <TouchableOpacity style={styles.addCommentBtn}>
-                                    <Ionicons name="add" size={20} color={colors.SLATE[500]} />
-                                    <Text style={styles.addCommentText}>Agregar comentario</Text>
-                                </TouchableOpacity>
                             </View>
                         </>
                     )}
@@ -841,7 +957,7 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: colors.SLATE[50],
+        backgroundColor: '#faf9f7',
     },
     scrollContainer: {
         flex: 1,
@@ -878,7 +994,7 @@ const styles = StyleSheet.create({
     glassButton: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 14,
         backgroundColor: 'rgba(255,255,255,0.2)',
         justifyContent: 'center',
         alignItems: 'center',
@@ -890,6 +1006,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         flexDirection: 'row',
         gap: 6,
+        borderRadius: 14,
     },
     visitButtonText: {
         color: colors.WHITE,
@@ -942,7 +1059,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         overflow: 'hidden',
         elevation: 8,
-        shadowColor: colors.HONEY[500],
+        shadowColor: colors.SLATE[400],
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -962,32 +1079,29 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     glassCard: {
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderRadius: 20,
+        backgroundColor: colors.WHITE,
+        borderRadius: 16,
         padding: 16,
         flexDirection: 'row',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 20,
+        borderWidth: 1,
+        borderColor: '#ede9e3',
     },
     quickActionBtn: {
         flex: 1,
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: 10,
         gap: 8,
     },
     actionIconBox: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
     },
     actionBtnLabel: {
-        fontSize: 14,
-        fontWeight: '700',
+        fontSize: 13,
+        fontWeight: '500',
         color: colors.SLATE[700],
     },
     actionDivider: {
@@ -1005,15 +1119,15 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: '800',
-        color: colors.SLATE[900],
+        fontSize: 15,
+        fontWeight: '600',
+        color: colors.SLATE[700],
         marginBottom: 16,
     },
     sectionLink: {
         fontSize: 14,
         fontWeight: '700',
-        color: colors.HONEY[600],
+        color: colors.SLATE[700],
     },
     statusCard: {
         backgroundColor: colors.STATUS.GOOD_BG,
@@ -1044,31 +1158,30 @@ const styles = StyleSheet.create({
         color: colors.STATUS.GOOD,
         opacity: 0.8,
     },
-
     // Stats Grid
     statsGrid: {
         flexDirection: 'row',
-        gap: 16,
+        gap: 8,
         marginBottom: 24,
     },
     gridCard: {
         flex: 1,
         backgroundColor: colors.WHITE,
-        borderRadius: 20,
-        padding: 16,
+        borderRadius: 12,
+        padding: 10,
         borderWidth: 1,
-        borderColor: colors.SLATE[100],
+        borderColor: '#ede9e3',
     },
     gridCardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     gridIconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
+        width: 32,
+        height: 32,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -1078,7 +1191,7 @@ const styles = StyleSheet.create({
         color: colors.SLATE[400],
     },
     gridValue: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: '800',
         color: colors.SLATE[900],
     },
@@ -1115,20 +1228,20 @@ const styles = StyleSheet.create({
         color: colors.SLATE[400],
     },
     miniLabelBox: {
-        marginTop: 12,
+        marginTop: 8,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        backgroundColor: '#FFF7ED',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        backgroundColor: '#f4f1ec',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
         borderRadius: 8,
         alignSelf: 'flex-start',
     },
     miniLabelText: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#EA580C',
+        color: colors.SLATE[600],
     },
 
     // List Styles
@@ -1138,13 +1251,13 @@ const styles = StyleSheet.create({
     },
     rowCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 20,
-        padding: 16,
+        borderRadius: 14,
+        padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
+        gap: 14,
         borderWidth: 1,
-        borderColor: colors.SLATE[100],
+        borderColor: '#ede9e3',
     },
     rowIconBox: {
         width: 48,
@@ -1176,7 +1289,7 @@ const styles = StyleSheet.create({
 
     // Comments
     countBadge: {
-        backgroundColor: colors.HONEY[100],
+        backgroundColor: colors.SLATE[100],
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 8,
@@ -1184,59 +1297,74 @@ const styles = StyleSheet.create({
     countBadgeText: {
         fontSize: 12,
         fontWeight: '800',
-        color: colors.HONEY[700],
+        color: colors.SLATE[600],
     },
-    commentsCard: {
-        backgroundColor: colors.SLATE[50],
-        borderRadius: 20,
-        padding: 16,
+    tasksCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: colors.SLATE[200],
+        borderColor: colors.BORDER,
+        overflow: 'hidden',
     },
-    commentRow: {
+    taskRow: {
         flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
         gap: 12,
-        marginBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.BORDER_XLIGHT,
     },
-    avatarCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.HONEY[500],
-        justifyContent: 'center',
-        alignItems: 'center',
+    taskCheckbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: colors.BORDER_MEDIUM,
+        backgroundColor: colors.BG_CARD,
     },
-    avatarText: {
-        color: colors.WHITE,
+    taskTitle: {
         fontSize: 14,
-        fontWeight: '800',
+        fontWeight: '500',
+        color: colors.TEXT_PRIMARY,
     },
-    commentBody: {
-        fontSize: 14,
-        color: colors.SLATE[700],
-        lineHeight: 20,
+    taskDue: {
+        fontSize: 11,
+        color: colors.TEXT_TERTIARY,
+        marginTop: 2,
     },
-    commentTime: {
-        fontSize: 12,
-        color: colors.SLATE[400],
-        marginTop: 4,
+    tasksEmpty: {
+        fontSize: 13,
+        color: colors.TEXT_TERTIARY,
+        textAlign: 'center',
+        paddingVertical: 16,
     },
-    addCommentBtn: {
-        width: '100%',
-        height: 54,
-        borderRadius: 16,
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        borderColor: colors.SLATE[300],
-        justifyContent: 'center',
-        alignItems: 'center',
+    tasksActions: {
         flexDirection: 'row',
-        gap: 8,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        gap: 12,
     },
-    addCommentText: {
-        fontSize: 14,
+    tasksViewAll: {
+        fontSize: 13,
         fontWeight: '600',
-        color: colors.SLATE[500],
+        color: colors.TEXT_SECONDARY,
+    },
+    addTaskBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        backgroundColor: colors.SLATE[100],
+    },
+    addTaskText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.SLATE[600],
     },
 
 
@@ -1290,7 +1418,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: colors.YELLOW + '20',
+        backgroundColor: colors.SLATE[100],
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -1348,17 +1476,12 @@ const styles = StyleSheet.create({
     hiveCardGrid: {
         flex: 1,
         backgroundColor: colors.WHITE,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: 10,
         margin: 6,
         alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        elevation: 2,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
+        borderColor: '#ede9e3',
         minHeight: 120,
         justifyContent: 'space-between',
         position: 'relative',
@@ -1402,6 +1525,19 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.WHITE,
     },
+    hiveHealthBadge: {
+        width: '100%',
+        borderRadius: 999,
+        borderWidth: 1,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    hiveHealthBadgeText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
     hiveGridInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1442,8 +1578,8 @@ const styles = StyleSheet.create({
         borderColor: '#E0E0E0',
     },
     sortButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: colors.SLATE[900],
+        borderColor: colors.SLATE[900],
     },
     sortButtonText: {
         fontSize: 12,

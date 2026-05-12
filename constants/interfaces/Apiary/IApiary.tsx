@@ -10,6 +10,7 @@ export interface IApiary extends IApiaryData {
 export interface IApiaryData {
     name: string;
     image: string;
+    imageUrl?: string;
     hives: number;
     status: string;
     honey: number;
@@ -23,7 +24,6 @@ export interface IApiaryData {
     tFlumetrine: number;
     tFence: number;
     transhumance: number;
-    tComment: string;
     settings: IApiarySettings;
     latitude?: number;
     longitude?: number;

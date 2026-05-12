@@ -1,50 +1,27 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
 import colors from '../../constants/colors';
-
-const MOCK_GUIDE_CONTENT = `
-# Guía de Inspección Básica de Primavera
-
-Esta es una guía de demostración de cómo se vería el contenido utilizando **Markdown** con el nuevo sistema de diseño.
-
-## 1. El objetivo de la primera inspección
-Durante la primavera, las colonias de abejas comienzan su expansión. El objetivo principal es:
-- Evaluar las reservas de alimento.
-- Verificar la presencia y calidad de la reina.
-- Controlar el nivel de enfermedades tempranas.
-
-### Materiales necesarios
-* Ahumador bien encendido.
-* Cuña (pinza).
-* Traje de apicultor completo.
-* Marcador para la reina (opcional).
-
-## 2. Pasos a seguir
-1. **Acercamiento:** Utiliza humo frío en la entrada antes de abrir.
-2. **Revisión de marcos:** Saca el segundo marco, nunca el del centro para evitar aplastar a la reina accidentalmente.
-3. **Identificar cría:** Busca patrones sólidos de cría operculada y huevos frescos del día.
-
-> **Importante:** Si ves huevos rodeados de jalea real en el fondo de una celda, significa que la reina estuvo allí hace como máximo 3 días.
-
-## Conclusión
-La inspección de primavera define el ritmo de toda la temporada. Sé suave pero decidido. 
-
-*¡Buenas cosechas!*
-`;
+import { getGuideById } from '../../constants/guides';
 
 export default function GuideDetailScreen({ route, navigation }: any) {
     const insets = useSafeAreaInsets();
-    const { title } = route.params || { title: 'Guía Detallada' };
+    const { guideId, title: fallbackTitle } = route.params || {};
+    const guide = useMemo(() => getGuideById(guideId), [guideId]);
+    const title = guide?.title || fallbackTitle || 'Guia detallada';
+    const description = guide?.description || 'Contenido practico para el manejo diario del apiario.';
+    const category = guide?.category || 'Guia';
+    const readTime = guide?.readTime || 'Lectura';
+    const iconName = guide?.icon || 'book-outline';
+    const iconColor = guide?.color || colors.HONEY[500];
+    const markdownContent = guide?.markdown || '# Guia no encontrada\n\nNo pudimos cargar esta guia en este momento.';
 
     return (
         <View style={styles.mainContainer}>
             <StatusBar barStyle="dark-content" />
 
-            {/* Custom Header */}
             <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity
                     style={styles.backButton}
@@ -53,7 +30,7 @@ export default function GuideDetailScreen({ route, navigation }: any) {
                     <Icon name="arrow-back" size={24} color={colors.SLATE[800]} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
-                <TouchableOpacity style={styles.shareButton}>
+                <TouchableOpacity style={styles.shareButton} activeOpacity={0.8}>
                     <Icon name="share-outline" size={22} color={colors.SLATE[800]} />
                 </TouchableOpacity>
             </View>
@@ -64,17 +41,26 @@ export default function GuideDetailScreen({ route, navigation }: any) {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.heroSection}>
-                    <LinearGradient
-                        colors={[colors.HONEY[100], colors.HONEY[50]]}
-                        style={styles.heroGradient}
-                    >
-                        <Icon name="book-outline" size={60} color={colors.HONEY[500]} />
-                    </LinearGradient>
+                    <View style={styles.heroCard}>
+                        <View style={styles.heroTopRow}>
+                            <View style={[styles.heroIconBox, { backgroundColor: `${iconColor}18` }]}>
+                                <Icon name={iconName} size={28} color={iconColor} />
+                            </View>
+                            <View style={styles.readTimeBadge}>
+                                <Icon name="time-outline" size={12} color={colors.SLATE[500]} />
+                                <Text style={styles.readTimeText}>{readTime}</Text>
+                            </View>
+                        </View>
+
+                        <Text style={styles.categoryText}>{category}</Text>
+                        <Text style={styles.heroTitle}>{title}</Text>
+                        <Text style={styles.heroDescription}>{description}</Text>
+                    </View>
                 </View>
 
-                <View style={styles.markdownContainer}>
+                <View style={styles.markdownCard}>
                     <Markdown style={markdownStyles}>
-                        {MOCK_GUIDE_CONTENT}
+                        {markdownContent}
                     </Markdown>
                 </View>
             </ScrollView>
@@ -85,17 +71,16 @@ export default function GuideDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#fafaf9',
+        backgroundColor: '#f6f3ec',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: 20,
         backgroundColor: colors.WHITE,
         paddingBottom: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        borderBottomColor: '#ece8df',
     },
     backButton: {
         width: 40,
@@ -106,11 +91,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fafc',
     },
     headerTitle: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '700',
         color: colors.SLATE[800],
         flex: 1,
-        textAlign: 'center',
+        textAlign: 'left',
         marginHorizontal: 12,
     },
     shareButton: {
@@ -125,27 +110,81 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingTop: 32,
+        paddingTop: 20,
     },
     heroSection: {
-        alignItems: 'center',
-        marginBottom: 32,
+        paddingHorizontal: 16,
+        marginBottom: 18,
     },
-    heroGradient: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+    heroCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 18,
+        borderWidth: 1,
+        borderColor: '#ece8df',
+        shadowColor: colors.SLATE[900],
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 16,
+        elevation: 3,
+    },
+    heroTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 14,
+    },
+    heroIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: colors.HONEY[500],
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 5,
     },
-    markdownContainer: {
-        paddingHorizontal: 24,
-    }
+    readTimeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    readTimeText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.SLATE[500],
+    },
+    categoryText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: colors.HONEY[600],
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+    },
+    heroTitle: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: colors.SLATE[900],
+        lineHeight: 34,
+        marginBottom: 10,
+    },
+    heroDescription: {
+        fontSize: 15,
+        color: colors.SLATE[500],
+        lineHeight: 23,
+    },
+    markdownCard: {
+        marginHorizontal: 16,
+        backgroundColor: colors.WHITE,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 20,
+        borderWidth: 1,
+        borderColor: '#ece8df',
+    },
 });
 
 const markdownStyles = StyleSheet.create({
@@ -155,11 +194,11 @@ const markdownStyles = StyleSheet.create({
         color: colors.SLATE[600],
     },
     heading1: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '800',
         color: colors.SLATE[900],
-        marginTop: 10,
-        marginBottom: 20,
+        marginTop: 6,
+        marginBottom: 18,
         letterSpacing: -0.5,
     },
     heading2: {
@@ -179,6 +218,11 @@ const markdownStyles = StyleSheet.create({
     },
     paragraph: {
         marginBottom: 16,
+    },
+    hr: {
+        backgroundColor: '#ece8df',
+        height: 1,
+        marginVertical: 20,
     },
     list_item: {
         marginBottom: 10,
@@ -208,5 +252,5 @@ const markdownStyles = StyleSheet.create({
         color: colors.SLATE[800],
         paddingHorizontal: 4,
         borderRadius: 4,
-    }
+    },
 });

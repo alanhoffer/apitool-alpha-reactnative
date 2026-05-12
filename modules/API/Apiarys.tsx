@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../../helpers/apiErrors';
 import logger from '../../helpers/logger';
 import { addToQueue } from '../Offline/OfflineQueue';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildApiaryImageUpload, persistImageForOfflineQueue } from '../FILES/imageUpload';
 
 export const getApiarys = async (): Promise<IApiary[] | null> => {
   try {
@@ -106,12 +107,10 @@ export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryDat
 
   const data = new FormData();
   if (profileImage) {
-    const selectedImage: any = {
-      uri: profileImage.uri,
-      name: 'SomeImageName.jpg',
-      type: 'image/jpg',
+    const selectedImage = buildApiaryImageUpload(profileImage, 'apiary-image');
+    if (selectedImage) {
+      data.append("file", selectedImage as any);
     }
-    data.append("file", selectedImage);
   }
 
 
@@ -130,7 +129,6 @@ export async function createApiaryImpl(profileImage: any, ApiaryData: IApiaryDat
   data.append('tAmitraz', String(ApiaryData.tAmitraz));
   data.append('tFlumetrine', String(ApiaryData.tFlumetrine));
   data.append('tFence', String(ApiaryData.tFence));
-  data.append('tComment', ApiaryData.tComment);
   data.append('transhumance', String(ApiaryData.transhumance));
 
   // Verificar y enviar coordenadas
@@ -165,7 +163,8 @@ export async function createApiary(profileImage: any, ApiaryData: IApiaryData) {
   } catch (error: any) {
     if (!error.response) { // Network error usually has no response
       logger.info('[createApiary] Network error, adding to offline queue');
-      await addToQueue('createApiary', { profileImage, ApiaryData });
+      const queuedProfileImage = await persistImageForOfflineQueue(profileImage);
+      await addToQueue('createApiary', { profileImage: queuedProfileImage, ApiaryData });
       ToastAndroid.show('Sin conexión. Se guardó para sincronizar luego.', ToastAndroid.LONG);
       return { status: 200, data: { offline: true } }; // Mock success
     }
@@ -203,12 +202,10 @@ export const updateApiaryImpl = async (profileImage: any, apiaryId: number, Apia
 
     // Añade la imagen solo si está presente
     if (profileImage) {
-      const selectedImage: any = {
-        uri: profileImage.uri,
-        name: 'UpdatedImageName.jpg',
-        type: 'image/jpg',
-      };
-      data.append("file", selectedImage);
+      const selectedImage = buildApiaryImageUpload(profileImage, 'apiary-image');
+      if (selectedImage) {
+        data.append("file", selectedImage as any);
+      }
     }
 
     // Añade los datos del apiario al FormData
@@ -254,7 +251,8 @@ export const updateApiary = async (profileImage: any, apiaryId: number, ApiaryDa
   } catch (error: any) {
     if (!error.response) {
       logger.info('[updateApiary] Network error, adding to offline queue');
-      await addToQueue('updateApiary', { profileImage, apiaryId, ApiaryData });
+      const queuedProfileImage = await persistImageForOfflineQueue(profileImage);
+      await addToQueue('updateApiary', { profileImage: queuedProfileImage, apiaryId, ApiaryData });
       ToastAndroid.show('Sin conexión. Cambios guardados localmente.', ToastAndroid.LONG);
       return true;
     }
@@ -281,38 +279,6 @@ export const updateSettings = async (settingsData: IApiarySettings) => {
       logger.info('[updateSettings] Network error, adding to offline queue');
       await addToQueue('updateSettings', { settingsData });
       ToastAndroid.show('Sin conexión. Configuración guardada localmente.', ToastAndroid.LONG);
-      return true;
-    }
-    return false;
-  }
-};
-
-export const toggleHarvestAllImpl = async (harvesting: boolean) => {
-  try {
-    const response = await apiClient.put('apiarys/harvest/all', { harvesting });
-
-    if (response.status === 200) {
-      ToastAndroid.show(`${harvesting ? 'Apiarios en cosecha' : 'Apiarios fuera de cosecha'}.`, ToastAndroid.SHORT);
-      return true;
-    } else {
-      ToastAndroid.show('No se pudo actualizar el estado de cosecha.', ToastAndroid.SHORT);
-      return false;
-    }
-  } catch (error) {
-    ToastAndroid.show('Hubo un problema al intentar actualizar el estado de cosecha.', ToastAndroid.SHORT);
-    logger.error('Error handling harvest all:', error);
-    throw error;
-  }
-};
-
-export const toggleHarvestAll = async (harvesting: boolean) => {
-  try {
-    return await toggleHarvestAllImpl(harvesting);
-  } catch (error: any) {
-    if (!error.response) {
-      logger.info('[toggleHarvestAll] Network error, adding to offline queue');
-      await addToQueue('toggleHarvestAll', { harvesting });
-      ToastAndroid.show('Sin conexión. Se actualizará al reconectar.', ToastAndroid.LONG);
       return true;
     }
     return false;
@@ -354,6 +320,65 @@ export interface HarvestStats {
   total?: number; // Total calculado (opcional, por si el endpoint lo incluye)
 }
 
+export interface HarvestSeason {
+  id: number;
+  name: string;
+  status: string;
+  startedAt: string;
+  endedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  box: number;
+  boxMedium: number;
+  boxSmall: number;
+  total: number;
+  apiaryCount: number;
+  hiveCount: number;
+  isActive: boolean;
+}
+
+export interface HarvestSeasonApiaryTotal {
+  id: number;
+  seasonId: number;
+  apiaryId?: number | null;
+  apiaryName?: string | null;
+  hives: number;
+  box: number;
+  boxMedium: number;
+  boxSmall: number;
+  total: number;
+}
+
+export interface ApiaryWeatherInsight {
+  temperatureC?: number | null;
+  feelsLikeC?: number | null;
+  humidity?: number | null;
+  windKph?: number | null;
+  condition?: string | null;
+  inspectionWindow?: string | null;
+}
+
+export interface ApiaryInsightRecommendation {
+  priority: 'high' | 'medium' | 'low' | string;
+  title: string;
+  description: string;
+  affectedHives: number;
+}
+
+export interface ApiaryInsights {
+  apiaryId: number;
+  apiaryName: string;
+  managementType: string;
+  healthScore: number;
+  healthStatus: 'estable' | 'atencion' | 'critica' | string;
+  attentionHiveCount: number;
+  criticalHiveCount: number;
+  pendingTaskCount: number;
+  overdueTaskCount: number;
+  weather?: ApiaryWeatherInsight | null;
+  recommendations: ApiaryInsightRecommendation[];
+}
+
 export const getHarvestTotals = async (apiaryId: number): Promise<HarvestTotals | null> => {
   try {
     const response = await apiClient.get<HarvestTotals>(`apiarys/${apiaryId}/harvested`);
@@ -366,6 +391,20 @@ export const getHarvestTotals = async (apiaryId: number): Promise<HarvestTotals 
     }
     // Para otros errores, mostrar el error pero no fallar
     logger.warn('[getHarvestTotals] Error obteniendo totales de cosecha:', error?.response?.status || error?.message);
+    return null;
+  }
+};
+
+export const getApiaryInsights = async (apiaryId: number): Promise<ApiaryInsights | null> => {
+  try {
+    const response = await apiClient.get<ApiaryInsights>(`apiarys/${apiaryId}/insights`);
+    return response.data;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      logger.debug(`[getApiaryInsights] Endpoint o apiario no disponible para ${apiaryId}`);
+      return null;
+    }
+    logger.warn('[getApiaryInsights] Error obteniendo insights del apiario:', error?.response?.status || error?.message);
     return null;
   }
 };
@@ -386,17 +425,47 @@ export const getHarvestStats = async (): Promise<HarvestStats | null> => {
   }
 };
 
-export const getHarvestingCount = async (): Promise<number | null> => {
+export const getHarvestSeasons = async (): Promise<HarvestSeason[]> => {
   try {
-    const response = await apiClient.get<{ harvestingCount: number }>('apiarys/harvesting/count');
-    return response.data?.harvestingCount || null;
-  } catch (error: any) {
-    if (error?.response?.status === 404) {
-      logger.debug('[getHarvestingCount] Endpoint no disponible (404)');
-      return null;
+    const response = await apiClient.get<HarvestSeason[]>('apiarys/harvest/seasons');
+    if (response.data) {
+      try {
+        await AsyncStorage.setItem('@harvest_seasons_cache', JSON.stringify(response.data));
+      } catch (e) { }
     }
-    logger.warn('[getHarvestingCount] Error obteniendo cantidad de apiarios en cosecha:', error?.response?.status || error?.message);
+    return response.data || [];
+  } catch (error: any) {
+    if (!error.response || error.code === 'ERR_NETWORK') {
+      try {
+        const cached = await AsyncStorage.getItem('@harvest_seasons_cache');
+        if (cached) {
+          logger.info('[getHarvestSeasons] Obteniendo temporadas desde cache offline');
+          return JSON.parse(cached);
+        }
+      } catch (e) { }
+    }
+    logger.warn('[getHarvestSeasons] Error obteniendo temporadas:', error?.response?.status || error?.message);
+    return [];
+  }
+};
+
+export const getActiveHarvestSeason = async (): Promise<HarvestSeason | null> => {
+  try {
+    const response = await apiClient.get<HarvestSeason>('apiarys/harvest/seasons/active');
+    return response.data;
+  } catch (error: any) {
+    logger.warn('[getActiveHarvestSeason] Error obteniendo temporada activa:', error?.response?.status || error?.message);
     return null;
+  }
+};
+
+export const getHarvestSeasonApiaryTotals = async (seasonId: number): Promise<HarvestSeasonApiaryTotal[]> => {
+  try {
+    const response = await apiClient.get<HarvestSeasonApiaryTotal[]>(`apiarys/harvest/seasons/${seasonId}/apiaries`);
+    return response.data || [];
+  } catch (error: any) {
+    logger.warn('[getHarvestSeasonApiaryTotals] Error obteniendo detalle de temporada:', error?.response?.status || error?.message);
+    return [];
   }
 };
 

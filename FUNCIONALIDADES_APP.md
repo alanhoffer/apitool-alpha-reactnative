@@ -17,7 +17,7 @@ ApiTool es una aplicación móvil para la gestión integral de apiarios y colmen
 - **Acceso**: Desde la pantalla principal → Configuración
 - **Funcionalidades**:
   - Visualización de información personal (nombre, apellido, email)
-  - Resumen general de estadísticas (total de apiarios, colmenas, apiarios en cosecha)
+  - Resumen general de estadísticas (total de apiarios y colmenas)
   - Resumen de alimentación total (miel, azúcar, levudex en kg)
   - Acceso a gestión de dispositivos
 

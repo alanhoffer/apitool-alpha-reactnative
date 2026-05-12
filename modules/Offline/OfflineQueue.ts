@@ -5,7 +5,7 @@ const LAST_SUCCESSFUL_SYNC_KEY = 'offline_queue_last_successful_sync_at';
 
 export interface OfflineRequest {
   id: string;
-  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'toggleHarvestAll' | 'createTask' | 'updateTask' | 'deleteTask' | 'createHive' | 'updateHive' | 'deleteHive';
+  type: 'createApiary' | 'updateApiary' | 'deleteApiary' | 'updateSettings' | 'createTask' | 'updateTask' | 'deleteTask' | 'createHive' | 'updateHive' | 'deleteHive';
   payload: any;
   timestamp: number;
   attempts: number;
@@ -50,11 +50,6 @@ const writeQueue = async (queue: OfflineRequest[]) => {
 
 const compactQueue = (queue: OfflineRequest[], newRequest: OfflineRequest): OfflineRequest[] => {
   switch (newRequest.type) {
-    case 'toggleHarvestAll':
-      return [
-        ...queue.filter(req => req.type !== 'toggleHarvestAll'),
-        newRequest,
-      ];
     case 'updateApiary': {
       const apiaryId = newRequest.payload?.apiaryId;
       const existingIndex = queue.findIndex(req => req.type === 'updateApiary' && req.payload?.apiaryId === apiaryId);

@@ -4,6 +4,11 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+def reactNativeArchitectures() {
+    def value = findProperty('reactNativeArchitectures') ?: 'arm64-v8a,x86_64'
+    return value.split(',').collect { it.trim() }.findAll { it }
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -94,6 +99,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 2
         versionName "1.0.1"
+
+        ndk {
+            abiFilters(*reactNativeArchitectures())
+        }
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

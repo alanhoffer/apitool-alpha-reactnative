@@ -1,71 +1,28 @@
-// src/screens/ListScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Alert, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Image, Platform, Modal } from 'react-native';
+import { View, Text, Alert, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Image, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScannedDataItem } from '../../constants/interfaces/Scanner/ScannedDataItem';
 import createAndShareExcel from '../../helpers/Scanner/createAndShareExcel';
 import createAndShareText from '../../helpers/Scanner/createAndShareText';
 import { useIsFocused } from '@react-navigation/native';
-import colors from '../../constants/colors';
 import { getDrums, deleteAllDrums, Drum } from '../../modules/API/Drums';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import logger from '../../helpers/logger';
+import colors from '../../constants/colors';
 
 const ListScreen: React.FC = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [scannedData, setScannedData] = useState<ScannedDataItem[]>([]);
-    const [allDrums, setAllDrums] = useState<ScannedDataItem[]>([]); // Todos los tambores
+    const [allDrums, setAllDrums] = useState<ScannedDataItem[]>([]);
     const [duplicates, setDuplicates] = useState<Set<string>>(new Set());
     const [refreshing, setRefreshing] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [menuVisible, setMenuVisible] = useState(false);
-    const [filter, setFilter] = useState<'all' | 'sold'>('all'); // Filtro: 'all' o 'sold'
+    const [filter, setFilter] = useState<'all' | 'sold'>('all');
     const isFocused = useIsFocused();
 
-
-    const loadScannedData = async (soldFilter?: boolean) => {
-        try {
-            setLoading(true);
-            const response = await getDrums({ sold: soldFilter });
-            const drums: ScannedDataItem[] = response.data.map((drum: Drum) => ({
-                id: drum.id,
-                code: drum.code,
-                tare: drum.tare,
-                weight: drum.weight,
-                sold: drum.sold,
-                createdAt: drum.createdAt,
-                updatedAt: drum.updatedAt,
-            }));
-            
-            if (drums.length > 0) {
-                setAllDrums(drums);
-                // Filtrar según el estado actual
-                const filtered = soldFilter !== undefined 
-                    ? drums.filter(d => d.sold === soldFilter)
-                    : drums;
-                setScannedData(filtered);
-                findDuplicates(filtered);
-            } else {
-                // No hay tambores, mostrar lista vacía
-                setAllDrums([]);
-                setScannedData([]);
-                setDuplicates(new Set());
-            }
-        } catch (error) {
-            logger.error('[ScannerListScreen] Error loading drums:', error);
-            // En caso de error, mostrar lista vacía
-            setAllDrums([]);
-            setScannedData([]);
-            setDuplicates(new Set());
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Cargar todos los tambores (tanto vendidos como no vendidos)
     const loadAllDrums = async () => {
         try {
-            setLoading(true);
-            // Cargar todos sin filtro
             const response = await getDrums();
             const drums: ScannedDataItem[] = response.data.map((drum: Drum) => ({
                 id: drum.id,
@@ -76,36 +33,25 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 createdAt: drum.createdAt,
                 updatedAt: drum.updatedAt,
             }));
-            
             if (drums.length > 0) {
                 setAllDrums(drums);
-                // Aplicar filtro actual
                 applyFilter(filter, drums);
                 findDuplicates(drums);
             } else {
-                // No hay tambores, mostrar lista vacía
                 setAllDrums([]);
                 applyFilter(filter, []);
                 setDuplicates(new Set());
             }
         } catch (error) {
             logger.error('[ScannerListScreen] Error loading all drums:', error);
-            // En caso de error, mostrar lista vacía
             setAllDrums([]);
             applyFilter(filter, []);
             setDuplicates(new Set());
-        } finally {
-            setLoading(false);
         }
     };
 
     const applyFilter = (filterType: 'all' | 'sold', data: ScannedDataItem[]) => {
-        if (filterType === 'sold') {
-            setScannedData(data.filter(d => d.sold === true));
-        } else {
-            // "Todos" muestra todos los tambores (vendidos y no vendidos)
-            setScannedData(data);
-        }
+        setScannedData(filterType === 'sold' ? data.filter(d => d.sold === true) : data);
     };
 
     const handleFilterChange = (filterType: 'all' | 'sold') => {
@@ -114,9 +60,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
     };
 
     useEffect(() => {
-        if (isFocused) {
-            loadAllDrums();
-        }
+        if (isFocused) loadAllDrums();
     }, [isFocused]);
 
     const handleRefresh = useCallback(async () => {
@@ -128,7 +72,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
     const findDuplicates = (data: ScannedDataItem[]) => {
         const codes = data.map(item => item.code);
         const duplicateCodes = codes.filter((code, index) => codes.indexOf(code) !== index);
-        setDuplicates(new Set(duplicateCodes)); // Asegúrate de que `duplicates` sea un Set
+        setDuplicates(new Set(duplicateCodes));
     };
 
     const clearAllScannedData = async () => {
@@ -136,20 +80,16 @@ const ListScreen: React.FC = ({ navigation }: any) => {
             'Confirmar Eliminación',
             '¿Estás seguro de que quieres borrar todos los tambores escaneados?',
             [
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
+                { text: 'Cancelar', style: 'cancel' },
                 {
                     text: 'Eliminar',
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            await deleteAllDrums(false); // Solo eliminar no vendidos
+                            await deleteAllDrums(false);
                             setScannedData([]);
                             setDuplicates(new Set());
                             setMenuVisible(false);
-                            Alert.alert('Éxito', 'Todos los tambores escaneados han sido borrados.');
                         } catch (error) {
                             logger.error('[ScannerListScreen] Error deleting drums:', error);
                             Alert.alert('Error', 'No se pudo borrar los tambores escaneados.');
@@ -162,30 +102,20 @@ const ListScreen: React.FC = ({ navigation }: any) => {
 
     const handlePrint = async () => {
         Alert.alert(
-            'Selecciona el tipo de archivo',
-            'Elige el formato para exportar',
+            'Exportar',
+            'Elige el formato',
             [
-                {
-                    text: 'Excel',
-                    onPress: () => createAndShareExcel(scannedData),
-                },
-                {
-                    text: 'Texto Plano',
-                    onPress: () => createAndShareText(scannedData),
-                },
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
+                { text: 'Excel', onPress: () => createAndShareExcel(scannedData) },
+                { text: 'Texto Plano', onPress: () => createAndShareText(scannedData) },
+                { text: 'Cancelar', style: 'cancel' },
             ]
         );
     };
 
-
     const handleDeleteOne = (item: ScannedDataItem) => {
         Alert.alert(
-            'Confirmar Eliminación',
-            `¿Estás seguro de que quieres eliminar el tambor ${item.code}?`,
+            'Eliminar tambor',
+            `¿Eliminar el tambor ${item.code}?`,
             [
                 {
                     text: 'Eliminar',
@@ -195,7 +125,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                             if (typeof item.id === 'number') {
                                 const { deleteDrum } = await import('../../modules/API/Drums');
                                 await deleteDrum(item.id);
-                                const newData = scannedData.filter((data) => data.id !== item.id);
+                                const newData = scannedData.filter(d => d.id !== item.id);
                                 setScannedData(newData);
                                 findDuplicates(newData);
                             }
@@ -205,31 +135,23 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                         }
                     },
                 },
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
+                { text: 'Cancelar', style: 'cancel' },
             ]
         );
     };
 
-    const totalCalculator = (key: 'tare' | 'weight'): number => {
-        return scannedData.reduce((sum, item) => {
-            const value = item[key];
-            const numValue = typeof value === 'number' ? value : parseFloat(String(value || '0'));
-            return sum + (isNaN(numValue) ? 0 : numValue);
+    const totalCalculator = (key: 'tare' | 'weight'): number =>
+        scannedData.reduce((sum, item) => {
+            const val = typeof item[key] === 'number' ? item[key] as number : parseFloat(String(item[key] || '0'));
+            return sum + (isNaN(val) ? 0 : val);
         }, 0);
-    };
 
     const ListFooter = () => {
         if (scannedData.length === 0) return null;
-        
         const totalTare = totalCalculator('tare');
         const totalWeight = totalCalculator('weight');
-        const totalNetWeight = totalWeight - totalTare;
-        
         return (
-            <View style={styles.summaryContainer}>
+            <View style={styles.summaryCard}>
                 <View style={styles.summaryItem}>
                     <Text style={styles.summaryLabel}>Tambores</Text>
                     <Text style={styles.summaryValue}>{scannedData.length}</Text>
@@ -237,155 +159,147 @@ const ListScreen: React.FC = ({ navigation }: any) => {
                 <View style={styles.summaryDivider} />
                 <View style={styles.summaryItem}>
                     <Text style={styles.summaryLabel}>Peso Neto</Text>
-                    <Text style={styles.summaryValue}>{totalNetWeight.toFixed(2)} kg</Text>
+                    <Text style={styles.summaryValue}>{(totalWeight - totalTare).toFixed(2)} kg</Text>
                 </View>
             </View>
         );
     };
 
-    const ListHeader = () => (
-        <View style={styles.headerContainer}>
-            <View style={styles.filterRow}>
-                <View style={styles.filterContainer}>
-                    <TouchableOpacity 
-                        style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
-                        onPress={() => handleFilterChange('all')}
-                    >
-                        <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
-                            Todos
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                        style={[styles.filterButton, filter === 'sold' && styles.filterButtonActive]}
-                        onPress={() => handleFilterChange('sold')}
-                    >
-                        <Text style={[styles.filterButtonText, filter === 'sold' && styles.filterButtonTextActive]}>
-                            Vendidos
-                        </Text>
-                    </TouchableOpacity>
+    return (
+        <View style={[styles.wrapper, { paddingTop: insets.top }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+                    <FontAwesome5 name="arrow-left" size={16} color={colors.TEXT_PRIMARY} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.headerTitle}>Tambores</Text>
+                    {scannedData.length > 0 && (
+                        <Text style={styles.headerSubtitle}>{scannedData.length} registrado{scannedData.length === 1 ? '' : 's'}</Text>
+                    )}
                 </View>
-                <TouchableOpacity 
-                    style={styles.menuButton}
-                    onPress={() => setMenuVisible(true)}
-                >
-                    <Text style={styles.menuButtonText}>⋮</Text>
+                <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuVisible(true)} activeOpacity={0.7}>
+                    <MaterialIcons name="more-vert" size={20} color={colors.TEXT_PRIMARY} />
                 </TouchableOpacity>
             </View>
-        </View>
-    );
 
-    return (
-        <View style={styles.container}>
+            {/* Filter Pills */}
+            <View style={styles.filterRow}>
+                <TouchableOpacity
+                    style={[styles.filterPill, filter === 'all' && styles.filterPillActive]}
+                    onPress={() => handleFilterChange('all')}
+                    activeOpacity={0.7}
+                >
+                    <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>Todos</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.filterPill, filter === 'sold' && styles.filterPillActive]}
+                    onPress={() => handleFilterChange('sold')}
+                    activeOpacity={0.7}
+                >
+                    <Text style={[styles.filterText, filter === 'sold' && styles.filterTextActive]}>Vendidos</Text>
+                </TouchableOpacity>
+            </View>
+
             <FlatList
                 data={scannedData}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(insets.bottom, 20) }}
-                ListHeaderComponent={ListHeader}
+                keyExtractor={item => item.id.toString()}
+                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 90 }]}
+                showsVerticalScrollIndicator={false}
                 ListFooterComponent={ListFooter}
-                ListEmptyComponent={ // Agregamos el componente cuando no hay elementos
+                ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Image 
-                            style={styles.emptyIcon} 
-                            source={require('../../assets/images/icons/drum.png')} 
-                        />
-                        <Text style={styles.emptyTitle}>No hay tambores</Text>
-                        <Text style={styles.emptySubtitle}>
-                            Toca el botón amarillo para escanear tu primer tambor
-                        </Text>
+                        <View style={styles.emptyIcon}>
+                            <FontAwesome5 name="box-open" size={28} color={colors.BORDER_MEDIUM} />
+                        </View>
+                        <Text style={styles.emptyTitle}>Sin tambores</Text>
+                        <Text style={styles.emptySubtitle}>Tocá el botón amarillo para escanear tu primer tambor</Text>
                     </View>
                 }
                 refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                    />
+                    <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.WARNING_COLOR} />
                 }
                 renderItem={({ item }) => {
-                    // Asegurar que tare y weight sean números
                     const tare = typeof item.tare === 'number' ? item.tare : parseFloat(String(item.tare || '0'));
                     const weight = typeof item.weight === 'number' ? item.weight : parseFloat(String(item.weight || '0'));
                     const netWeight = (weight - tare).toFixed(2);
                     const isDuplicate = duplicates.has(item.code);
-                    
+
                     return (
                         <TouchableOpacity
-                            style={[styles.itemCard, isDuplicate && styles.duplicateItem]}
+                            style={[styles.itemCard, isDuplicate && styles.itemCardDuplicate]}
                             onLongPress={() => handleDeleteOne(item)}
                             activeOpacity={0.7}
                         >
-                            <View style={styles.itemInfo}>
-                                <Text style={styles.itemCode}>{item.code}</Text>
-                                <View style={styles.itemWeightsRow}>
-                                    <Text style={styles.itemWeightText}>
-                                        Tara: {tare.toFixed(2)} kg
-                                    </Text>
-                                    <Text style={styles.itemWeightText}>
-                                        Total: {weight.toFixed(2)} kg
-                                    </Text>
-                                    <Text style={styles.itemWeightText}>
-                                        Neto: {netWeight} kg
-                                    </Text>
+                            <View style={styles.itemLeft}>
+                                <View style={styles.itemIconWrap}>
+                                    <FontAwesome5 name="drum" size={14} color={colors.TEXT_SECONDARY} />
+                                </View>
+                                <View>
+                                    <Text style={styles.itemCode}>{item.code}</Text>
+                                    <View style={styles.itemWeightsRow}>
+                                        <Text style={styles.itemWeightText}>Tara: {tare.toFixed(2)} kg</Text>
+                                        <Text style={styles.itemWeightDot}>·</Text>
+                                        <Text style={styles.itemWeightText}>Total: {weight.toFixed(2)} kg</Text>
+                                        <Text style={styles.itemWeightDot}>·</Text>
+                                        <Text style={[styles.itemWeightText, styles.itemNetWeight]}>Neto: {netWeight} kg</Text>
+                                    </View>
                                 </View>
                             </View>
                             {isDuplicate && (
                                 <View style={styles.duplicateBadge}>
-                                    <Text style={styles.duplicateBadgeText}>!</Text>
+                                    <FontAwesome5 name="exclamation" size={10} color={colors.WARNING_DARK} />
                                 </View>
                             )}
                         </TouchableOpacity>
                     );
                 }}
             />
-            <View style={[styles.buttonContainer, { bottom: 24 + insets.bottom }]}>
-                <TouchableOpacity 
-                    style={styles.scanButton} 
-                    onPress={() => navigation.navigate('CameraScreen')}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.cameraIconContainer}>
-                        <Image style={styles.actionButtonIcon} source={require('../../assets/images/icons/camera.png')} />
-                    </View>
-                </TouchableOpacity>
-            </View>
 
-            {/* Menú de opciones */}
+            {/* FAB */}
+            <TouchableOpacity
+                style={[styles.fab, { bottom: insets.bottom + 20 }]}
+                onPress={() => navigation.navigate('CameraScreen')}
+                activeOpacity={0.85}
+            >
+                <FontAwesome5 name="camera" size={18} color={colors.TEXT_PRIMARY} />
+            </TouchableOpacity>
+
+            {/* Menu Modal */}
             <Modal
                 visible={menuVisible}
-                transparent={true}
+                transparent
                 animationType="fade"
                 onRequestClose={() => setMenuVisible(false)}
             >
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.modalOverlay}
                     activeOpacity={1}
                     onPress={() => setMenuVisible(false)}
                 >
-                    <View style={styles.menuContainer}>
-                        <TouchableOpacity 
+                    <View style={styles.menuCard}>
+                        <TouchableOpacity
                             style={styles.menuItem}
-                            onPress={() => {
-                                setMenuVisible(false);
-                                handlePrint();
-                            }}
+                            onPress={() => { setMenuVisible(false); handlePrint(); }}
+                            activeOpacity={0.7}
                         >
-                            <Image style={styles.menuItemIcon} source={require('../../assets/images/icons/paper-plane.png')} />
+                            <View style={styles.menuItemIcon}>
+                                <FontAwesome5 name="share-square" size={15} color={colors.TEXT_PRIMARY} />
+                            </View>
                             <Text style={styles.menuItemText}>Exportar</Text>
+                            <FontAwesome5 name="chevron-right" size={12} color={colors.TEXT_TERTIARY} />
                         </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={[styles.menuItem, styles.menuItemDanger]}
-                            onPress={() => {
-                                setMenuVisible(false);
-                                clearAllScannedData();
-                            }}
+                        <View style={styles.menuDivider} />
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => { setMenuVisible(false); clearAllScannedData(); }}
+                            activeOpacity={0.7}
                         >
-                            <Image style={styles.menuItemIcon} source={require('../../assets/images/icons/trash.png')} />
+                            <View style={[styles.menuItemIcon, styles.menuItemIconDanger]}>
+                                <FontAwesome5 name="trash" size={15} color={colors.DANGER} />
+                            </View>
                             <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Eliminar Todos</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={styles.menuItemCancel}
-                            onPress={() => setMenuVisible(false)}
-                        >
-                            <Text style={styles.menuItemTextCancel}>Cancelar</Text>
+                            <FontAwesome5 name="chevron-right" size={12} color={colors.TEXT_TERTIARY} />
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>
@@ -395,371 +309,293 @@ const ListScreen: React.FC = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
+    wrapper: {
         flex: 1,
-        backgroundColor: colors.WHITE_DARK,
+        backgroundColor: colors.BG_APP,
     },
-    headerContainer: {
-        backgroundColor: colors.WHITE_DARK,
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: 16,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: colors.WHITE,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.BG_INPUT,
+    },
+    backButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        textAlign: 'center',
+        letterSpacing: -0.3,
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        color: colors.TEXT_TERTIARY,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    menuBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     filterRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        gap: 8,
+        backgroundColor: colors.WHITE,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.BG_INPUT,
     },
-    filterContainer: {
+    filterPill: {
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        backgroundColor: colors.BG_INPUT,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+    },
+    filterPillActive: {
+        backgroundColor: colors.BG_DARK,
+        borderColor: colors.BG_DARK,
+    },
+    filterText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.TEXT_SECONDARY,
+    },
+    filterTextActive: {
+        color: colors.WHITE,
+    },
+    listContent: {
+        padding: 20,
+        gap: 10,
+    },
+    itemCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        justifyContent: 'space-between',
         backgroundColor: colors.WHITE,
-        padding: 6,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    itemCardDuplicate: {
+        borderColor: colors.WARNING_COLOR,
+        borderWidth: 1.5,
+        backgroundColor: colors.HONEY[50],
+    },
+    itemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    itemIconWrap: {
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    itemCode: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 4,
+        letterSpacing: 0.3,
+    },
+    itemWeightsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 4,
+    },
+    itemWeightText: {
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+        fontWeight: '500',
+    },
+    itemWeightDot: {
+        fontSize: 12,
+        color: colors.BORDER_MEDIUM,
+    },
+    itemNetWeight: {
+        color: colors.TEXT_PRIMARY,
+        fontWeight: '700',
+    },
+    duplicateBadge: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        backgroundColor: colors.WARNING_BG,
+        borderWidth: 1,
+        borderColor: colors.WARNING_BG_LIGHT,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
+    },
+    summaryCard: {
+        backgroundColor: colors.WHITE,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.06)',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 2,
-            },
-        }),
-    },
-    filterButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        backgroundColor: 'transparent',
+        borderColor: colors.BORDER,
+        padding: 20,
+        marginTop: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         alignItems: 'center',
-        borderWidth: 0,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
     },
-    filterButtonActive: {
-        backgroundColor: colors.YELLOW,
-        ...Platform.select({
-            ios: {
-                shadowColor: colors.YELLOW,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 3,
-            },
-        }),
+    summaryItem: {
+        alignItems: 'center',
+        flex: 1,
     },
-    filterButtonText: {
-        fontSize: 15,
+    summaryLabel: {
+        fontSize: 11,
         fontWeight: '600',
-        color: colors.GREY,
+        color: colors.TEXT_SECONDARY,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 6,
     },
-    filterButtonTextActive: {
-        color: colors.BLACK,
-        fontWeight: 'bold',
+    summaryValue: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        letterSpacing: -0.5,
     },
-    menuButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
+    summaryDivider: {
+        width: 1,
+        height: 36,
+        backgroundColor: colors.BORDER,
+    },
+    fab: {
+        position: 'absolute',
+        right: 20,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: colors.WARNING_COLOR,
         alignItems: 'center',
-        backgroundColor: colors.WHITE,
-        borderRadius: 22,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-            },
-            android: {
-                elevation: 3,
-            },
-        }),
+        justifyContent: 'center',
+        shadowColor: colors.WARNING_COLOR,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        elevation: 6,
     },
-    menuButtonText: {
-        fontSize: 24,
-        color: colors.BLACK,
-        fontWeight: 'bold',
-        marginTop: -4,
+    emptyContainer: {
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    emptyIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: 24,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 6,
+    },
+    emptySubtitle: {
+        fontSize: 13,
+        color: colors.TEXT_TERTIARY,
+        fontWeight: '500',
+        textAlign: 'center',
+        maxWidth: 240,
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: colors.OVERLAY_DARK,
+        justifyContent: 'flex-end',
+        paddingHorizontal: 20,
+        paddingBottom: 32,
     },
-    menuContainer: {
+    menuCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 24,
-        width: '85%',
-        maxWidth: 340,
-        padding: 12,
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.35,
-                shadowRadius: 16,
-            },
-            android: {
-                elevation: 12,
-            },
-        }),
+        borderRadius: 20,
+        padding: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 12,
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 18,
-        borderRadius: 14,
-        marginBottom: 6,
-    },
-    menuItemDanger: {
-        backgroundColor: colors.RED_LIGHT + '20',
+        padding: 14,
+        borderRadius: 12,
     },
     menuItemIcon: {
-        width: 26,
-        height: 26,
-        marginRight: 14,
-        tintColor: colors.BLACK,
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    menuItemIconDanger: {
+        backgroundColor: colors.DANGER_BG,
+        borderColor: colors.DANGER_BORDER,
     },
     menuItemText: {
-        fontSize: 17,
-        color: colors.BLACK,
+        flex: 1,
+        fontSize: 15,
         fontWeight: '600',
+        color: colors.TEXT_PRIMARY,
     },
     menuItemTextDanger: {
-        color: colors.RED_LIGHT,
-        fontWeight: '700',
+        color: colors.DANGER,
     },
-    menuItemCancel: {
-        padding: 18,
-        alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: colors.GREY_LIGHT,
-        marginTop: 8,
-        borderRadius: 14,
-    },
-    menuItemTextCancel: {
-        fontSize: 17,
-        color: colors.GREY,
-        fontWeight: '600',
-    },
-    itemCard: {
-        marginVertical: 10,
-        padding: 20,
-        flexDirection: 'row',
-        backgroundColor: colors.WHITE,
-        borderRadius: 20,
-        marginHorizontal: 24,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.05)',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.1,
-                shadowRadius: 10,
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
-    },
-    duplicateItem: {
-        borderColor: colors.YELLOW,
-        borderWidth: 3,
-        ...Platform.select({
-            ios: {
-                shadowColor: colors.YELLOW,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-            },
-            android: {
-                elevation: 6,
-            },
-        }),
-    },
-    itemInfo: {
-        flex: 1,
-    },
-    itemCode: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: colors.BLACK,
-        marginBottom: 10,
-        letterSpacing: 0.5,
-    },
-    itemWeightsRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 14,
-    },
-    itemWeightText: {
-        fontSize: 14,
-        color: colors.BLACK_TRANSPARENT,
-        fontWeight: '500',
-    },
-    duplicateBadge: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: colors.YELLOW,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 12,
-        ...Platform.select({
-            ios: {
-                shadowColor: colors.YELLOW,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.4,
-                shadowRadius: 4,
-            },
-            android: {
-                elevation: 4,
-            },
-        }),
-    },
-    duplicateBadgeText: {
-        color: colors.BLACK,
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    summaryContainer: {
-        backgroundColor: colors.WHITE,
-        borderRadius: 20,
-        padding: 24,
-        marginHorizontal: 24,
-        marginTop: 12,
-        marginBottom: 100,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.05)',
-        ...Platform.select({
-            ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.12,
-                shadowRadius: 16,
-            },
-            android: {
-                elevation: 5,
-            },
-        }),
-    },
-    summaryItem: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    summaryLabel: {
-        fontSize: 13,
-        color: colors.BLACK_TRANSPARENT,
-        marginBottom: 6,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    summaryValue: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: colors.BLACK,
-    },
-    summaryDivider: {
-        width: 1,
-        height: '60%',
-        backgroundColor: colors.GREY_LIGHT,
-    },
-    buttonContainer: {
-        position: 'absolute',
-        bottom: 24,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'transparent',
-        borderTopWidth: 0,
-    },
-    scanButton: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: colors.YELLOW,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 4,
-        borderColor: colors.WHITE,
-        ...Platform.select({
-            ios: {
-                shadowColor: colors.YELLOW,
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.5,
-                shadowRadius: 12,
-            },
-            android: {
-                elevation: 12,
-            },
-        }),
-    },
-    cameraIconContainer: {
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        borderRadius: 20,
-    },
-    actionButtonIcon: {
-        width: 28,
-        height: 28,
-        tintColor: colors.WHITE,
-    },
-    actionButtonText: {
-        color: colors.WHITE,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 48,
-        marginTop: 60,
-    },
-    emptyIcon: {
-        width: 80,
-        height: 80,
-        tintColor: colors.GREY_LIGHT,
-        marginBottom: 24,
-        opacity: 0.6,
-    },
-    emptyTitle: {
-        fontSize: 22,
-        color: colors.BLACK,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        fontSize: 16,
-        color: colors.GREY,
-        textAlign: 'center',
-        lineHeight: 24,
-        maxWidth: 280,
-    },
-    emptyText: {
-        fontSize: 19,
-        color: colors.GREY,
-        textAlign: 'center',
-        fontWeight: '500',
+    menuDivider: {
+        height: 1,
+        backgroundColor: colors.BG_INPUT,
+        marginHorizontal: 14,
     },
 });
 

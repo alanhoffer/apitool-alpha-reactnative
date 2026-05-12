@@ -11,7 +11,6 @@ import ImagePick from "../../components/imagePicker";
 import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryVisitScreenProps } from "../../types/navigation";
-import { VoiceNoteRecorder } from "../../components/general/VoiceNoteRecorder"; // Importar grabadora
 import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Importar SafeAreaInsets
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
@@ -23,10 +22,11 @@ import beehiveTreatmentFlumetrine from '../../assets/images/icons/beehive_treatm
 import beehiveTreatmentOxalic from '../../assets/images/icons/beehive_treatment_oxalic.png'
 import beehiveBoxGeneral from '../../assets/images/icons/beehive_box_general.png'
 import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
+import beehiveTranshumance from '../../assets/images/icons/beehive-transhumance.png'
 import colors from "../../constants/colors";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
-import { APIARY_IMG_URL } from "../../constants/api";
+import { resolveApiaryImageUrl } from "../../constants/api";
 
 
 
@@ -176,7 +176,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                 </View>
                 <View style={styles.apiaryInfo}>
        
-                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={apiaryNavData.image ? { uri: `${APIARY_IMG_URL}${apiaryNavData.image}` } : require('../../assets/images/apiary-default.png')} />
+                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={resolveApiaryImageUrl(apiaryNavData.image, apiaryNavData.imageUrl) ? { uri: resolveApiaryImageUrl(apiaryNavData.image, apiaryNavData.imageUrl) as string } : require('../../assets/images/apiary-default.png')} />
 
                     {/* NOMBRE DEL APIARIO */}
                     <View style={styles.apiaryNameContainer}>
@@ -246,7 +246,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="honey"
                         image={beehiveFoodHoney}
                         unity=" kg"
-                        isActive={apiaryNavData.settings.honey}
+                        isActive={apiaryNavData.settings?.honey}
                         quantity={handleApiaryQuantity('honey')}
                         functionchange={handleChangeData}
                     />
@@ -260,7 +260,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="levudex"
                         image={beehiveFoodLevudex}
                         unity=" kg"
-                        isActive={apiaryNavData.settings.levudex}
+                        isActive={apiaryNavData.settings?.levudex}
                         quantity={handleApiaryQuantity('levudex')}
                         functionchange={handleChangeData}
                     />
@@ -274,7 +274,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="sugar"
                         image={beehiveFoodSugar}
                         unity=" kg"
-                        isActive={apiaryNavData.settings.sugar}
+                        isActive={apiaryNavData.settings?.sugar}
                         quantity={handleApiaryQuantity('sugar')}
                         functionchange={handleChangeData}
                     />
@@ -288,7 +288,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="box"
                         image={beehiveBoxGeneral}
                         unity=" Unidades"
-                        isActive={apiaryNavData.settings.box}
+                        isActive={apiaryNavData.settings?.box}
                         quantity={handleApiaryQuantity('box')}
                         functionchange={handleChangeData}
                     />
@@ -302,7 +302,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="boxMedium"
                         image={beehiveBoxGeneral}
                         unity=" Unidades"
-                        isActive={apiaryNavData.settings.boxMedium}
+                        isActive={apiaryNavData.settings?.boxMedium}
                         quantity={handleApiaryQuantity('boxMedium')}
                         functionchange={handleChangeData}
                     />
@@ -316,8 +316,22 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         name="boxSmall"
                         image={beehiveBoxGeneral}
                         unity=" Unidades"
-                        isActive={apiaryNavData.settings.boxSmall}
+                        isActive={apiaryNavData.settings?.boxSmall}
                         quantity={handleApiaryQuantity('boxSmall')}
+                        functionchange={handleChangeData}
+                    />
+
+                    {/* TRANSHUMANCIA */}
+                    <ApiarySlider
+                        max={1000}
+                        min={0}
+                        step={1}
+                        text="Transhumancia"
+                        name="transhumance"
+                        image={beehiveTranshumance}
+                        unity=" Colm"
+                        isActive={apiaryNavData.settings?.transhumance}
+                        quantity={handleApiaryQuantity('transhumance')}
                         functionchange={handleChangeData}
                     />
 
@@ -327,33 +341,6 @@ function ApiaryVisitScreen({ route, navigation }: any) {
                         {renderTreatments()}
 
                     </View>
-
-                    {/* COMENTARIOS */}
-                    {apiaryNavData.settings.tComment ?
-                        <View style={styles.apiaryCommentContainer}>
-                            <View style={styles.commentInputRow}>
-                                <TextInput
-                                    style={styles.apiaryInfoComment}
-                                    onChangeText={(text) => handleChangeData(text, 'tComment')}
-                                    placeholder='Escribe un comentario aqui'
-                                    placeholderTextColor='#BCBDC5'
-                                    value={String(handleApiaryQuantity('tComment') || '')}
-                                    multiline
-                                />
-                                <View style={styles.micButtonContainer}>
-                                    <VoiceNoteRecorder 
-                                        onTranscription={(text) => {
-                                            const currentText = String(handleApiaryQuantity('tComment') || '');
-                                            const newText = currentText ? `${currentText} ${text}` : text;
-                                            handleChangeData(newText, 'tComment');
-                                            ToastAndroid.show('Nota de voz transcrita', ToastAndroid.SHORT);
-                                        }} 
-                                    />
-                                </View>
-                            </View>
-                        </View>
-                        : null}
-
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -362,7 +349,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: colors.BG_SECTION
     },
     container: {
         alignItems: 'center',
@@ -396,7 +383,7 @@ const styles = StyleSheet.create({
     apiaryName: {
         fontSize: 24,
         fontWeight: '400',
-        color: '#3C4256',
+        color: colors.TEXT_LABEL,
     },
     apiaryInfoImage: {
         height: wp('40%'),
@@ -455,7 +442,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: colors.BORDER_LIGHT,
         backgroundColor: '#F5F5F7',
         alignItems: 'center',
         justifyContent: 'center',
@@ -486,7 +473,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     apiaryTreatmentText: {
-        color: '#CFCFD7',
+        color: colors.BORDER_INPUT,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -500,37 +487,11 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     apiaryTreatmentTextBackground: {
-        color: '#CFCFD7',
+        color: colors.BORDER_INPUT,
         fontSize: 16,
         height: 20,
         fontWeight: '500',
     },
-    apiaryCommentContainer: {
-        marginVertical: 10,
-        width: wp('90%'), // Increased width to fit mic
-        alignItems: 'center',
-    },
-    commentInputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '100%',
-        justifyContent: 'space-between',
-    },
-    apiaryInfoComment: {
-        flex: 1, // Take available space
-        backgroundColor: '#EEF0F3',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 10,
-        marginRight: 10, // Space for mic
-        minHeight: 44, // Match mic height
-    },
-    micButtonContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-
-
 });
 
 

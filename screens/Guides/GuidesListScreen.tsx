@@ -1,163 +1,162 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
     FlatList,
-    TouchableOpacity,
-    TextInput,
     ScrollView,
-    Dimensions,
     StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import colors from '../../constants/colors';
+import { APICULTURE_GUIDES, GUIDE_CATEGORIES, GuideItem } from '../../constants/guides';
 
-const { width } = Dimensions.get('window');
-
-const MOCK_GUIDES = [
-    {
-        id: '1',
-        title: 'Guía de Inspección Básica de Primavera',
-        description: 'Aprende los conceptos fundamentales para la primera inspección tras el invierno.',
-        category: 'Manejo',
-        readTime: '5 min',
-        icon: 'flower-outline',
-        color: '#10b981'
-    },
-    {
-        id: '2',
-        title: 'Tratamiento contra Varroa',
-        description: 'Métodos modernos y efectivos para controlar la población de ácaros Varroa.',
-        category: 'Sanidad',
-        readTime: '8 min',
-        icon: 'medical-outline',
-        color: '#ef4444'
-    },
-    {
-        id: '3',
-        title: 'Alimentación Estratégica',
-        description: 'Cuándo y cómo alimentar a tus abejas para maximizar su desarrollo y recolección.',
-        category: 'Nutrición',
-        readTime: '6 min',
-        icon: 'leaf-outline',
-        color: '#f59e0b'
-    },
-    {
-        id: '4',
-        title: 'Prevención de Enjambrazón',
-        description: 'Técnicas comprobadas para mantener a tus colonias fuertes y en la caja.',
-        category: 'Manejo',
-        readTime: '10 min',
-        icon: 'bug-outline',
-        color: '#6366f1'
-    },
-    {
-        id: '5',
-        title: 'Extracción de Miel Paso a Paso',
-        description: 'Guía completa sobre cómo cosechar y procesar tu miel obteniendo la mejor calidad.',
-        category: 'Cosecha',
-        readTime: '15 min',
-        icon: 'color-fill-outline',
-        color: '#eab308'
-    },
-    {
-        id: '6',
-        title: 'Almacenamiento de Alzas',
-        description: 'Cómo proteger tus panales de la polilla de la cera durante el invierno.',
-        category: 'Materiales',
-        readTime: '4 min',
-        icon: 'construct-outline',
-        color: '#64748b'
-    }
-];
-
-const CATEGORIES = ['Todas', 'Manejo', 'Sanidad', 'Nutrición', 'Cosecha', 'Materiales'];
+const SCREEN_PADDING = 16;
 
 export default function GuidesListScreen({ navigation }: any) {
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('Todas');
+    const [selectedCategory, setSelectedCategory] = useState(GUIDE_CATEGORIES[0]);
 
     const filteredGuides = useMemo(() => {
-        return MOCK_GUIDES.filter(guide => {
-            const matchesSearch = guide.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                guide.description.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesCategory = selectedCategory === 'Todas' || guide.category === selectedCategory;
+        return APICULTURE_GUIDES.filter((guide) => {
+            const normalizedSearch = searchQuery.toLowerCase().trim();
+            const matchesSearch =
+                guide.title.toLowerCase().includes(normalizedSearch) ||
+                guide.description.toLowerCase().includes(normalizedSearch) ||
+                guide.category.toLowerCase().includes(normalizedSearch);
+            const matchesCategory = selectedCategory === GUIDE_CATEGORIES[0] || guide.category === selectedCategory;
             return matchesSearch && matchesCategory;
         });
     }, [searchQuery, selectedCategory]);
 
-    const renderGuideItem = ({ item }: { item: typeof MOCK_GUIDES[0] }) => (
-        <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('GuideDetailScreen', { guideId: item.id, title: item.title })}
-            activeOpacity={0.9}
-        >
-            <View style={styles.cardHeader}>
-                <View style={[styles.guideIconContainer, { backgroundColor: item.color + '15' }]}>
-                    <Icon name={item.icon || 'book-outline'} size={24} color={item.color} />
-                </View>
-                <View style={styles.timeBadge}>
-                    <Icon name="time-outline" size={12} color={colors.SLATE[400]} />
-                    <Text style={styles.timeText}>{item.readTime}</Text>
-                </View>
-            </View>
+    const featuredGuide = filteredGuides[0];
+    const regularGuides = featuredGuide ? filteredGuides.slice(1) : [];
 
-            <View style={styles.cardBody}>
-                <View style={styles.categoryBadge}>
+    const openGuide = (guide: GuideItem) => {
+        navigation.navigate('GuideDetailScreen', { guideId: guide.id, title: guide.title });
+    };
+
+    const renderGuideItem = ({ item }: { item: GuideItem }) => (
+        <View style={styles.cardWrapper}>
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => openGuide(item)}
+                activeOpacity={0.9}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={[styles.guideIconContainer, { backgroundColor: `${item.color}16` }]}>
+                        <Icon name={item.icon || 'book-outline'} size={22} color={item.color} />
+                    </View>
+                    <View style={styles.timeBadge}>
+                        <Icon name="time-outline" size={12} color={colors.SLATE[400]} />
+                        <Text style={styles.timeText}>{item.readTime}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.cardBody}>
                     <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                    <Text style={styles.cardTitle}>{item.title}</Text>
+                    <Text style={styles.cardDescription} numberOfLines={2}>
+                        {item.description}
+                    </Text>
                 </View>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardDescription} numberOfLines={2}>
-                    {item.description}
-                </Text>
+
+                <View style={styles.cardFooter}>
+                    <Text style={styles.readMoreText}>Leer guia</Text>
+                    <Icon name="arrow-forward" size={16} color={colors.HONEY[600]} />
+                </View>
+            </TouchableOpacity>
+        </View>
+    );
+
+    const renderFeaturedGuide = (guide: GuideItem) => (
+        <TouchableOpacity
+            style={styles.featuredCard}
+            onPress={() => openGuide(guide)}
+            activeOpacity={0.92}
+        >
+            <View style={styles.featuredHeader}>
+                <View style={styles.featuredLabel}>
+                    <Icon name="sparkles-outline" size={13} color={colors.HONEY[700]} />
+                    <Text style={styles.featuredLabelText}>Guia destacada</Text>
+                </View>
+                <View style={styles.featuredTimeBadge}>
+                    <Icon name="time-outline" size={12} color={colors.SLATE[500]} />
+                    <Text style={styles.featuredTimeText}>{guide.readTime}</Text>
+                </View>
             </View>
 
-            <View style={styles.cardFooter}>
-                <View style={styles.readMoreContainer}>
-                    <Text style={styles.readMoreText}>Explorar contenido</Text>
-                    <Icon name="chevron-forward" size={16} color={colors.HONEY[500]} />
-                </View>
-                <View style={styles.arrowCircle}>
-                    <Icon name="arrow-forward" size={16} color={colors.WHITE} />
-                </View>
+            <View style={[styles.featuredIconBox, { backgroundColor: `${guide.color}18` }]}>
+                <Icon name={guide.icon || 'book-outline'} size={26} color={guide.color} />
+            </View>
+
+            <Text style={styles.featuredCategory}>{guide.category}</Text>
+            <Text style={styles.featuredTitle}>{guide.title}</Text>
+            <Text style={styles.featuredDescription} numberOfLines={3}>
+                {guide.description}
+            </Text>
+
+            <View style={styles.featuredFooter}>
+                <Text style={styles.featuredFooterText}>Abrir guia completa</Text>
+                <Icon name="arrow-forward-circle" size={20} color={colors.HONEY[600]} />
             </View>
         </TouchableOpacity>
     );
 
     const renderHeader = () => (
-        <View style={styles.headerContent}>
-            <View style={styles.headerTopRow}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                    activeOpacity={0.7}
-                >
-                    <Icon name="arrow-back" size={24} color={colors.SLATE[800]} />
-                </TouchableOpacity>
-                <View style={styles.titleSection}>
-                    <Text style={styles.mainTitle}>Centro de Ayuda</Text>
-                    <Text style={styles.mainSubtitle}>Aprende y mejora tu apicultura</Text>
+        <View style={[styles.headerContent, { paddingTop: insets.top + 10 }]}>
+            <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.7}
+            >
+                <Icon name="arrow-back" size={22} color={colors.SLATE[800]} />
+            </TouchableOpacity>
+
+            <View style={styles.heroCard}>
+                <View style={styles.kickerBadge}>
+                    <Icon name="library-outline" size={14} color={colors.HONEY[700]} />
+                    <Text style={styles.kickerText}>Guias practicas</Text>
+                </View>
+                <Text style={styles.mainTitle}>Guias para trabajar mejor el apiario</Text>
+                <Text style={styles.mainSubtitle}>
+                    Consulta manejo, sanidad, nutricion y cosecha con pasos claros para cada etapa del ano.
+                </Text>
+
+                <View style={styles.heroStatsRow}>
+                    <View style={styles.heroStatCard}>
+                        <Text style={styles.heroStatValue}>{APICULTURE_GUIDES.length}</Text>
+                        <Text style={styles.heroStatLabel}>guias</Text>
+                    </View>
+                    <View style={styles.heroStatCard}>
+                        <Text style={styles.heroStatValue}>{GUIDE_CATEGORIES.length - 1}</Text>
+                        <Text style={styles.heroStatLabel}>temas</Text>
+                    </View>
                 </View>
             </View>
 
-            <View style={styles.searchContainer}>
-                <Icon name="search-outline" size={20} color={colors.SLATE[400]} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Buscar guías o temas..."
-                    placeholderTextColor={colors.SLATE[400]}
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-                {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <Icon name="close-circle" size={20} color={colors.SLATE[300]} />
-                    </TouchableOpacity>
-                )}
+            <View style={styles.searchBlock}>
+                <Text style={styles.searchLabel}>Buscar contenido</Text>
+                <View style={styles.searchContainer}>
+                    <Icon name="search-outline" size={20} color={colors.SLATE[400]} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Buscar guias o temas"
+                        placeholderTextColor={colors.SLATE[400]}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
+                            <Icon name="close-circle" size={20} color={colors.SLATE[300]} />
+                        </TouchableOpacity>
+                    )}
+                </View>
             </View>
 
             <ScrollView
@@ -165,22 +164,24 @@ export default function GuidesListScreen({ navigation }: any) {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryContainer}
             >
-                {CATEGORIES.map((category) => {
+                {GUIDE_CATEGORIES.map((category) => {
                     const isActive = selectedCategory === category;
                     return (
                         <TouchableOpacity
                             key={category}
                             style={[
                                 styles.categoryPill,
-                                isActive && styles.categoryPillActive
+                                isActive && styles.categoryPillActive,
                             ]}
                             onPress={() => setSelectedCategory(category)}
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                         >
-                            <Text style={[
-                                styles.categoryPillText,
-                                isActive && styles.categoryPillTextActive
-                            ]}>
+                            <Text
+                                style={[
+                                    styles.categoryPillText,
+                                    isActive && styles.categoryPillTextActive,
+                                ]}
+                            >
                                 {category}
                             </Text>
                         </TouchableOpacity>
@@ -190,12 +191,18 @@ export default function GuidesListScreen({ navigation }: any) {
 
             <View style={styles.resultsHeader}>
                 <Text style={styles.resultsTitle}>
-                    {selectedCategory === 'Todas' ? 'Todas las guías' : `Resultados: ${selectedCategory}`}
+                    {selectedCategory === GUIDE_CATEGORIES[0] ? 'Todas las guias' : selectedCategory}
                 </Text>
                 <View style={styles.resultsBadge}>
                     <Text style={styles.resultsBadgeText}>{filteredGuides.length}</Text>
                 </View>
             </View>
+
+            {featuredGuide ? renderFeaturedGuide(featuredGuide) : null}
+
+            {regularGuides.length > 0 && (
+                <Text style={styles.sectionTitle}>Mas para leer</Text>
+            )}
         </View>
     );
 
@@ -203,33 +210,34 @@ export default function GuidesListScreen({ navigation }: any) {
         <View style={styles.mainContainer}>
             <StatusBar barStyle="dark-content" />
             <FlatList
-                data={filteredGuides}
+                data={regularGuides}
                 keyExtractor={(item) => item.id}
                 renderItem={renderGuideItem}
                 ListHeaderComponent={renderHeader}
-                contentContainerStyle={[
-                    styles.listContent,
-                    { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 }
-                ]}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
                 showsVerticalScrollIndicator={false}
                 numColumns={1}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <View style={styles.emptyIconBox}>
-                            <Icon name="search-outline" size={48} color={colors.SLATE[200]} />
+                    filteredGuides.length === 0 ? (
+                        <View style={styles.emptyContainer}>
+                            <View style={styles.emptyIconBox}>
+                                <Icon name="search-outline" size={48} color={colors.SLATE[200]} />
+                            </View>
+                            <Text style={styles.emptyTitle}>No hay resultados</Text>
+                            <Text style={styles.emptyText}>
+                                No encontramos guias que coincidan con tu busqueda.
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.resetButton}
+                                onPress={() => {
+                                    setSearchQuery('');
+                                    setSelectedCategory(GUIDE_CATEGORIES[0]);
+                                }}
+                            >
+                                <Text style={styles.resetButtonText}>Ver todas las guias</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text style={styles.emptyTitle}>No hay resultados</Text>
-                        <Text style={styles.emptyText}>No encontramos guías que coincidan con tu búsqueda.</Text>
-                        <TouchableOpacity
-                            style={styles.resetButton}
-                            onPress={() => {
-                                setSearchQuery('');
-                                setSelectedCategory('Todas');
-                            }}
-                        >
-                            <Text style={styles.resetButtonText}>Ver todas las guías</Text>
-                        </TouchableOpacity>
-                    </View>
+                    ) : null
                 }
             />
         </View>
@@ -239,92 +247,154 @@ export default function GuidesListScreen({ navigation }: any) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#fafaf9',
-    },
-    listContent: {
-        paddingHorizontal: 24,
+        backgroundColor: '#f6f3ec',
     },
     headerContent: {
-        paddingHorizontal: 24,
-        paddingBottom: 24,
-    },
-    headerTopRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 24,
+        paddingHorizontal: SCREEN_PADDING,
+        paddingBottom: 18,
     },
     backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         backgroundColor: colors.WHITE,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 16,
+        marginBottom: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
     },
-    titleSection: {
-        flex: 1,
+    heroCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 26,
+        paddingHorizontal: 18,
+        paddingVertical: 20,
+        borderWidth: 1,
+        borderColor: '#efe9dc',
+        marginBottom: 18,
+        shadowColor: colors.SLATE[900],
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.05,
+        shadowRadius: 16,
+        elevation: 3,
+    },
+    kickerBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: colors.HONEY[100],
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        gap: 6,
+        marginBottom: 14,
+    },
+    kickerText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.HONEY[700],
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     mainTitle: {
         fontSize: 32,
         fontWeight: '800',
         color: colors.SLATE[900],
-        letterSpacing: -1,
+        lineHeight: 36,
+        letterSpacing: -0.8,
+        marginBottom: 10,
     },
     mainSubtitle: {
-        fontSize: 16,
+        fontSize: 15,
         color: colors.SLATE[500],
-        marginTop: 4,
+        lineHeight: 23,
+    },
+    heroStatsRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 18,
+    },
+    heroStatCard: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#edf2f7',
+    },
+    heroStatValue: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: colors.SLATE[900],
+        marginBottom: 2,
+    },
+    heroStatLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: colors.SLATE[500],
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    searchBlock: {
+        marginBottom: 18,
+    },
+    searchLabel: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: colors.SLATE[600],
+        marginBottom: 10,
+        paddingLeft: 2,
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.WHITE,
-        borderRadius: 20,
+        borderRadius: 18,
         paddingHorizontal: 16,
-        height: 56,
+        height: 58,
         borderWidth: 1,
-        borderColor: '#f1f5f9',
+        borderColor: '#e2e8f0',
         shadowColor: colors.SLATE[900],
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.04,
         shadowRadius: 10,
         elevation: 2,
-        marginBottom: 20,
     },
     searchInput: {
         flex: 1,
         height: '100%',
         marginLeft: 12,
         fontSize: 16,
+        fontWeight: '500',
         color: colors.SLATE[800],
     },
     categoryContainer: {
-        paddingBottom: 4,
         gap: 10,
-        marginBottom: 24,
+        paddingRight: 8,
+        marginBottom: 16,
     },
     categoryPill: {
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 14,
+        height: 42,
+        paddingHorizontal: 17,
+        borderRadius: 16,
         backgroundColor: colors.WHITE,
         borderWidth: 1,
-        borderColor: '#f1f5f9',
+        borderColor: '#ece8df',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     categoryPillActive: {
-        backgroundColor: colors.SLATE[900],
-        borderColor: colors.SLATE[900],
+        backgroundColor: colors.HONEY[500],
+        borderColor: colors.HONEY[500],
     },
     categoryPillText: {
         fontSize: 14,
         fontWeight: '700',
-        color: colors.SLATE[500],
+        color: colors.SLATE[600],
     },
     categoryPillTextActive: {
         color: colors.WHITE,
@@ -333,50 +403,148 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 16,
-        paddingHorizontal: 4,
+        marginBottom: 14,
     },
     resultsTitle: {
-        fontSize: 14,
-        fontWeight: '800',
-        color: colors.SLATE[400],
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.SLATE[700],
     },
     resultsBadge: {
+        minWidth: 34,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: colors.HONEY[100],
         paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 10,
     },
     resultsBadgeText: {
         fontSize: 12,
         fontWeight: '800',
         color: colors.HONEY[700],
     },
-    card: {
+    featuredCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 28,
-        padding: 24,
-        marginBottom: 20,
+        borderRadius: 24,
+        paddingHorizontal: 18,
+        paddingVertical: 18,
+        marginBottom: 18,
         borderWidth: 1,
-        borderColor: '#f1f5f9',
+        borderColor: '#efe5d3',
         shadowColor: colors.SLATE[900],
         shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.05,
-        shadowRadius: 15,
-        elevation: 4,
+        shadowOpacity: 0.04,
+        shadowRadius: 14,
+        elevation: 3,
+    },
+    featuredHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 14,
+    },
+    featuredLabel: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    featuredLabelText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: colors.HONEY[700],
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    featuredTimeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    featuredTimeText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.SLATE[500],
+    },
+    featuredIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 14,
+    },
+    featuredCategory: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: colors.HONEY[600],
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginBottom: 8,
+    },
+    featuredTitle: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: colors.SLATE[900],
+        lineHeight: 30,
+        marginBottom: 10,
+    },
+    featuredDescription: {
+        fontSize: 15,
+        color: colors.SLATE[500],
+        lineHeight: 23,
+    },
+    featuredFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 16,
+        paddingTop: 14,
+        borderTopWidth: 1,
+        borderTopColor: '#f3efe5',
+    },
+    featuredFooterText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.HONEY[700],
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: colors.SLATE[800],
+        marginBottom: 12,
+    },
+    cardWrapper: {
+        paddingHorizontal: SCREEN_PADDING,
+        marginBottom: 14,
+    },
+    card: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 22,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
+        borderWidth: 1,
+        borderColor: '#ece8df',
+        shadowColor: colors.SLATE[900],
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.04,
+        shadowRadius: 12,
+        elevation: 3,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 14,
     },
     guideIconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
+        width: 46,
+        height: 46,
+        borderRadius: 15,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -395,10 +563,7 @@ const styles = StyleSheet.create({
         color: colors.SLATE[500],
     },
     cardBody: {
-        marginBottom: 20,
-    },
-    categoryBadge: {
-        marginBottom: 8,
+        marginBottom: 14,
     },
     categoryBadgeText: {
         fontSize: 11,
@@ -406,13 +571,14 @@ const styles = StyleSheet.create({
         color: colors.HONEY[600],
         textTransform: 'uppercase',
         letterSpacing: 0.5,
+        marginBottom: 8,
     },
     cardTitle: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: '800',
         color: colors.SLATE[900],
+        lineHeight: 28,
         marginBottom: 8,
-        lineHeight: 26,
     },
     cardDescription: {
         fontSize: 14,
@@ -421,33 +587,21 @@ const styles = StyleSheet.create({
     },
     cardFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingTop: 16,
+        gap: 6,
+        paddingTop: 14,
         borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-    },
-    readMoreContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
+        borderTopColor: '#f3efe5',
     },
     readMoreText: {
         fontSize: 14,
         fontWeight: '700',
         color: colors.HONEY[600],
     },
-    arrowCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: colors.HONEY[500],
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     emptyContainer: {
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 28,
         paddingVertical: 60,
     },
     emptyIconBox: {
@@ -469,19 +623,18 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: colors.SLATE[500],
         textAlign: 'center',
-        paddingHorizontal: 40,
-        marginBottom: 24,
         lineHeight: 22,
+        marginBottom: 20,
     },
     resetButton: {
-        backgroundColor: colors.SLATE[100],
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 16,
+        backgroundColor: colors.SLATE[900],
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 14,
     },
     resetButtonText: {
+        color: colors.WHITE,
         fontSize: 14,
         fontWeight: '700',
-        color: colors.SLATE[800],
-    }
+    },
 });

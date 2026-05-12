@@ -33,14 +33,19 @@ export const useNotificationNavigation = (isAuthenticated: boolean = true) => {
           }
 
           // Navegar según el tipo de notificación
-          if (data?.apiaryId) {
-            // Navegar a la pantalla del apiario
+          if (data?.hiveId && data?.apiaryId) {
+            navigation.navigate('Apiary' as never, {
+              screen: 'HiveScreen',
+              params: { hiveInfo: { id: data.hiveId }, apiaryInfo: { id: data.apiaryId } }
+            } as never);
+          } else if (data?.apiaryId) {
             navigation.navigate('Apiary' as never, {
               screen: 'ApiaryScreen',
               params: { apiaryInfo: { id: data.apiaryId } }
             } as never);
+          } else if (data?.taskId) {
+            navigation.navigate('TasksScreen' as never);
           } else if (data?.notificationId) {
-            // Navegar a la pantalla de notificaciones
             navigation.navigate('NotificationScreen' as never);
           }
         } catch (error) {

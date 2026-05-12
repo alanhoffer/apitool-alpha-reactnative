@@ -1,11 +1,11 @@
 import { Alert } from 'react-native';
-import * as XLSX from 'xlsx';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { ScannedDataItem } from '../../constants/interfaces/Scanner/ScannedDataItem';
 
 const createAndShareExcel = async (data: ScannedDataItem[]): Promise<void> => {
   try {
+    const XLSX = await import('xlsx');
     // Crear una hoja de trabajo
     const ws = XLSX.utils.json_to_sheet(data);
 

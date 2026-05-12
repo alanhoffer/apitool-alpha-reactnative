@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, TextInput, ToastAndroid, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../constants/colors';
 import { isValidLength } from '../../helpers/validation';
@@ -7,9 +7,6 @@ import logger from '../../helpers/logger';
 import { ChangePasswordScreenProps } from '../../types/navigation';
 import { changePassword } from '../../modules/API/User';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
 
 const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -17,327 +14,257 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-    const [showNewPassword, setShowNewPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [focusedField, setFocusedField] = useState<string | null>(null);
 
     const handleChangePassword = async () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
             ToastAndroid.show('Por favor completa todos los campos', ToastAndroid.SHORT);
             return;
         }
-
         if (!isValidLength(newPassword, 7, 50)) {
-            ToastAndroid.show('La nueva contrasena debe tener al menos 7 caracteres', ToastAndroid.SHORT);
+            ToastAndroid.show('La nueva contraseña debe tener al menos 7 caracteres', ToastAndroid.SHORT);
             return;
         }
-
         if (newPassword !== confirmPassword) {
-            ToastAndroid.show('Las contrasenas nuevas no coinciden', ToastAndroid.SHORT);
+            ToastAndroid.show('Las contraseñas nuevas no coinciden', ToastAndroid.SHORT);
             return;
         }
-
         if (currentPassword === newPassword) {
-            ToastAndroid.show('La nueva contrasena debe ser diferente a la actual', ToastAndroid.SHORT);
+            ToastAndroid.show('La nueva contraseña debe ser diferente a la actual', ToastAndroid.SHORT);
             return;
         }
 
         setIsSubmitting(true);
         try {
-            const success = await changePassword({
-                currentPassword,
-                newPassword,
-            });
-
+            const success = await changePassword({ currentPassword, newPassword });
             if (success) {
-                ToastAndroid.show('Contrasena actualizada exitosamente', ToastAndroid.SHORT);
+                ToastAndroid.show('Contraseña actualizada', ToastAndroid.SHORT);
                 navigation.goBack();
             } else {
-                ToastAndroid.show('No se pudo actualizar la contrasena. Verifica tu contrasena actual.', ToastAndroid.SHORT);
+                ToastAndroid.show('No se pudo actualizar. Verifica tu contraseña actual.', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = error?.response?.data?.detail || 'Error al actualizar la contrasena';
-            ToastAndroid.show(errorMessage, ToastAndroid.SHORT);
-            logger.error('[ChangePasswordScreen] Error actualizando contrasena:', error);
+            const msg = error?.response?.data?.detail || 'Error al actualizar la contraseña';
+            ToastAndroid.show(msg, ToastAndroid.SHORT);
+            logger.error('[ChangePasswordScreen] Error:', error);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const PasswordInput = ({ label, value, onChangeText, showPassword, setShowPassword, placeholder }: any) => (
-        <View style={styles.inputGroup}>
-            <Text style={styles.label}>{label}</Text>
-            <View style={styles.inputWrapper}>
-                <Icon name="lock-closed-outline" size={20} color={colors.SLATE[400]} style={styles.inputIcon} />
+    const PasswordField = ({ id, label, value, onChangeText, show, setShow, placeholder }: any) => (
+        <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>{label}</Text>
+            <View style={[styles.fieldInput, focusedField === id && styles.fieldInputFocused]}>
                 <TextInput
-                    style={styles.input}
+                    style={styles.textInput}
                     placeholder={placeholder}
                     value={value}
                     onChangeText={onChangeText}
-                    secureTextEntry={!showPassword}
+                    onFocus={() => setFocusedField(id)}
+                    onBlur={() => setFocusedField(null)}
+                    secureTextEntry={!show}
                     editable={!isSubmitting}
                     placeholderTextColor={colors.SLATE[300]}
                 />
-                <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                >
-                    <Icon
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                        size={22}
-                        color={colors.SLATE[400]}
-                    />
+                <TouchableOpacity onPress={() => setShow(!show)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Icon name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.SLATE[400]} />
                 </TouchableOpacity>
             </View>
         </View>
     );
 
     return (
-        <View style={styles.mainContainer}>
-            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => navigation.goBack()}
-                >
-                    <Icon name="arrow-back" size={24} color={colors.SLATE[800]} />
+        <ScrollView
+            style={styles.container}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 32, 48) }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+        >
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <Icon name="arrow-back" size={22} color={colors.SLATE[700]} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Seguridad</Text>
-                <View style={{ width: 40 }} />
+                <View style={{ width: 22 }} />
             </View>
 
-            <ScrollView
-                style={styles.container}
-                contentContainerStyle={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom, 40) }]}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.heroSection}>
-                    <View style={styles.iconBox}>
-                        <LinearGradient
-                            colors={['#e0e7ff', '#eff6ff']}
-                            style={styles.iconGradient}
-                        >
-                            <Icon name="shield-checkmark" size={60} color="#6366f1" />
-                        </LinearGradient>
-                    </View>
-                    <Text style={styles.heroTitle}>Cambiar Contrasena</Text>
-                    <Text style={styles.heroSubtitle}>Protege tu cuenta con una clave segura</Text>
+            {/* Icon */}
+            <View style={styles.iconSection}>
+                <View style={styles.iconCircle}>
+                    <Icon name="lock-closed-outline" size={32} color={colors.SLATE[600]} />
                 </View>
+                <Text style={styles.iconLabel}>Cambiar contraseña</Text>
+                <Text style={styles.iconSub}>Elige una clave segura para tu cuenta</Text>
+            </View>
 
-                <View style={styles.formCard}>
-                    <PasswordInput
-                        label="Contrasena Actual"
-                        value={currentPassword}
-                        onChangeText={setCurrentPassword}
-                        showPassword={showCurrentPassword}
-                        setShowPassword={setShowCurrentPassword}
-                        placeholder="********"
-                    />
+            {/* Form */}
+            <View style={styles.form}>
+                <PasswordField
+                    id="current"
+                    label="Contraseña actual"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    show={showCurrent}
+                    setShow={setShowCurrent}
+                    placeholder="••••••••"
+                />
 
-                    <View style={styles.separator} />
+                <View style={styles.separator} />
 
-                    <PasswordInput
-                        label="Nueva Contrasena"
-                        value={newPassword}
-                        onChangeText={setNewPassword}
-                        showPassword={showNewPassword}
-                        setShowPassword={setShowNewPassword}
-                        placeholder="Minimo 7 caracteres"
-                    />
+                <PasswordField
+                    id="new"
+                    label="Nueva contraseña"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    show={showNew}
+                    setShow={setShowNew}
+                    placeholder="Mínimo 7 caracteres"
+                />
+                <PasswordField
+                    id="confirm"
+                    label="Confirmar contraseña"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    show={showConfirm}
+                    setShow={setShowConfirm}
+                    placeholder="Repite la contraseña"
+                />
+            </View>
 
-                    <PasswordInput
-                        label="Confirmar Nueva Contrasena"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        showPassword={showConfirmPassword}
-                        setShowPassword={setShowConfirmPassword}
-                        placeholder="Repite la contrasena"
-                    />
-                </View>
+            {/* Actions */}
+            <View style={styles.actions}>
+                <TouchableOpacity
+                    style={[styles.saveBtn, isSubmitting && styles.saveBtnDisabled]}
+                    onPress={handleChangePassword}
+                    disabled={isSubmitting}
+                    activeOpacity={0.85}
+                >
+                    {isSubmitting
+                        ? <ActivityIndicator color={colors.WHITE} />
+                        : <Text style={styles.saveBtnText}>Actualizar contraseña</Text>
+                    }
+                </TouchableOpacity>
 
-                <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={[styles.saveButton, isSubmitting && styles.btnDisabled]}
-                        onPress={handleChangePassword}
-                        disabled={isSubmitting}
-                        activeOpacity={0.8}
-                    >
-                        <LinearGradient
-                            colors={[colors.HONEY[500], colors.HONEY[600]]}
-                            style={styles.btnGradient}
-                        >
-                            {isSubmitting ? (
-                                <ActivityIndicator color={colors.WHITE} />
-                            ) : (
-                                <>
-                                    <Text style={styles.saveButtonText}>Actualizar Contrasena</Text>
-                                    <Icon name="lock-open" size={20} color={colors.WHITE} />
-                                </>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => navigation.goBack()}
-                        disabled={isSubmitting}
-                    >
-                        <Text style={styles.cancelButtonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </View>
+                <TouchableOpacity onPress={() => navigation.goBack()} disabled={isSubmitting} activeOpacity={0.6}>
+                    <Text style={styles.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
+            </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        backgroundColor: '#fafaf9',
-    },
     container: {
         flex: 1,
+        backgroundColor: '#faf9f7',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        backgroundColor: colors.WHITE,
-        paddingBottom: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f8fafc',
+        paddingHorizontal: 24,
+        paddingBottom: 20,
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: 17,
+        fontWeight: '600',
         color: colors.SLATE[800],
     },
-    contentContainer: {
-        padding: 24,
-    },
-    heroSection: {
+    iconSection: {
         alignItems: 'center',
-        marginBottom: 32,
+        paddingVertical: 24,
+        gap: 8,
     },
-    iconBox: {
-        marginBottom: 20,
-    },
-    iconGradient: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+    iconCircle: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: colors.SLATE[100],
+        borderWidth: 1.5,
+        borderColor: colors.SLATE[200],
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#6366f1',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 5,
-    },
-    heroTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: colors.SLATE[900],
         marginBottom: 4,
     },
-    heroSubtitle: {
-        fontSize: 14,
+    iconLabel: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.SLATE[800],
+    },
+    iconSub: {
+        fontSize: 13,
+        color: colors.SLATE[400],
+    },
+    form: {
+        paddingHorizontal: 24,
+        marginTop: 8,
+    },
+    fieldGroup: {
+        marginBottom: 16,
+    },
+    fieldLabel: {
+        fontSize: 13,
+        fontWeight: '500',
         color: colors.SLATE[500],
-        textAlign: 'center',
+        marginBottom: 8,
     },
-    formCard: {
-        backgroundColor: colors.WHITE,
-        borderRadius: 24,
-        padding: 24,
-        shadowColor: colors.SLATE[900],
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.04,
-        shadowRadius: 20,
-        elevation: 4,
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: colors.SLATE[700],
-        marginBottom: 10,
-        marginLeft: 4,
-    },
-    inputWrapper: {
+    fieldInput: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
+        backgroundColor: colors.WHITE,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: colors.BORDER,
         paddingHorizontal: 16,
+        height: 54,
     },
-    inputIcon: {
-        marginRight: 12,
+    fieldInputFocused: {
+        borderColor: colors.SLATE[400],
+        backgroundColor: colors.SLATE[50],
     },
-    input: {
+    textInput: {
         flex: 1,
-        height: 56,
         fontSize: 16,
         color: colors.SLATE[800],
-        fontWeight: '600',
-    },
-    eyeIcon: {
-        padding: 8,
     },
     separator: {
         height: 1,
-        backgroundColor: '#f1f5f9',
-        marginBottom: 24,
-        marginTop: 4,
+        backgroundColor: '#ede9e3',
+        marginVertical: 8,
+        marginBottom: 20,
     },
-    footer: {
+    actions: {
+        paddingHorizontal: 24,
         marginTop: 32,
         gap: 16,
     },
-    saveButton: {
-        borderRadius: 18,
-        overflow: 'hidden',
-        shadowColor: colors.HONEY[600],
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.2,
-        shadowRadius: 20,
-        elevation: 8,
-    },
-    btnGradient: {
-        flexDirection: 'row',
+    saveBtn: {
+        backgroundColor: colors.SLATE[900],
+        height: 54,
+        borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 18,
-        gap: 10,
     },
-    saveButtonText: {
+    saveBtnDisabled: {
+        opacity: 0.5,
+    },
+    saveBtnText: {
         fontSize: 16,
-        fontWeight: '800',
+        fontWeight: '600',
         color: colors.WHITE,
+        letterSpacing: 0.2,
     },
-    cancelButton: {
-        paddingVertical: 14,
-        alignItems: 'center',
-    },
-    cancelButtonText: {
-        fontSize: 16,
-        fontWeight: '700',
+    cancelText: {
+        fontSize: 15,
         color: colors.SLATE[400],
+        textAlign: 'center',
+        paddingVertical: 4,
     },
-    btnDisabled: {
-        opacity: 0.6,
-    }
 });
 
 export default ChangePasswordScreen;

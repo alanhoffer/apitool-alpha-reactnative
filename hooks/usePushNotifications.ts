@@ -7,7 +7,6 @@ import { getDeviceInfo } from '../helpers/deviceInfo';
 import { registerDevice } from '../modules/API/Devices';
 import logger from '../helpers/logger';
 
-// Configuración de cómo mostrar notificaciones cuando la app está abierta
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -24,37 +23,38 @@ interface UsePushNotificationsReturn {
   registerForPushNotifications: () => Promise<string | null>;
 }
 
+const getSafeErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === 'string' && error.trim()) {
+    return error;
+  }
+
+  return 'Unknown error';
+};
+
 export const usePushNotifications = (): UsePushNotificationsReturn => {
   const [fcmToken, setFcmToken] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
 
-  /**
-   * Envía el token FCM al backend con información completa del dispositivo
-   */
   async function sendTokenToBackend(token: string): Promise<void> {
     try {
-      // Obtener información completa del dispositivo
       const deviceInfo = await getDeviceInfo();
-
-      // Registrar/actualizar dispositivo con el push token
       await registerDevice(deviceInfo, token);
-
-      logger.info('[usePushNotifications] Token FCM y dispositivo registrado en el backend exitosamente');
-    } catch (error: any) {
-      logger.error('[usePushNotifications] Error enviando token al backend:', error?.response?.data || error?.message);
-      // No lanzar error para no interrumpir el flujo
+    } catch (error) {
+      logger.error(
+        '[usePushNotifications] Error registrando el dispositivo para push notifications',
+        getSafeErrorMessage(error)
+      );
     }
   }
 
-  /**
-   * Registra el dispositivo para recibir push notifications
-   * Usa Expo Push Notifications (compatible con FCM en builds nativos)
-   */
   async function registerForPushNotificationsAsync(): Promise<string | null> {
     let token: string | null = null;
 
-    // Configurar canal de notificaciones para Android
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
@@ -65,13 +65,11 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
       });
     }
 
-    // Solo funciona en dispositivos físicos
     if (!Device.isDevice) {
-      logger.warn('[usePushNotifications] Push notifications solo funcionan en dispositivos físicos');
+      logger.warn('[usePushNotifications] Push notifications solo funcionan en dispositivos fisicos');
       return null;
     }
 
-    // Solicitar permisos
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -83,77 +81,78 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     if (finalStatus !== 'granted') {
       Alert.alert(
         'Permisos necesarios',
-        '¡Se necesitan permisos para recibir alertas sobre tus apiarios!',
+        'Se necesitan permisos para recibir alertas sobre tus apiarios.',
         [{ text: 'OK' }]
       );
       return null;
     }
 
-    // Obtener el projectId de Expo
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
     if (!projectId) {
-      logger.error('[usePushNotifications] Project ID no encontrado en app.json. Verifica que extra.eas.projectId esté configurado.');
+      logger.error('[usePushNotifications] Project ID no encontrado en la configuracion');
       return null;
     }
 
     try {
-      // Intentar obtener el token nativo (FCM para Android, APNs para iOS) si está disponible
-      // Esto funciona en builds nativos con Firebase configurado
       try {
         const deviceToken = await Notifications.getDevicePushTokenAsync();
         if (deviceToken?.data) {
           const nativeToken = String(deviceToken.data);
           token = nativeToken;
-          logger.info('[usePushNotifications] Token nativo obtenido (FCM/APNs):', nativeToken);
+
           await sendTokenToBackend(nativeToken);
           setFcmToken(nativeToken);
+
           return nativeToken;
         }
-      } catch (nativeError: any) {
-        // Si no hay token nativo disponible, usar Expo Push Token
-        logger.debug('[usePushNotifications] Token nativo no disponible, usando Expo Push Token:', nativeError?.message);
+      } catch (nativeError) {
+        logger.debug(
+          '[usePushNotifications] No fue posible obtener token nativo; se intentara Expo Push Token',
+          getSafeErrorMessage(nativeError)
+        );
       }
 
-      // Obtener el token de Expo Push Notifications
-      // Este token funciona con el servicio de Expo o puede ser convertido a FCM
       const expoToken = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId,
+        projectId,
       });
 
-      if (expoToken?.data) {
-        const resolvedToken = expoToken.data;
-        token = resolvedToken;
-        logger.info('[usePushNotifications] Token Expo Push obtenido:', resolvedToken);
-        await sendTokenToBackend(resolvedToken);
-        setFcmToken(resolvedToken);
-        return resolvedToken;
-      } else {
-        logger.error('[usePushNotifications] No se pudo obtener el token de Expo');
+      if (!expoToken?.data) {
+        logger.error('[usePushNotifications] No se pudo obtener el token de Expo Push');
         return null;
       }
-    } catch (error: any) {
-      logger.error('[usePushNotifications] Error obteniendo token:', error?.message || error);
+
+      const resolvedToken = expoToken.data;
+      token = resolvedToken;
+
+      await sendTokenToBackend(resolvedToken);
+      setFcmToken(resolvedToken);
+
+      return resolvedToken;
+    } catch (error) {
+      logger.error(
+        '[usePushNotifications] Error obteniendo token de push notifications',
+        getSafeErrorMessage(error)
+      );
       return null;
     }
   }
 
   useEffect(() => {
-    // Registrar dispositivo al montar el componente
     registerForPushNotificationsAsync();
 
-    // Escuchar notificaciones recibidas cuando la app está en primer plano
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      setNotification(notification);
-      logger.info('[usePushNotifications] Notificación recibida:', notification);
+    notificationListener.current = Notifications.addNotificationReceivedListener((receivedNotification) => {
+      setNotification(receivedNotification);
     });
 
     return () => {
-      // Limpiar listeners al desmontar
       if (notificationListener.current) {
         try {
           notificationListener.current.remove();
         } catch (error) {
-          console.warn('[usePushNotifications] Error al limpiar listener:', error);
+          logger.warn(
+            '[usePushNotifications] Error limpiando listener de notificaciones',
+            getSafeErrorMessage(error)
+          );
         }
       }
     };

@@ -17,6 +17,10 @@
       }
     },
     "androidapk": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_ALLOW_CLEARTEXT_API": "true"
+      },
       "android": {
         "buildType": "apk"
       }

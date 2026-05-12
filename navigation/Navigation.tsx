@@ -44,12 +44,15 @@ import FormScreen from '../screens/Scanner/ScannerFormScreen';
 import StatisticsScreen from '../screens/Statistics/StatisticsScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import DevicesScreen from '../screens/Profile/DevicesScreen';
+import SupportLegalScreen from '../screens/Profile/SupportLegalScreen';
+import DeleteAccountScreen from '../screens/Profile/DeleteAccountScreen';
 import NotificationScreen from '../screens/Home/NotificationsScreen';
 import AIChatScreen from '../screens/AI/AIChatScreen';
 import TasksScreen from '../screens/Tasks/TasksScreen';
 import TaskAddScreen from '../screens/Tasks/TaskAddScreen';
 import GuidesListScreen from '../screens/Guides/GuidesListScreen';
 import GuideDetailScreen from '../screens/Guides/GuideDetailScreen';
+import SubscriptionScreen from '../screens/Subscription/SubscriptionScreen';
 
 const Stack = createNativeStackNavigator<any>();
 const ApiaryStack = createNativeStackNavigator<any>();
@@ -85,7 +88,7 @@ function ScannerNavigator() {
     return (
         <ScannerStack.Navigator>
             <ScannerStack.Screen component={InstructionsScreen} name="InstructionsScreen" options={(navigation) => ApiaryHeader(navigation)} />
-            <ScannerStack.Screen component={ListScreen} name="ListScreen" options={{ title: 'Lista de Tambores' }} />
+            <ScannerStack.Screen component={ListScreen} name="ListScreen" options={{ headerShown: false }} />
             <ScannerStack.Screen component={CameraScreen} name="CameraScreen" options={{ title: 'Scaneando codigo' }} />
             <ScannerStack.Screen component={FormScreen as any} name="FormScreen" options={{ title: 'Completa los datos' }} />
         </ScannerStack.Navigator>
@@ -108,6 +111,9 @@ function ProfileNavigator() {
             <ProfileStack.Screen component={EditProfileScreen as any} name="EditProfileScreen" />
             <ProfileStack.Screen component={ChangePasswordScreen as any} name="ChangePasswordScreen" />
             <ProfileStack.Screen component={DevicesScreen as any} name="DevicesScreen" />
+            <ProfileStack.Screen component={SubscriptionScreen as any} name="SubscriptionScreen" />
+            <ProfileStack.Screen component={SupportLegalScreen as any} name="SupportLegalScreen" />
+            <ProfileStack.Screen component={DeleteAccountScreen as any} name="DeleteAccountScreen" />
         </ProfileStack.Navigator>
     );
 }

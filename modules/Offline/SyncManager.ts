@@ -4,12 +4,12 @@ import { createHiveImpl, deleteHiveImpl, setHiveIdMapping, updateHiveImpl } from
 import {
     createApiaryImpl,
     deleteApiaryImpl,
-    toggleHarvestAllImpl,
     updateApiaryImpl,
     updateSettingsImpl,
 } from '../API/Apiarys';
 import { createTaskImpl, deleteTaskImpl, updateTaskImpl } from '../API/Tasks';
 import logger from '../../helpers/logger';
+import { cleanupOfflineQueuedImage } from '../FILES/imageUpload';
 import { getQueue, OfflineRequest, removeFromQueue, setLastSuccessfulSyncAt, updateQueueRequest } from './OfflineQueue';
 
 const isNetworkError = (error: any): boolean => {
@@ -27,7 +27,6 @@ const hasConfirmedSuccess = (req: OfflineRequest, result: any): boolean => {
         case 'updateApiary':
         case 'deleteApiary':
         case 'updateSettings':
-        case 'toggleHarvestAll':
         case 'deleteTask':
         case 'deleteHive':
             return result === true;
@@ -81,8 +80,6 @@ const processRequest = async (req: OfflineRequest): Promise<any> => {
             return deleteApiaryImpl(req.payload.apiaryId);
         case 'updateSettings':
             return updateSettingsImpl(req.payload.settingsData);
-        case 'toggleHarvestAll':
-            return toggleHarvestAllImpl(req.payload.harvesting);
         case 'createTask':
             return createTaskImpl(req.payload.taskData);
         case 'updateTask':
@@ -98,6 +95,12 @@ const processRequest = async (req: OfflineRequest): Promise<any> => {
         default:
             logger.warn('[SyncManager] syncPendingRequests: Tipo de peticion desconocido:', req.type);
             return null;
+    }
+};
+
+const cleanupRequestArtifacts = async (req: OfflineRequest) => {
+    if (req.type === 'createApiary' || req.type === 'updateApiary') {
+        await cleanupOfflineQueuedImage(req.payload?.profileImage);
     }
 };
 
@@ -141,6 +144,7 @@ export const syncPendingRequests = async () => {
             }
 
             await removeFromQueue(req.id);
+            await cleanupRequestArtifacts(req);
             syncedCount++;
         } catch (error: any) {
             logger.error(`[SyncManager] syncPendingRequests: Error sincronizando peticion ${req.id}:`, {

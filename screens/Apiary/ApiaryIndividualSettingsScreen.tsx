@@ -10,6 +10,7 @@ import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { IApiarySettings, IApiarySettingsItems } from "../../constants/interfaces/Apiary/IApiarySettings";
 import { UISettingsItem } from "../../constants/interfaces/UI/Settings/UISettings";
 import { updateSettings } from "../../modules/API/Apiarys";
+import colors from "../../constants/colors";
 
 function ApiaryIndividualSettingsScreen({ route, navigation }: any) {
     const apiaryInfo: IApiary = route.params.apiaryInfo;
@@ -95,7 +96,7 @@ function ApiaryIndividualSettingsScreen({ route, navigation }: any) {
                 </SettingCategory>
 
                 <SettingCategory title="Cosecha">
-                    {categories.harvesting.map((item: UISettingsItem) => (
+                    {categories.harvest.map((item: UISettingsItem) => (
                         <SettingItem
                             key={item.key}
                             icon={item.image}
@@ -124,7 +125,7 @@ function ApiaryIndividualSettingsScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: colors.BG_SECTION,
     },
     container: {
         alignItems: 'center',
@@ -136,12 +137,12 @@ const styles = StyleSheet.create({
     settingsTitleText: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#2E3A59',
+        color: colors.TEXT_LINK,
         marginBottom: 8,
         letterSpacing: 0.5,
     },
     settingsSubTitleText: {
-        color: '#8F9BB3',
+        color: colors.TEXT_MUTED,
         fontSize: 16,
         fontWeight: '400',
         lineHeight: 24,

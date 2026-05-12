@@ -1,134 +1,161 @@
-// src/screens/InstructionsScreen.tsx
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
-import colors from '../../constants/colors';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import colors from '../../constants/colors';
+
+const tips = [
+  { icon: 'ruler', text: 'Mantén el código de barras a una distancia de 15-30 cm de la cámara para un escaneo óptimo.' },
+  { icon: 'sun', text: 'Asegúrate de tener buena iluminación al escanear para evitar errores en la lectura.' },
+  { icon: 'check-circle', text: 'Verifica que el código de barras esté limpio y sin daños antes de escanear.' },
+  { icon: 'exclamation-triangle', text: 'Los códigos duplicados se resaltan automáticamente en la lista para facilitar su identificación.' },
+];
 
 const InstructionsScreen: React.FC = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
-  const tips = [
-    'Mantén el código de barras a una distancia de 15-30 cm de la cámara para un escaneo óptimo.',
-    'Asegúrate de tener buena iluminación al escanear para evitar errores en la lectura.',
-    'Verifica que el código de barras esté limpio y sin daños antes de escanear.',
-    'Los códigos duplicados se resaltan automáticamente en la lista para facilitar su identificación.',
-  ];
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={[
-        styles.contentContainer, 
-        { paddingBottom: 40 + insets.bottom }
-      ]} 
+    <ScrollView
+      style={styles.wrapper}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
       showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <Image
-            style={styles.logoIcon}
-            source={require('../../assets/images/icons/camera.png')}
-          />
+        <View style={styles.iconWrap}>
+          <FontAwesome5 name="qrcode" size={32} color={colors.TEXT_PRIMARY} />
         </View>
         <Text style={styles.title}>ApiScanner</Text>
+        <Text style={styles.subtitle}>Escaneá tambores de miel fácilmente</Text>
       </View>
 
-      <View style={styles.tipsContainer}>
+      {/* Tips */}
+      <View style={styles.tipsCard}>
+        <Text style={styles.tipsTitle}>Consejos para escanear</Text>
         {tips.map((tip, index) => (
-          <View key={index} style={styles.tipItem}>
-            <Icon name="checkmark-circle" size={20} color={colors.BLUE} style={styles.tipIcon} />
-            <Text style={styles.tipText}>{tip}</Text>
+          <View key={index} style={[styles.tipRow, index < tips.length - 1 && styles.tipBorder]}>
+            <View style={styles.tipIcon}>
+              <FontAwesome5 name={tip.icon} size={14} color={colors.TEXT_SECONDARY} />
+            </View>
+            <Text style={styles.tipText}>{tip.text}</Text>
           </View>
         ))}
       </View>
 
-      <TouchableOpacity 
-        style={styles.button} 
+      {/* CTA */}
+      <TouchableOpacity
+        style={styles.button}
         onPress={() => navigation.navigate('ListScreen')}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>Empezar a Escanear</Text>
+        <FontAwesome5 name="camera" size={16} color={colors.WHITE} style={{ marginRight: 10 }} />
+        <Text style={styles.buttonText}>Empezar a escanear</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
-    backgroundColor: colors.WHITE,
+    backgroundColor: colors.BG_APP,
   },
-  contentContainer: {
-    padding: 20,
-    paddingTop: 60,
+  content: {
+    paddingHorizontal: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 28,
   },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.BLUE + '15',
-    justifyContent: 'center',
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: colors.BG_HIGHLIGHT,
+    borderWidth: 1,
+    borderColor: colors.WARNING_BG_LIGHT,
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  logoIcon: {
-    width: 60,
-    height: 60,
-    tintColor: colors.BLUE,
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.BLACK,
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
+    letterSpacing: -0.5,
+    marginBottom: 6,
   },
-  tipsContainer: {
-    marginBottom: 32,
-    paddingHorizontal: 8,
+  subtitle: {
+    fontSize: 14,
+    color: colors.TEXT_SECONDARY,
+    fontWeight: '500',
   },
-  tipItem: {
+  tipsCard: {
+    backgroundColor: colors.WHITE,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+    padding: 20,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  tipsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.TEXT_SECONDARY,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 16,
+  },
+  tipRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 20,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+  },
+  tipBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.BG_INPUT,
   },
   tipIcon: {
-    marginRight: 12,
-    marginTop: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: colors.BG_CARD,
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+    marginTop: 1,
   },
   tipText: {
     flex: 1,
-    fontSize: 16,
-    color: colors.BLACK_TRANSPARENT,
-    lineHeight: 24,
+    fontSize: 14,
+    color: colors.TEXT_DARK,
+    lineHeight: 22,
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: colors.BLUE,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    justifyContent: 'center',
+    backgroundColor: colors.BG_DARK,
+    paddingVertical: 16,
+    borderRadius: 14,
+    shadowColor: colors.BG_DARK,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
     color: colors.WHITE,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

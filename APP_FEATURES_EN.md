@@ -1,7 +1,7 @@
 # ApiTool - Mobile Beekeeping Management Application
 
 ## General Description
-ApiTool is a mobile application for comprehensive management of apiaries and beehives. It allows beekeepers to maintain complete control of their operations, from apiary registration to treatment tracking, feeding, harvesting, and statistical analysis.
+ApiTool is a mobile application for comprehensive management of apiaries and beehives. It allows beekeepers to maintain complete control of their operations, from apiary registration to treatment tracking, feeding, harvest records, and statistical analysis.
 
 ---
 
@@ -262,7 +262,7 @@ The main screen includes quick access buttons to all sections:
   - Hive management
   - Beekeeping treatments
   - Bee feeding
-  - Honey harvesting
+  - Honey harvest records
   - Common problems in apiaries
   - Beekeeping best practices
 

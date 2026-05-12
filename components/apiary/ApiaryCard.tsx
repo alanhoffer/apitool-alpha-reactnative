@@ -1,173 +1,157 @@
-// React Imports //
 import React from 'react';
 import { StyleSheet, View, Text, Image } from 'react-native';
-
-// 2 Visuals
 import { statusToColor } from '../../modules/Apiary/ApiaryStatus';
 import Capitalize from '../../modules/Capitalize';
-
-// Assets Imports //  
-import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
-import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
-import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
+import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png';
+import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png';
+import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png';
 import DatePretty from '../../modules/DatePretty';
-import { APIARY_IMG_URL } from '../../constants/api';
+import { resolveApiaryImageUrl } from '../../constants/api';
 import colors from '../../constants/colors';
-import { MaterialIcons } from '@expo/vector-icons';
 import { Ionicons } from '@expo/vector-icons';
 
 export const ApiaryCard = ({ apiaryInfo }: any) => {
-
-  // Manejar tanto camelCase como snake_case
   const updatedAt = apiaryInfo?.updatedAt || apiaryInfo?.updated_at;
+  const settings = apiaryInfo?.settings || {};
 
-  const isTreatmentsActive = () => {
-    // Verificar si hay tratamientos activos: setting activo (indica que se está usando ese tratamiento)
-    const settings = apiaryInfo.settings || {};
-    const hasTreatment = settings.tAmitraz || settings.tOxalic || settings.tFlumetrine;
-    return hasTreatment;
-  }
-
-  const isFoodActive = () => {
-    // Verificar si hay comida activa: setting activo (indica que se está usando ese tipo de alimento)
-    const settings = apiaryInfo.settings || {};
-    const hasFood = settings.honey || settings.sugar || settings.levudex;
-    return hasFood;
-  }
+  const isTreatmentsActive = () => settings.tAmitraz || settings.tOxalic || settings.tFlumetrine;
+  const isFoodActive = () => settings.honey || settings.sugar || settings.levudex;
 
   return (
-    <View style={styles.apiaryCard}>
-      <View style={styles.apiaryImageContainer}>
+    <View style={styles.card}>
+      {/* Image */}
+      <View style={styles.imageContainer}>
         <Image
-          style={styles.apiaryImage}
-          source={apiaryInfo.image ? { uri: `${APIARY_IMG_URL}${apiaryInfo.image}` } : require('../../assets/images/icons/beehive_box_general.png')}
+          style={styles.image}
+          source={resolveApiaryImageUrl(apiaryInfo.image, apiaryInfo.imageUrl)
+            ? { uri: resolveApiaryImageUrl(apiaryInfo.image, apiaryInfo.imageUrl) as string }
+            : require('../../assets/images/icons/beehive_box_general.png')}
           defaultSource={require('../../assets/images/icons/beehive_box_general.png')}
         />
-        <View style={[{ backgroundColor: statusToColor(apiaryInfo.status) }, styles.apiaryStatus]} />
+        <View style={[styles.statusDot, { backgroundColor: statusToColor(apiaryInfo.status) }]} />
       </View>
-      <View style={styles.apiaryData}>
-        <View style={styles.apiaryNameContainer}>
-          <Text style={styles.apiaryDataName}>{Capitalize(apiaryInfo.name || '')}</Text>
+
+      {/* Info */}
+      <View style={styles.info}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>{Capitalize(apiaryInfo.name || '')}</Text>
           {apiaryInfo.managementType === 'individual' && (
-            <View style={styles.individualBadge}>
-              <Ionicons name="cube-outline" size={12} color={colors.YELLOW} />
-              <Text style={styles.individualBadgeText}>Individual</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Individual</Text>
             </View>
           )}
         </View>
-        <Text style={styles.apiaryDataDate}>{DatePretty(updatedAt)}</Text>
-        {(isFoodActive() || isTreatmentsActive() || (apiaryInfo.settings?.tFence && Number(apiaryInfo.tFence) >= 1)) && (
-          <View style={styles.apiaryTreatments}>
-            {isFoodActive() && <Image source={beehiveFoodHoney} style={styles.apiaryTreatment} />}
-            {isTreatmentsActive() && <Image source={beehiveTreatmentGeneral} style={styles.apiaryTreatment} />}
-            {apiaryInfo.settings?.tFence && Number(apiaryInfo.tFence) >= 1 && <Image source={beeHiveBateryNocarge} style={styles.apiaryTreatment} />}
+
+        <Text style={styles.date}>{DatePretty(updatedAt)}</Text>
+
+        {(isFoodActive() || isTreatmentsActive() || (settings.tFence && Number(apiaryInfo.tFence) >= 1)) && (
+          <View style={styles.indicators}>
+            {isFoodActive() && <Image source={beehiveFoodHoney} style={styles.indicator} />}
+            {isTreatmentsActive() && <Image source={beehiveTreatmentGeneral} style={styles.indicator} />}
+            {settings.tFence && Number(apiaryInfo.tFence) >= 1 && <Image source={beeHiveBateryNocarge} style={styles.indicator} />}
           </View>
         )}
       </View>
-      <View style={styles.apiaryHivesContainer}>
-        <MaterialIcons name="hive" size={20} color={colors.YELLOW} />
-        <Text style={styles.apiaryHivesText}>{apiaryInfo.hives}</Text>
+
+      {/* Hives count */}
+      <View style={styles.hivesContainer}>
+        <Ionicons name="grid-outline" size={14} color={colors.SLATE[500]} />
+        <Text style={styles.hivesText}>{apiaryInfo.hives ?? 0}</Text>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  apiaryCard: {
-    marginVertical: 8,
-    padding: 16,
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.WHITE,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 5,
-    elevation: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ede9e3',
+    padding: 14,
+    marginBottom: 10,
   },
-  apiaryImageContainer: {
+  imageContainer: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 14,
   },
-  apiaryImage: {
-    height: 70,
-    width: 70,
+  image: {
+    height: 64,
+    width: 64,
     resizeMode: 'cover',
-    borderRadius: 10,
+    borderRadius: 12,
+    backgroundColor: colors.SLATE[100],
   },
-  apiaryStatus: {
+  statusDot: {
     position: 'absolute',
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     bottom: 0,
     right: 0,
-    borderRadius: 7,
-    borderWidth: 3,
+    borderRadius: 6,
+    borderWidth: 2,
     borderColor: colors.WHITE,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 2,
   },
-  apiaryData: {
+  info: {
     flex: 1,
     justifyContent: 'center',
   },
-  apiaryNameContainer: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     gap: 8,
+    marginBottom: 4,
+    flexWrap: 'wrap',
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.SLATE[800],
+  },
+  badge: {
+    backgroundColor: colors.SLATE[100],
+    borderWidth: 1,
+    borderColor: colors.SLATE[200],
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: colors.SLATE[500],
+  },
+  date: {
+    fontSize: 12,
+    color: colors.SLATE[400],
     marginBottom: 6,
   },
-  apiaryDataName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.BLACK,
-  },
-  individualBadge: {
+  indicators: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.YELLOW + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  individualBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.YELLOW,
-  },
-  apiaryDataDate: {
-    fontSize: 13,
-    color: colors.BLACK_TRANSPARENT,
-    marginBottom: 10,
-  },
-  apiaryTreatments: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  apiaryTreatment: {
-    width: 22,
-    height: 22,
-    resizeMode: 'contain',
-    marginRight: 8,
-  },
-  apiaryHivesContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.YELLOW + '15',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
     gap: 6,
   },
-  apiaryHivesText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.BLACK,
+  indicator: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+  },
+  hivesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.SLATE[50],
+    borderWidth: 1,
+    borderColor: colors.SLATE[200],
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  hivesText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.SLATE[700],
   },
 });

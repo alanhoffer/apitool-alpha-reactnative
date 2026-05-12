@@ -46,7 +46,6 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
         transhumance: 0,
         tFence: 0,
         settings: apiarySettings,
-        tComment: '',
         latitude: 0,
         longitude: 0
     })
@@ -377,20 +376,6 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                     {renderTreatments()}
 
                 </View>
-
-                {apiarySettings.tComment ?
-                    <View style={styles.apiaryCommentContainer}>
-                        <TextInput
-                            multiline={true}
-                            value={apiaryData.tComment}
-                            onChangeText={(text) => handleChangeData(text, 'tComment')}
-                            style={styles.apiaryInfoComment}
-                            placeholder='Escribe un comentario aqui '
-                            placeholderTextColor='#BCBDC5'
-                        />
-                    </View>
-                    : null}
-
             </View>
         </ScrollView>
     )
@@ -398,7 +383,7 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: colors.BG_SECTION
     },
     container: {
         alignItems: 'center',
@@ -430,7 +415,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     apiaryInfoName: {
-        backgroundColor: '#EEF0F3',
+        backgroundColor: colors.BORDER_FORM,
         paddingHorizontal: 20,
         paddingVertical: 6,
         borderRadius: 5,
@@ -486,7 +471,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: colors.BORDER_LIGHT,
         backgroundColor: '#F5F5F7',
         alignItems: 'center',
         justifyContent: 'center',
@@ -525,7 +510,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     apiaryTreatmentText: {
-        color: '#CFCFD7',
+        color: colors.BORDER_INPUT,
         fontSize: 16,
         fontWeight: '500',
     },
@@ -539,26 +524,11 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     apiaryTreatmentTextBackground: {
-        color: '#CFCFD7',
+        color: colors.BORDER_INPUT,
         fontSize: 16,
         height: 20,
         fontWeight: '500',
     },
-    apiaryCommentContainer: {
-        marginVertical: 10,
-        width: wp('80%'),
-    },
-    apiaryInfoComment: {
-        width: wp('80%'),
-        backgroundColor: '#EEF0F3',
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 5,
-
-    },
-
-
-
 });
 
 

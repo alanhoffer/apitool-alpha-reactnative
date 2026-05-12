@@ -1,29 +1,29 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import colors from '../../constants/colors';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { getTasks, updateTask, deleteTask } from '../../modules/API/Tasks';
 import { ITask } from '../../constants/interfaces/Task/ITask';
 import { TasksScreenProps } from '../../types/navigation';
-import { widthPercentageToDP as wp } from 'react-native-responsive-screen';
+import colors from '../../constants/colors';
 
-const TasksScreen = ({ navigation }: TasksScreenProps) => {
+const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
     const insets = useSafeAreaInsets();
+    const apiaryId = route.params?.apiaryId;
+    const apiaryName = route.params?.apiaryName;
+    const isApiaryScoped = typeof apiaryId === 'number';
     const [tasks, setTasks] = useState<ITask[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [filter, setFilter] = useState<'pending' | 'completed'>('pending');
-
-    const [category, setCategory] = useState<'general' | 'apiary'>('general');
+    const [category, setCategory] = useState<'general' | 'apiary'>(isApiaryScoped ? 'apiary' : 'general');
 
     const fetchTasks = async () => {
         try {
-            let fetchedTasks = await getTasks() || [];
-
+            const params = isApiaryScoped ? { apiary_id: apiaryId } : {};
+            let fetchedTasks = await getTasks(params) || [];
             if (fetchedTasks) {
-                // Sort by due date (ascending) and then created_at (descending)
                 fetchedTasks.sort((a, b) => {
                     if (a.completed !== b.completed) return a.completed ? 1 : -1;
                     if (a.due_date && b.due_date) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
@@ -42,7 +42,7 @@ const TasksScreen = ({ navigation }: TasksScreenProps) => {
     useFocusEffect(
         useCallback(() => {
             fetchTasks();
-        }, [])
+        }, [apiaryId])
     );
 
     const onRefresh = () => {
@@ -51,15 +51,12 @@ const TasksScreen = ({ navigation }: TasksScreenProps) => {
     };
 
     const handleToggleComplete = async (task: ITask) => {
-        // Optimistic update
-        const updatedTasks = tasks.map(t => 
+        const updatedTasks = tasks.map(t =>
             t.id === task.id ? { ...t, completed: !t.completed } : t
         );
         setTasks(updatedTasks);
-
         const result = await updateTask(task.id, { completed: !task.completed });
         if (!result) {
-            // Revert if failed
             Alert.alert('Error', 'No se pudo actualizar la tarea');
             fetchTasks();
         }
@@ -88,290 +85,386 @@ const TasksScreen = ({ navigation }: TasksScreenProps) => {
     };
 
     const filteredTasks = tasks.filter(task => {
-        // Filter by category
+        if (isApiaryScoped && task.apiary_id !== apiaryId) return false;
         if (category === 'general' && task.apiary_id) return false;
         if (category === 'apiary' && !task.apiary_id) return false;
-
-        // Filter by status
         if (filter === 'pending') return !task.completed;
         if (filter === 'completed') return task.completed;
         return true;
     });
 
+    const pendingCount = tasks.filter(t => {
+        if (isApiaryScoped && t.apiary_id !== apiaryId) return false;
+        if (t.completed) return false;
+        return category === 'general' ? !t.apiary_id : !!t.apiary_id;
+    }).length;
+
     const renderItem = ({ item }: { item: ITask }) => (
-        <TouchableOpacity 
-            style={styles.taskCard} 
-            onPress={() => navigation.navigate('TaskAddScreen', { task: item })}
+        <TouchableOpacity
+            style={styles.taskCard}
+            onPress={() => navigation.navigate('TaskAddScreen', { task: item, apiaryId: item.apiary_id ?? apiaryId })}
             activeOpacity={0.7}
         >
-            <TouchableOpacity 
-                style={styles.checkboxContainer} 
+            <TouchableOpacity
+                style={styles.checkbox}
                 onPress={() => handleToggleComplete(item)}
+                activeOpacity={0.7}
             >
-                <Ionicons 
-                    name={item.completed ? "checkbox" : "square-outline"} 
-                    size={24} 
-                    color={item.completed ? colors.YELLOW : colors.GREY} 
-                />
+                <View style={[styles.checkboxInner, item.completed && styles.checkboxChecked]}>
+                    {item.completed && <FontAwesome5 name="check" size={10} color={colors.WHITE} />}
+                </View>
             </TouchableOpacity>
-            
+
             <View style={styles.taskContent}>
-                <Text style={[styles.taskTitle, item.completed && styles.taskCompleted]}>
+                <Text style={[styles.taskTitle, item.completed && styles.taskTitleCompleted]}>
                     {item.title}
                 </Text>
                 {item.due_date && (
-                    <View style={styles.dateContainer}>
-                         <Ionicons name="calendar-outline" size={14} color={colors.GREY} />
-                         <Text style={styles.dateText}>
+                    <View style={styles.dateRow}>
+                        <FontAwesome5 name="calendar-alt" size={11} color={colors.TEXT_TERTIARY} />
+                        <Text style={styles.dateText}>
                             {new Date(item.due_date).toLocaleDateString()}
-                         </Text>
+                        </Text>
                     </View>
                 )}
             </View>
 
-            <TouchableOpacity 
-                style={styles.deleteButton} 
+            <TouchableOpacity
+                style={styles.deleteBtn}
                 onPress={() => handleDeleteTask(item)}
+                activeOpacity={0.7}
             >
-                <Ionicons name="trash-outline" size={20} color={colors.RED} />
+                <FontAwesome5 name="trash" size={14} color={colors.TEXT_TERTIARY} />
             </TouchableOpacity>
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <View style={[styles.header, { marginTop: insets.top }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={colors.BLACK} />
+        <View style={[styles.wrapper, { paddingTop: insets.top }]}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+                    <FontAwesome5 name="arrow-left" size={16} color={colors.TEXT_PRIMARY} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Tareas</Text>
-                <View style={{ width: 24 }} /> 
+                <View>
+                    <Text style={styles.headerTitle}>{isApiaryScoped ? 'Tareas del apiario' : 'Tareas'}</Text>
+                    {isApiaryScoped && apiaryName ? (
+                        <Text style={styles.headerSubtitle}>{apiaryName}</Text>
+                    ) : pendingCount > 0 ? (
+                        <Text style={styles.headerSubtitle}>{pendingCount} pendiente{pendingCount === 1 ? '' : 's'}</Text>
+                    ) : null}
+                </View>
+                <View style={{ width: 36 }} />
             </View>
 
-            {/* Main Category Tabs */}
-            <View style={styles.categoryTabs}>
-                <TouchableOpacity 
-                    style={[styles.categoryTab, category === 'general' && styles.categoryTabActive]}
-                    onPress={() => setCategory('general')}
-                >
-                    <Text style={[styles.categoryText, category === 'general' && styles.categoryTextActive]}>Generales</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.categoryTab, category === 'apiary' && styles.categoryTabActive]}
-                    onPress={() => setCategory('apiary')}
-                >
-                    <Text style={[styles.categoryText, category === 'apiary' && styles.categoryTextActive]}>Apiarios</Text>
-                </TouchableOpacity>
-            </View>
+            {/* Category Tabs */}
+            {!isApiaryScoped && (
+                <View style={styles.categoryRow}>
+                    <TouchableOpacity
+                        style={[styles.categoryTab, category === 'general' && styles.categoryTabActive]}
+                        onPress={() => setCategory('general')}
+                        activeOpacity={0.7}
+                    >
+                        <FontAwesome5
+                            name="list-ul"
+                            size={12}
+                            color={category === 'general' ? colors.TEXT_PRIMARY : colors.TEXT_TERTIARY}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.categoryText, category === 'general' && styles.categoryTextActive]}>
+                            Generales
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.categoryTab, category === 'apiary' && styles.categoryTabActive]}
+                        onPress={() => setCategory('apiary')}
+                        activeOpacity={0.7}
+                    >
+                        <FontAwesome5
+                            name="database"
+                            size={12}
+                            color={category === 'apiary' ? colors.TEXT_PRIMARY : colors.TEXT_TERTIARY}
+                            style={{ marginRight: 6 }}
+                        />
+                        <Text style={[styles.categoryText, category === 'apiary' && styles.categoryTextActive]}>
+                            Apiarios
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
-            <View style={styles.filterContainer}>
-                <TouchableOpacity 
-                    style={[styles.filterButton, filter === 'pending' && styles.filterButtonActive]} 
+            {/* Filter Pills */}
+            <View style={styles.filterRow}>
+                <TouchableOpacity
+                    style={[styles.filterPill, filter === 'pending' && styles.filterPillActive]}
                     onPress={() => setFilter('pending')}
+                    activeOpacity={0.7}
                 >
-                    <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>Pendientes</Text>
+                    <Text style={[styles.filterText, filter === 'pending' && styles.filterTextActive]}>
+                        Pendientes
+                    </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.filterButton, filter === 'completed' && styles.filterButtonActive]} 
+                <TouchableOpacity
+                    style={[styles.filterPill, filter === 'completed' && styles.filterPillActive]}
                     onPress={() => setFilter('completed')}
+                    activeOpacity={0.7}
                 >
-                    <Text style={[styles.filterText, filter === 'completed' && styles.filterTextActive]}>Completadas</Text>
+                    <Text style={[styles.filterText, filter === 'completed' && styles.filterTextActive]}>
+                        Completadas
+                    </Text>
                 </TouchableOpacity>
             </View>
 
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.YELLOW} />
+                    <ActivityIndicator size="large" color={colors.WARNING_COLOR} />
                 </View>
             ) : (
                 <FlatList
                     data={filteredTasks}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 90 }]}
+                    showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.YELLOW} />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.WARNING_COLOR} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Ionicons name="checkmark-done-circle-outline" size={80} color={colors.GREY_LIGHT} />
-                            <Text style={styles.emptyText}>No hay tareas {category === 'general' ? 'generales' : 'de apiarios'}</Text>
-                            <Text style={styles.emptySubText}>Crea una nueva tarea para comenzar</Text>
+                            <View style={styles.emptyIcon}>
+                                <FontAwesome5 name="check-circle" size={32} color={colors.BORDER} />
+                            </View>
+                            <Text style={styles.emptyText}>Sin tareas {filter === 'pending' ? 'pendientes' : 'completadas'}</Text>
+                            <Text style={styles.emptySubText}>
+                                {filter === 'pending' ? 'Crea una nueva tarea para empezar' : 'Todavía no completaste ninguna'}
+                            </Text>
                         </View>
                     }
                 />
             )}
 
-            <TouchableOpacity 
-                style={[styles.fab, { bottom: insets.bottom + 20 }]} 
-                onPress={() => navigation.navigate('TaskAddScreen', {})}
+            <TouchableOpacity
+                style={[styles.fab, { bottom: insets.bottom + 20 }]}
+                onPress={() => navigation.navigate('TaskAddScreen', isApiaryScoped ? { apiaryId } : {})}
+                activeOpacity={0.85}
             >
-                <Ionicons name="add" size={30} color={colors.BLACK} />
+                <FontAwesome5 name="plus" size={18} color={colors.TEXT_PRIMARY} />
             </TouchableOpacity>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    wrapper: {
         flex: 1,
-        backgroundColor: colors.WHITE_DARK,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        backgroundColor: colors.WHITE,
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEEEEE',
-    },
-    backButton: {
-        padding: 5,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: colors.BLACK,
-    },
-    filterContainer: {
-        flexDirection: 'row',
-        padding: 15,
-        backgroundColor: colors.WHITE,
-        gap: 10,
-    },
-    filterButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        backgroundColor: '#F5F5F5',
-        borderWidth: 1,
-        borderColor: '#EEEEEE',
-    },
-    filterButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
-    },
-    filterText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.GREY,
-    },
-    filterTextActive: {
-        color: colors.BLACK,
-    },
-    listContent: {
-        padding: 15,
+        backgroundColor: colors.BG_APP,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    emptyContainer: {
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: colors.WHITE,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.BG_INPUT,
+    },
+    backButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 50,
-        opacity: 0.8,
     },
-    emptyText: {
-        fontSize: 20,
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        textAlign: 'center',
+        letterSpacing: -0.3,
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        color: colors.TEXT_TERTIARY,
+        fontWeight: '500',
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    categoryRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        gap: 10,
+        backgroundColor: colors.WHITE,
+    },
+    categoryTab: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        borderRadius: 12,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+    },
+    categoryTabActive: {
+        backgroundColor: colors.HONEY[100],
+        borderColor: colors.WARNING_COLOR,
+    },
+    categoryText: {
+        fontSize: 13,
         fontWeight: '600',
-        color: colors.BLACK_LIGHT,
-        marginTop: 16,
+        color: colors.TEXT_TERTIARY,
     },
-    emptySubText: {
-        fontSize: 16,
-        color: colors.GREY,
-        marginTop: 8,
+    categoryTextActive: {
+        color: colors.TEXT_PRIMARY,
+    },
+    filterRow: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        paddingBottom: 14,
+        gap: 8,
+        backgroundColor: colors.WHITE,
+    },
+    filterPill: {
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        backgroundColor: colors.BG_INPUT,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+    },
+    filterPillActive: {
+        backgroundColor: colors.TEXT_PRIMARY,
+        borderColor: colors.TEXT_PRIMARY,
+    },
+    filterText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: colors.TEXT_SECONDARY,
+    },
+    filterTextActive: {
+        color: colors.WHITE,
+    },
+    listContent: {
+        padding: 20,
+        gap: 10,
     },
     taskCard: {
         flexDirection: 'row',
-        backgroundColor: colors.WHITE,
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 12,
         alignItems: 'center',
-        shadowColor: "#000",
+        backgroundColor: colors.WHITE,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
         elevation: 2,
     },
-    checkboxContainer: {
-        marginRight: 15,
+    checkbox: {
+        marginRight: 14,
+    },
+    checkboxInner: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: colors.BORDER_MEDIUM,
+        backgroundColor: colors.BG_CARD,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxChecked: {
+        backgroundColor: colors.SUCCESS,
+        borderColor: colors.SUCCESS,
     },
     taskContent: {
         flex: 1,
     },
     taskTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        color: colors.BLACK_LIGHT,
+        color: colors.TEXT_PRIMARY,
         marginBottom: 4,
     },
-    taskCompleted: {
+    taskTitleCompleted: {
         textDecorationLine: 'line-through',
-        color: colors.GREY,
+        color: colors.TEXT_TERTIARY,
     },
-    taskDescription: {
-        fontSize: 14,
-        color: colors.GREY,
-        marginBottom: 6,
-    },
-    dateContainer: {
+    dateRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 5,
     },
     dateText: {
         fontSize: 12,
-        color: colors.GREY,
+        color: colors.TEXT_TERTIARY,
+        fontWeight: '500',
     },
-    deleteButton: {
-        padding: 10,
+    deleteBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        backgroundColor: colors.BG_CARD,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        marginLeft: 8,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    emptyIcon: {
+        width: 72,
+        height: 72,
+        borderRadius: 24,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 6,
+    },
+    emptySubText: {
+        fontSize: 13,
+        color: colors.TEXT_TERTIARY,
+        fontWeight: '500',
+        textAlign: 'center',
     },
     fab: {
         position: 'absolute',
         right: 20,
-        backgroundColor: colors.YELLOW,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: colors.WARNING_COLOR,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: "#000",
+        shadowColor: colors.WARNING_COLOR,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
         elevation: 6,
-    },
-    categoryTabs: {
-        flexDirection: 'row',
-        paddingHorizontal: 15,
-        paddingTop: 15,
-        gap: 15,
-        backgroundColor: colors.WHITE,
-    },
-    categoryTab: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderBottomWidth: 3,
-        borderBottomColor: 'transparent',
-    },
-    categoryTabActive: {
-        borderBottomColor: colors.YELLOW,
-    },
-    categoryText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.GREY,
-    },
-    categoryTextActive: {
-        color: colors.BLACK,
-        fontWeight: 'bold',
     },
 });
 

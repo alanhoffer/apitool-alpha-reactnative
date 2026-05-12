@@ -7,6 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "build:preview:android": "eas build --profile preview --platform android",
     "build:preview:ios": "eas build --profile preview --platform ios",
     "build:production:android": "eas build --profile production --platform android",
@@ -14,6 +17,22 @@
     "build:apk": "eas build --profile androidapk --platform android",
     "build:list": "eas build:list",
     "postinstall": "npx jetify"
+  },
+  "jest": {
+    "preset": "jest-expo/node",
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+    ],
+    "moduleNameMapper": {
+      "^react-native$": "<rootDir>/__mocks__/react-native.js",
+      "^react-native-web(/.*)?$": "<rootDir>/__mocks__/react-native.js",
+      "^@react-native-async-storage/async-storage$": "<rootDir>/__mocks__/@react-native-async-storage/async-storage.js",
+      "^react-native-purchases$": "<rootDir>/__mocks__/react-native-purchases.js",
+      "^react-native-purchases-ui$": "<rootDir>/__mocks__/react-native-purchases-ui.js"
+    }
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -23,15 +42,17 @@
     "@rneui/base": "^4.0.0-rc.8",
     "@rneui/themed": "^4.0.0-rc.8",
     "@ungap/structured-clone": "^1.3.0",
-    "axios": "^1.7.7",
+    "axios": "^1.16.0",
     "expo": "~54.0.0",
     "expo-av": "^16.0.8",
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.12",
     "expo-device": "~8.0.10",
+    "expo-file-system": "~19.0.22",
     "expo-image-picker": "~17.0.10",
     "expo-linear-gradient": "~15.0.8",
+    "expo-linking": "~8.0.11",
     "expo-location": "~19.0.8",
     "expo-notifications": "~0.32.15",
     "expo-secure-store": "~15.0.8",
@@ -43,6 +64,8 @@
     "react-native-chart-kit": "^6.12.0",
     "react-native-maps": "1.20.1",
     "react-native-markdown-display": "^7.0.2",
+    "react-native-purchases": "^10.0.1",
+    "react-native-purchases-ui": "^10.0.1",
     "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
@@ -54,9 +77,15 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.10",
     "@types/react-native-vector-icons": "^6.4.18",
+    "jest": "^30.3.0",
+    "jest-expo": "~54.0.0",
     "jetifier": "^2.0.0",
+    "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2"
   },
   "private": true

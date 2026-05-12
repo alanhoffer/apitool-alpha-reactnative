@@ -36,9 +36,8 @@ export function variableToPretty(variable: string) {
         case 'tFence':
             return 'Electrico'
             break;
-        case 'tComment':
-            return 'Comentario'
-            break;
+        default:
+            return variable
     }
 }
 
@@ -80,8 +79,7 @@ export function valueToPretty(variable: string, valor:string) {
         case `tFence`:
             return `${valor} Dias`
             break;
-        case `tComment`:
+        default:
             return `${valor}`
-            break;
     }
 }

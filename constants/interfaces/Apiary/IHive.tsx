@@ -1,5 +1,14 @@
 import { IApiarySettings } from './IApiarySettings';
 
+export interface IHiveHealthSummary {
+    score: number;
+    status: 'estable' | 'atencion' | 'critica' | string;
+    alerts: string[];
+    recommendedActions: string[];
+    flags: string[];
+    lastInspectionDays?: number | null;
+}
+
 export interface IHive extends IHiveData {
     id: number;
     apiaryId: number;
@@ -8,6 +17,7 @@ export interface IHive extends IHiveData {
     updatedAt: Date;
     syncPending?: boolean;
     syncAction?: 'create' | 'update' | 'delete';
+    healthSummary?: IHiveHealthSummary | null;
 }
 
 export interface IHiveData {

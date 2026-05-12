@@ -1,15 +1,21 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import BottomNavBar from '../../components/navigation/BottomNavBar';
 import { useNotifications, Notification } from '../../hooks/useNotifications';
 import logger from '../../helpers/logger';
+import colors from '../../constants/colors';
 
 const NotificationScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { notifications, loading, error, refresh, markAsRead, markAllAsRead } = useNotifications(false);
+  const isFocused = useIsFocused();
+  const { notifications, loading, error, refresh, markAsRead, markAllAsRead } = useNotifications({
+    enabled: isFocused,
+    refreshIntervalMs: 120000,
+  });
   const [activeFilter, setActiveFilter] = useState('Todas');
 
   const filters = ['Todas', 'Urgentes', 'Visitas', 'Sistema'];
@@ -72,19 +78,35 @@ const NotificationScreen = () => {
         logger.error('[NotificationsScreen] Error marking as read:', err);
       }
     }
+
+    // Navigate to related resource if context data is available
+    const data = notification.data;
+    if (data?.hiveId && data?.apiaryId) {
+      navigation.navigate('Apiary', {
+        screen: 'HiveScreen',
+        params: { hiveInfo: { id: data.hiveId }, apiaryInfo: { id: data.apiaryId } },
+      });
+    } else if (data?.apiaryId) {
+      navigation.navigate('Apiary', {
+        screen: 'ApiaryScreen',
+        params: { apiaryInfo: { id: data.apiaryId } },
+      });
+    } else if (data?.taskId) {
+      navigation.navigate('TasksScreen');
+    }
   };
 
   const getIconConfig = (type: string) => {
     if (type === 'ALERT' || type === 'WARNING') {
-      return { name: 'exclamation-circle', color: '#ef4444', bgColor: '#fef2f2' };
+      return { name: 'exclamation-circle', color: colors.DANGER, bgColor: colors.DANGER_BG };
     }
-    return { name: 'info-circle', color: '#64748b', bgColor: '#f1f5f9' };
+    return { name: 'info-circle', color: colors.TEXT_SECONDARY, bgColor: colors.BG_INPUT };
   };
 
   if (loading && notifications.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0f172a" />
+        <ActivityIndicator size="large" color={colors.TEXT_PRIMARY} />
         <Text style={styles.loadingText}>Cargando notificaciones...</Text>
       </View>
     );
@@ -102,7 +124,7 @@ const NotificationScreen = () => {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <FontAwesome5 name="arrow-left" size={18} color="#64748b" />
+            <FontAwesome5 name="arrow-left" size={18} color={colors.TEXT_SECONDARY} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Notificaciones</Text>
@@ -149,14 +171,14 @@ const NotificationScreen = () => {
           <RefreshControl
             refreshing={loading}
             onRefresh={refresh}
-            tintColor="#0f172a"
+            tintColor={colors.TEXT_PRIMARY}
           />
         }
       >
         <View style={styles.listSection}>
           {Object.keys(groupedNotifications).length === 0 ? (
             <View style={styles.emptyContainer}>
-              <FontAwesome5 name="bell-slash" size={48} color="#e2e8f0" />
+              <FontAwesome5 name="bell-slash" size={48} color={colors.BORDER} />
               <Text style={styles.emptyText}>No hay notificaciones para mostrar</Text>
             </View>
           ) : (
@@ -218,42 +240,13 @@ const NotificationScreen = () => {
 
         {notifications.length > 0 && (
           <TouchableOpacity style={styles.largeMarkAll} onPress={markAllAsRead} activeOpacity={0.8}>
-            <FontAwesome5 name="check-double" size={14} color="#94a3b8" style={{ marginRight: 8 }} />
+            <FontAwesome5 name="check-double" size={14} color={colors.TEXT_TERTIARY} style={{ marginRight: 8 }} />
             <Text style={styles.largeMarkAllText}>Marcar todas como leídas</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
 
-      {/* Placeholder Bottom Nav (Matching the mock design) */}
-      <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <View style={styles.bottomNavItems}>
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('HomeScreen' as any)} activeOpacity={0.7}>
-            <FontAwesome5 name="home" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Inicio</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })} activeOpacity={0.7}>
-            <FontAwesome5 name="database" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Apiarios</Text>
-          </TouchableOpacity>
-
-          <View style={styles.fabWrapper}>
-            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryAddScreen' })} activeOpacity={0.8}>
-              <FontAwesome5 name="plus" size={20} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => { }} activeOpacity={0.7}>
-            <FontAwesome5 name="bell" size={18} color="#0f172a" solid />
-            <Text style={[styles.navItemText, styles.navItemActive]}>Alertas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })} activeOpacity={0.7}>
-            <FontAwesome5 name="user" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Perfil</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <BottomNavBar navigation={navigation} active="notifications" />
     </View>
   );
 };
@@ -261,23 +254,23 @@ const NotificationScreen = () => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.BG_APP,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.BG_APP,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
   },
   header: {
     backgroundColor: 'rgba(250, 250, 249, 0.9)',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.BG_INPUT,
     zIndex: 10,
     ...Platform.select({
       ios: {
@@ -301,9 +294,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -314,17 +307,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     marginTop: 1,
   },
   markAllText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
   },
   filterScroll: {
     paddingBottom: 12,
@@ -337,21 +330,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
   },
   filterPillActive: {
-    backgroundColor: '#0f172a',
-    borderColor: '#0f172a',
+    backgroundColor: colors.BG_DARK,
+    borderColor: colors.BG_DARK,
   },
   filterPillText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
   },
   filterPillTextActive: {
-    color: '#ffffff',
+    color: colors.WHITE,
   },
   container: {
     flex: 1,
@@ -371,22 +364,22 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: colors.TEXT_TERTIARY,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   dateLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.BORDER,
     marginLeft: 12,
   },
   notificationCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -414,10 +407,10 @@ const styles = StyleSheet.create({
     right: 0,
     width: 10,
     height: 10,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.DANGER,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: colors.WHITE,
   },
   textContainer: {
     flex: 1,
@@ -431,7 +424,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
     flex: 1,
   },
   cardTitleUnread: {
@@ -439,18 +432,18 @@ const styles = StyleSheet.create({
   },
   cardTime: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.TEXT_TERTIARY,
     marginLeft: 8,
   },
   cardMessage: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     lineHeight: 18,
     marginBottom: 8,
   },
   urgentBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fef2f2',
+    backgroundColor: colors.DANGER_BG,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -458,16 +451,16 @@ const styles = StyleSheet.create({
   urgentText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#ef4444',
+    color: colors.DANGER,
   },
   largeMarkAll: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
     padding: 16,
     marginTop: 8,
     marginBottom: 40,
@@ -475,7 +468,7 @@ const styles = StyleSheet.create({
   largeMarkAllText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -485,7 +478,7 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.TEXT_TERTIARY,
     textAlign: 'center',
   },
   bottomNav: {
@@ -493,9 +486,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: colors.OVERLAY_WHITE_90,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.BORDER,
     paddingHorizontal: 24,
     paddingTop: 12,
     zIndex: 100,
@@ -511,12 +504,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   navItemActive: {
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
   },
   navItemText: {
     fontSize: 10,
     fontWeight: '500',
-    color: '#94a3b8',
+    color: colors.TEXT_TERTIARY,
     marginTop: 4,
   },
   fabWrapper: {
@@ -528,7 +521,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.BG_DARK,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',

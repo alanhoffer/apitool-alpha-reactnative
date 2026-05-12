@@ -1,8 +1,16 @@
 import React, { useContext, useState } from 'react';
 import {
-    View, Text, TextInput, ToastAndroid, TouchableOpacity,
-    StyleSheet, Image, ActivityIndicator,
-    KeyboardAvoidingView, Platform, ScrollView
+    View,
+    Text,
+    TextInput,
+    ToastAndroid,
+    TouchableOpacity,
+    StyleSheet,
+    Image,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -83,7 +91,10 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
             <ScrollView
                 contentContainerStyle={[
                     styles.scrollContent,
-                    { paddingTop: Math.max(insets.top, 40), paddingBottom: Math.max(insets.bottom, 20) + 20 }
+                    {
+                        paddingTop: Math.max(insets.top, 18),
+                        paddingBottom: Math.max(insets.bottom, 20) + 20,
+                    },
                 ]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -91,62 +102,85 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => navigation.goBack()}
+                    activeOpacity={0.7}
                 >
-                    <Icon name="arrow-back" size={24} color={colors.BLACK_LIGHT} />
+                    <Icon name="arrow-back" size={20} color={colors.TEXT_PRIMARY} />
                 </TouchableOpacity>
 
-                <View style={styles.header}>
-                    <View style={styles.logoContainer}>
+                <View style={styles.heroHeader}>
+                    <View style={styles.logoShell}>
                         <Image
-                            source={{ uri: 'https://i.imgur.com/BWBW8rW.png' }}
+                            source={require('../../assets/images/logos/logo-yellow-white.png')}
                             style={styles.logo}
+                            resizeMode="contain"
                         />
                     </View>
-                    <Text style={styles.title}>Crea tu cuenta</Text>
-                    <Text style={styles.subtitle}>Unete y comienza a administrar tus apiarios facilmente.</Text>
+
+                    <View style={styles.heroTextBlock}>
+                        <View style={styles.liveBadge}>
+                            <Text style={styles.liveBadgeText}>Apitool</Text>
+                        </View>
+                        <Text style={styles.heroTitle}>Crear cuenta</Text>
+                        <Text style={styles.heroSubtitle}>
+                            Configura tu acceso para empezar a gestionar apiarios, colmenas y tareas.
+                        </Text>
+                    </View>
                 </View>
 
                 <View style={styles.formCard}>
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Nombre</Text>
-                        <View style={styles.inputContainer}>
-                            <Icon name="person-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Tu nombre"
-                                placeholderTextColor="#999"
-                                onChangeText={setName}
-                                value={name}
-                                autoCapitalize="words"
-                                editable={!loading}
-                            />
+                    <View style={styles.formHeader}>
+                        <Text style={styles.formTitle}>Datos de acceso</Text>
+                        <Text style={styles.formSubtitle}>Completa la informacion para registrarte.</Text>
+                    </View>
+
+                    <View style={styles.row}>
+                        <View style={[styles.inputGroup, styles.halfInput]}>
+                            <Text style={styles.label}>Nombre</Text>
+                            <View style={styles.inputContainer}>
+                                <View style={styles.inputIconBadge}>
+                                    <Icon name="person-outline" size={16} color={colors.SLATE[700]} />
+                                </View>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Nombre"
+                                    placeholderTextColor={colors.TEXT_TERTIARY}
+                                    onChangeText={setName}
+                                    value={name}
+                                    autoCapitalize="words"
+                                    editable={!loading}
+                                />
+                            </View>
+                        </View>
+
+                        <View style={[styles.inputGroup, styles.halfInput]}>
+                            <Text style={styles.label}>Apellido</Text>
+                            <View style={styles.inputContainer}>
+                                <View style={styles.inputIconBadge}>
+                                    <Icon name="person-outline" size={16} color={colors.SLATE[700]} />
+                                </View>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Apellido"
+                                    placeholderTextColor={colors.TEXT_TERTIARY}
+                                    onChangeText={setSurname}
+                                    value={surname}
+                                    autoCapitalize="words"
+                                    editable={!loading}
+                                />
+                            </View>
                         </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Apellido</Text>
+                        <Text style={styles.label}>Correo electronico</Text>
                         <View style={styles.inputContainer}>
-                            <Icon name="person-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Tu apellido"
-                                placeholderTextColor="#999"
-                                onChangeText={setSurname}
-                                value={surname}
-                                autoCapitalize="words"
-                                editable={!loading}
-                            />
-                        </View>
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Correo Electronico</Text>
-                        <View style={styles.inputContainer}>
-                            <Icon name="mail-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
+                            <View style={styles.inputIconBadge}>
+                                <Icon name="mail-outline" size={16} color={colors.SLATE[700]} />
+                            </View>
                             <TextInput
                                 style={styles.input}
                                 placeholder="tu@email.com"
-                                placeholderTextColor="#999"
+                                placeholderTextColor={colors.TEXT_TERTIARY}
                                 onChangeText={setEmail}
                                 value={email}
                                 autoCapitalize="none"
@@ -159,62 +193,89 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Contrasena</Text>
                         <View style={styles.inputContainer}>
-                            <Icon name="lock-closed-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
+                            <View style={styles.inputIconBadge}>
+                                <Icon name="lock-closed-outline" size={16} color={colors.SLATE[700]} />
+                            </View>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Minimo 7 caracteres"
-                                placeholderTextColor="#999"
+                                placeholderTextColor={colors.TEXT_TERTIARY}
                                 onChangeText={setPassword}
                                 value={password}
                                 secureTextEntry={!showPassword}
                                 editable={!loading}
                             />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                                <Icon name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.GREY} />
+                            <TouchableOpacity
+                                onPress={() => setShowPassword(!showPassword)}
+                                style={styles.eyeButton}
+                                activeOpacity={0.7}
+                            >
+                                <Icon
+                                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                                    size={18}
+                                    color={colors.TEXT_SECONDARY}
+                                />
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Confirmar Contrasena</Text>
+                        <Text style={styles.label}>Confirmar contrasena</Text>
                         <View style={styles.inputContainer}>
-                            <Icon name="checkmark-circle-outline" size={20} color={colors.GREY} style={styles.inputIcon} />
+                            <View style={styles.inputIconBadge}>
+                                <Icon name="checkmark-circle-outline" size={16} color={colors.SLATE[700]} />
+                            </View>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Repite tu contrasena"
-                                placeholderTextColor="#999"
+                                placeholderTextColor={colors.TEXT_TERTIARY}
                                 onChangeText={setConfirmPassword}
                                 value={confirmPassword}
                                 secureTextEntry={!showConfirmPassword}
                                 editable={!loading}
                             />
-                            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-                                <Icon name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.GREY} />
+                            <TouchableOpacity
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                style={styles.eyeButton}
+                                activeOpacity={0.7}
+                            >
+                                <Icon
+                                    name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                                    size={18}
+                                    color={colors.TEXT_SECONDARY}
+                                />
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     <TouchableOpacity
-                        style={[styles.registerButton, loading && styles.buttonDisabled]}
+                        style={[styles.primaryButton, loading && styles.buttonDisabled]}
                         onPress={handleRegister}
                         disabled={loading}
-                        activeOpacity={0.8}
+                        activeOpacity={0.85}
                     >
                         {loading ? (
                             <ActivityIndicator color={colors.WHITE} size="small" />
                         ) : (
-                            <Text style={styles.registerButtonText}>Completar Registro</Text>
+                            <>
+                                <Text style={styles.primaryButtonText}>Crear cuenta</Text>
+                                <Icon name="arrow-forward" size={16} color={colors.WHITE} />
+                            </>
                         )}
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.loginContainer}>
-                    <Text style={styles.loginText}>Ya tienes una cuenta?</Text>
+                <View style={styles.secondaryCard}>
+                    <Text style={styles.secondaryTitle}>Ya tienes una cuenta?</Text>
+                    <Text style={styles.secondaryText}>Vuelve al acceso principal para iniciar sesion.</Text>
+
                     <TouchableOpacity
+                        style={styles.secondaryButton}
                         onPress={() => navigation.navigate('LoginScreen')}
-                        activeOpacity={0.6}
+                        activeOpacity={0.8}
                     >
-                        <Text style={styles.loginLinkBold}>Iniciar Sesion</Text>
+                        <Text style={styles.secondaryButtonText}>Ir a iniciar sesion</Text>
+                        <Icon name="arrow-forward" size={16} color={colors.TEXT_PRIMARY} />
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -225,145 +286,187 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.BG_APP,
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 24,
-        paddingBottom: 40,
+        paddingHorizontal: 20,
     },
     backButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
         backgroundColor: colors.WHITE,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        marginBottom: 12,
     },
-    header: {
+    heroHeader: {
         alignItems: 'center',
-        marginBottom: 24,
-    },
-    logoContainer: {
-        width: 76,
-        height: 76,
-        backgroundColor: colors.WHITE,
-        borderRadius: 38,
         justifyContent: 'center',
+        marginBottom: 14,
+    },
+    logoShell: {
+        width: 96,
+        height: 96,
         alignItems: 'center',
-        marginBottom: 16,
-        shadowColor: colors.YELLOW,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
-        elevation: 6,
+        justifyContent: 'center',
+        marginBottom: 12,
     },
     logo: {
-        width: 46,
-        height: 46,
-        resizeMode: 'contain',
+        width: 74,
+        height: 74,
     },
-    title: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        color: colors.BLACK_LIGHT,
+    heroTextBlock: {
+        alignItems: 'center',
+    },
+    liveBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 8,
+    },
+    liveBadgeText: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.WARNING_COLOR,
+        letterSpacing: 0.1,
+    },
+    heroTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        letterSpacing: -0.6,
+        marginBottom: 4,
         textAlign: 'center',
     },
-    subtitle: {
-        fontSize: 14,
-        color: colors.GREY,
+    heroSubtitle: {
+        fontSize: 12,
+        lineHeight: 18,
+        color: colors.TEXT_SECONDARY,
         textAlign: 'center',
-        paddingHorizontal: 10,
-        lineHeight: 20,
     },
     formCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 12,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 3,
-        marginBottom: 24,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        padding: 16,
+        marginBottom: 12,
+    },
+    formHeader: {
+        marginBottom: 14,
+    },
+    formTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 2,
+    },
+    formSubtitle: {
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+    },
+    row: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    halfInput: {
+        flex: 1,
     },
     inputGroup: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     label: {
         fontSize: 13,
         fontWeight: '600',
-        color: colors.BLACK_LIGHT,
+        color: colors.TEXT_LABEL,
         marginBottom: 8,
-        marginLeft: 4,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
-        borderWidth: 1.5,
-        borderColor: '#E5E7EB',
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        height: 54,
+        minHeight: 52,
+        borderRadius: 14,
+        backgroundColor: colors.BG_CARD,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        paddingHorizontal: 10,
     },
-    inputIcon: {
+    inputIconBadge: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.SLATE[100],
         marginRight: 10,
     },
     input: {
         flex: 1,
-        height: '100%',
-        color: colors.BLACK,
-        fontSize: 15,
+        color: colors.TEXT_PRIMARY,
+        fontSize: 14,
+        paddingVertical: 14,
     },
-    eyeIcon: {
-        padding: 8,
-        marginRight: -4,
-    },
-    registerButton: {
-        backgroundColor: colors.YELLOW,
-        borderRadius: 8,
-        height: 56,
-        justifyContent: 'center',
+    eyeButton: {
+        width: 34,
+        height: 34,
+        borderRadius: 10,
         alignItems: 'center',
-        shadowColor: colors.YELLOW,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-        marginTop: 10,
+        justifyContent: 'center',
+    },
+    primaryButton: {
+        height: 50,
+        borderRadius: 14,
+        backgroundColor: colors.SLATE[900],
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+    },
+    primaryButtonText: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.WHITE,
     },
     buttonDisabled: {
-        opacity: 0.6,
+        opacity: 0.7,
     },
-    registerButtonText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.WHITE,
-        letterSpacing: 0.5,
+    secondaryCard: {
+        backgroundColor: colors.WHITE,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: colors.BORDER,
+        padding: 16,
     },
-    loginContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
+    secondaryTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
+        marginBottom: 4,
+    },
+    secondaryText: {
+        fontSize: 12,
+        lineHeight: 18,
+        color: colors.TEXT_SECONDARY,
+        marginBottom: 12,
+    },
+    secondaryButton: {
+        height: 48,
+        borderRadius: 14,
+        backgroundColor: colors.HONEY[100],
+        borderWidth: 1,
+        borderColor: colors.HONEY[200],
         alignItems: 'center',
-        marginTop: 10,
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
     },
-    loginText: {
-        fontSize: 15,
-        color: colors.GREY,
-        marginRight: 6,
-    },
-    loginLinkBold: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: colors.YELLOW,
+    secondaryButtonText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: colors.TEXT_PRIMARY,
     },
 });
 

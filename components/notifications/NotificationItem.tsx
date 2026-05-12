@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Notification } from '../../hooks/useNotifications';
 import colors from '../../constants/colors';
 
@@ -16,12 +17,12 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   const getTypeIcon = () => {
     switch (notification.type) {
       case 'ALERT':
-        return 'alert-circle';
+        return 'alert-circle-outline';
       case 'WARNING':
-        return 'warning';
+        return 'bee-flower';
       case 'INFO':
       default:
-        return 'information-circle';
+        return 'information-outline';
     }
   };
 
@@ -88,7 +89,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
       activeOpacity={0.7}
     >
       <View style={[styles.iconContainer, { backgroundColor: typeBackground }]}>
-        <Ionicons name={getTypeIcon()} size={22} color={typeColor} />
+        <MaterialCommunityIcons name={getTypeIcon()} size={22} color={typeColor} />
       </View>
       <View style={styles.content}>
         <View style={styles.titleRow}>
@@ -103,7 +104,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
           {notification.message}
         </Text>
         <View style={styles.footer}>
-          <Ionicons name="time-outline" size={12} color={colors.GREY} />
+          <MaterialCommunityIcons name="clock-outline" size={12} color={colors.GREY} />
           <Text style={styles.date}>{formatDate(notification.createdAt)}</Text>
         </View>
       </View>

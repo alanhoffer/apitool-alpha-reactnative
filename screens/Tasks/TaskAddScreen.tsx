@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 1,
-        borderBottomColor: '#EEEEEE',
+        borderBottomColor: colors.BORDER_XLIGHT,
     },
     backButton: {
         padding: 5,
@@ -168,13 +168,13 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     input: {
-        backgroundColor: '#F9F9F9',
+        backgroundColor: colors.BG_SECTION,
         borderRadius: 10,
         padding: 15,
         fontSize: 16,
         color: colors.BLACK,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
+        borderColor: colors.BORDER_XLIGHT,
     },
     textArea: {
         minHeight: 100,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5F5',
         marginRight: 10,
         borderWidth: 1,
-        borderColor: '#EEEEEE',
+        borderColor: colors.BORDER_XLIGHT,
     },
     chipActive: {
         backgroundColor: colors.YELLOW,

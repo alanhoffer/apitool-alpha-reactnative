@@ -9,9 +9,9 @@ export interface IApiarySettingsItems {
     tAmitraz: boolean;
     tFlumetrine: boolean;
     tFence: boolean;
-    tComment: boolean;
     transhumance: boolean;
-    harvesting: boolean;
+    tasks?: boolean | string | null;
+    tComment?: boolean;
     // Settings para colmenas individuales
     queenStatus?: boolean;
     population?: boolean;

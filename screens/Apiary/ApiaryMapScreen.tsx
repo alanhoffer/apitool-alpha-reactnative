@@ -8,7 +8,7 @@ import colors from '../../constants/colors';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { APIARY_IMG_URL } from '../../constants/api';
+import { resolveApiaryImageUrl } from '../../constants/api';
 import BlankImage from '../../assets/images/blank-image.jpg';
 import logger from '../../helpers/logger';
 import { ApiaryMapScreenProps } from '../../types/navigation';
@@ -306,7 +306,7 @@ const ApiaryMapScreen = ({ navigation }: ApiaryMapScreenProps) => {
                         <View style={styles.cardImageContainer}>
                             <Image
                                 style={styles.cardImage}
-                                source={selectedApiary.image ? { uri: `${APIARY_IMG_URL}${selectedApiary.image}` } : BlankImage}
+                                source={resolveApiaryImageUrl(selectedApiary.image, selectedApiary.imageUrl) ? { uri: resolveApiaryImageUrl(selectedApiary.image, selectedApiary.imageUrl) as string } : BlankImage}
                                 resizeMode="cover"
                             />
                         </View>

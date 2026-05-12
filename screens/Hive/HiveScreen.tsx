@@ -71,6 +71,34 @@ function HiveScreen({ route, navigation }: any) {
         }
     };
 
+    const getHealthTone = (status?: string) => {
+        if (status === 'critica') {
+            return {
+                background: colors.DANGER_BG,
+                border: colors.DANGER_BORDER,
+                badge: colors.DANGER,
+                badgeText: colors.WHITE,
+                title: 'CrÃ­tica',
+            };
+        }
+        if (status === 'atencion') {
+            return {
+                background: colors.WARNING_BG,
+                border: colors.WARNING_BG_LIGHT,
+                badge: colors.WARNING_COLOR,
+                badgeText: colors.WHITE,
+                title: 'AtenciÃ³n',
+            };
+        }
+        return {
+            background: colors.SUCCESS_BG,
+            border: '#86efac',
+            badge: colors.SUCCESS,
+            badgeText: colors.WHITE,
+            title: 'Estable',
+        };
+    };
+
     const renderHiveInfo = () => {
         const items = [];
         
@@ -205,6 +233,61 @@ function HiveScreen({ route, navigation }: any) {
                     <Text style={styles.apiaryName}>Apiario: {Capitalize(apiaryInfo?.name || '')}</Text>
                 </View>
 
+                {hiveInfo.healthSummary && (
+                    <View
+                        style={[
+                            styles.healthCard,
+                            {
+                                backgroundColor: getHealthTone(hiveInfo.healthSummary.status).background,
+                                borderColor: getHealthTone(hiveInfo.healthSummary.status).border,
+                            },
+                        ]}
+                    >
+                        <View style={styles.healthCardHeader}>
+                            <View>
+                                <Text style={styles.healthCardLabel}>Resumen sanitario</Text>
+                                <Text style={styles.healthCardScore}>{hiveInfo.healthSummary.score}/100</Text>
+                            </View>
+                            <View
+                                style={[
+                                    styles.healthCardBadge,
+                                    { backgroundColor: getHealthTone(hiveInfo.healthSummary.status).badge },
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.healthCardBadgeText,
+                                        { color: getHealthTone(hiveInfo.healthSummary.status).badgeText },
+                                    ]}
+                                >
+                                    {getHealthTone(hiveInfo.healthSummary.status).title}
+                                </Text>
+                            </View>
+                        </View>
+                        {hiveInfo.healthSummary.lastInspectionDays !== null && hiveInfo.healthSummary.lastInspectionDays !== undefined && (
+                            <Text style={styles.healthCardMeta}>
+                                Ãšltima revisiÃ³n registrada: hace {hiveInfo.healthSummary.lastInspectionDays} dÃ­as
+                            </Text>
+                        )}
+                        {hiveInfo.healthSummary.alerts.length > 0 ? (
+                            <View style={styles.healthAlerts}>
+                                {hiveInfo.healthSummary.alerts.slice(0, 3).map((alert, index) => (
+                                    <Text key={`${alert}-${index}`} style={styles.healthAlertText}>
+                                        - {alert}
+                                    </Text>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.healthStableText}>No se detectan alertas fuertes con la informaciÃ³n cargada.</Text>
+                        )}
+                        {hiveInfo.healthSummary.recommendedActions.length > 0 && (
+                            <Text style={styles.healthAction}>
+                                Siguiente paso: {hiveInfo.healthSummary.recommendedActions[0]}
+                            </Text>
+                        )}
+                    </View>
+                )}
+
                 {/* Stats Grid */}
                 {renderHiveInfo()}
 
@@ -266,6 +349,65 @@ const styles = StyleSheet.create({
     hiveInfoContainer: {
         width: '80%',
         marginVertical: 10,
+    },
+    healthCard: {
+        width: wp('80%'),
+        borderRadius: 16,
+        borderWidth: 1,
+        padding: 16,
+        marginBottom: 6,
+    },
+    healthCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 12,
+    },
+    healthCardLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.TEXT_SECONDARY,
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
+    },
+    healthCardScore: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: colors.TEXT_PRIMARY,
+        marginTop: 4,
+    },
+    healthCardBadge: {
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    healthCardBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    healthCardMeta: {
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+        marginBottom: 8,
+    },
+    healthAlerts: {
+        gap: 4,
+    },
+    healthAlertText: {
+        fontSize: 13,
+        lineHeight: 18,
+        color: colors.TEXT_DARK,
+    },
+    healthStableText: {
+        fontSize: 13,
+        color: colors.TEXT_DARK,
+    },
+    healthAction: {
+        marginTop: 10,
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+        fontWeight: '600',
     },
     rowContainer: {
         flexDirection: 'row',

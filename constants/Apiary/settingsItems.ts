@@ -25,7 +25,7 @@ export const settingsItems = (): UICategorizedSettings => ({
         { key: 'tAmitraz', title: 'Amitraz', value: 'Sí', image: beehiveTreatmentGeneral },
         { key: 'tFlumetrine', title: 'Flumetrina', value: 'Sí', image: beehiveTreatmentFlumetrine },
     ],
-    [SettingsCategory.Harvesting]: [
+    [SettingsCategory.Harvest]: [
         { key: 'box', title: 'Alza', value: 'Sí', image: beehiveBoxGeneral },
         { key: 'boxMedium', title: 'Alza 3/4', value: 'Sí', image: beehiveBoxGeneral },
         { key: 'boxSmall', title: 'Alza 1/2', value: 'Sí', image: beehiveBoxGeneral },
@@ -33,7 +33,7 @@ export const settingsItems = (): UICategorizedSettings => ({
     [SettingsCategory.Others]: [
         { key: 'transhumance', title: 'Transhumancia', value: 'Sí', image: beehiveTranshumance },
         { key: 'tFence', title: 'Eléctrico', value: 'Sí', image: beeHiveBateryNocarge },
-        { key: 'tComment', title: 'Notas', value: 'Sí', image: beehiveNotes },
+        { key: 'tasks', title: 'Tareas', value: 'Sí', image: beehiveNotes },
     ]
 });
 
@@ -50,7 +50,7 @@ export const settingsItemsIndividual = (): UICategorizedSettings => ({
         { key: 'tFlumetrine', title: 'Flumetrina', value: 'Sí', image: beehiveTreatmentFlumetrine },
         { key: 'disease', title: 'Enfermedades', value: 'Sí', image: beehiveTreatmentGeneral },
     ],
-    [SettingsCategory.Harvesting]: [
+    [SettingsCategory.Harvest]: [
         { key: 'box', title: 'Alza', value: 'Sí', image: beehiveBoxGeneral },
         { key: 'boxMedium', title: 'Alza 3/4', value: 'Sí', image: beehiveBoxGeneral },
         { key: 'boxSmall', title: 'Alza 1/2', value: 'Sí', image: beehiveBoxGeneral },
@@ -65,6 +65,6 @@ export const settingsItemsIndividual = (): UICategorizedSettings => ({
         { key: 'hiveStrength', title: 'Fortaleza de Colmena', value: 'Sí', image: beehiveCollonySize },
         { key: 'swarming', title: 'Enjambrazón', value: 'Sí', image: beehiveTranshumance },
         { key: 'lastInspection', title: 'Última Revisión', value: 'Sí', image: beehiveNotes },
-        { key: 'tComment', title: 'Notas', value: 'Sí', image: beehiveNotes },
+        { key: 'tasks', title: 'Tareas', value: 'Sí', image: beehiveNotes },
     ]
 });

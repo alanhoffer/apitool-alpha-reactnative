@@ -1,32 +1,52 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, ActivityIndicator, RefreshControl, Dimensions, Animated, Platform, Modal } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import getProfile from '../../modules/API/User';
-import { getApiaryAndHivesCount, getHarvestingCount } from '../../modules/API/Apiarys';
+
+import BottomNavBar from '../../components/navigation/BottomNavBar';
+import { BASE_URL } from '../../constants/api';
+import colors from '../../constants/colors';
+import { useSubscription } from '../../contexts/SubscriptionContext';
 import { capitalizeFirstLetter } from '../../helpers/Apiary/capitalizeFirstLetter';
 import { getGreetingMessage } from '../../helpers/Home/getGreetingMessage';
-import * as Location from 'expo-location';
-import { BASE_URL } from '../../constants/api';
 import logger from '../../helpers/logger';
-import { HomeScreenProps } from '../../types/navigation';
+import { getDashboardSummary } from '../../modules/API/User';
+import { getQueueStatus, getQueueSummaries, OfflineQueueItemSummary, OfflineQueueStatus, removeFromQueue } from '../../modules/Offline/OfflineQueue';
 import { syncPendingRequests } from '../../modules/Offline/SyncManager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getQueueStatus, getQueueSummaries, OfflineQueueItemSummary, OfflineQueueStatus } from '../../modules/Offline/OfflineQueue';
-import { getTasks } from '../../modules/API/Tasks';
+import { HomeScreenProps } from '../../types/navigation';
 
-const { width } = Dimensions.get('window');
+const HOME_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000;
+
+type WeatherCacheEntry = {
+  timestamp: number;
+  data: any;
+};
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const { currentPlanLabel } = useSubscription();
+
   const [profile, setProfile] = useState<any>(null);
   const [hives, setHives] = useState(0);
   const [apiaries, setApiaries] = useState(0);
-  const [pendingTasks, setPendingTasks] = useState(0);
-  const [harvestingApiaries, setHarvestingApiaries] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<any>(null);
@@ -37,93 +57,115 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [syncQueueItems, setSyncQueueItems] = useState<OfflineQueueItemSummary[]>([]);
   const [syncModalVisible, setSyncModalVisible] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const hasLoadedOnceRef = useRef(false);
 
-  const fetchWeather = useCallback(async () => {
+  const getCachedWeather = useCallback(async (): Promise<WeatherCacheEntry | null> => {
     try {
-      let currentLocation = location;
+      const cached = await AsyncStorage.getItem('@weather_cache');
+      if (!cached) {
+        return null;
+      }
 
-      if (!currentLocation) {
-        try {
-          let { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
-            currentLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            setLocation(currentLocation);
-          }
-        } catch (e) {
-          logger.warn('[HomeScreen] Location service unavailable, using mock location');
-        }
+      const parsed = JSON.parse(cached);
+      if (parsed?.data && typeof parsed?.timestamp === 'number') {
+        return parsed as WeatherCacheEntry;
+      }
 
-        if (!currentLocation) {
-          // Mock location (Buenos Aires)
-          currentLocation = {
-            coords: {
-              latitude: -34.6037,
-              longitude: -58.3816,
-            }
-          };
+      return {
+        timestamp: 0,
+        data: parsed,
+      };
+    } catch (error) {
+      logger.warn('[HomeScreen] Error leyendo cache de clima:', error);
+      return null;
+    }
+  }, []);
+
+  const resolveLocation = useCallback(async () => {
+    if (location) {
+      return location;
+    }
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setLocation(currentLocation);
+        return currentLocation;
+      }
+    } catch (error) {
+      logger.warn('[HomeScreen] Location service unavailable, using fallback location', error);
+    }
+
+    return {
+      coords: {
+        latitude: -34.6037,
+        longitude: -58.3816,
+      },
+    };
+  }, [location]);
+
+  const fetchWeather = useCallback(async (forceRefresh = false) => {
+    try {
+      if (!forceRefresh) {
+        const cachedWeather = await getCachedWeather();
+        if (cachedWeather && Date.now() - cachedWeather.timestamp < WEATHER_CACHE_TTL_MS) {
+          setWeather(cachedWeather.data);
+          setErrorMsg(null);
+          setWeatherLoading(false);
+          return;
         }
       }
 
+      const currentLocation = await resolveLocation();
       const { latitude: lat, longitude: lon } = currentLocation.coords;
 
       const response = await fetch(`${BASE_URL}weather?lat=${lat}&lon=${lon}&lang=es`);
       const data = await response.json();
 
       try {
-        await AsyncStorage.setItem('@weather_cache', JSON.stringify(data));
-      } catch (e) { }
+        await AsyncStorage.setItem('@weather_cache', JSON.stringify({
+          timestamp: Date.now(),
+          data,
+        }));
+      } catch (error) {
+        logger.warn('[HomeScreen] No se pudo guardar el clima en cache', error);
+      }
 
       setWeather(data);
       setErrorMsg(null);
     } catch (error) {
       logger.error('[HomeScreen] Error fetching weather:', error);
 
-      try {
-        const cached = await AsyncStorage.getItem('@weather_cache');
-        if (cached) {
-          logger.info('[HomeScreen] Usando clima desde caché');
-          setWeather(JSON.parse(cached));
-          setWeatherLoading(false);
-          return;
-        }
-      } catch (e) { }
-
-      setErrorMsg('Error al obtener el clima.');
+      const cachedWeather = await getCachedWeather();
+      if (cachedWeather?.data) {
+        logger.info('[HomeScreen] Usando clima desde cache');
+        setWeather(cachedWeather.data);
+      } else {
+        setErrorMsg('Error al obtener el clima.');
+      }
     } finally {
       setWeatherLoading(false);
     }
-  }, [location]);
+  }, [getCachedWeather, resolveLocation]);
 
-  const fetchUserInfo = useCallback(async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const [countFetched, profileFetched, tasksFetched, harvestingCountFetched] = await Promise.all([
-        getApiaryAndHivesCount(),
-        getProfile(),
-        getTasks(),
-        getHarvestingCount(),
-      ]);
-
-      if (countFetched) {
-        setHives(countFetched.hiveCount);
-        setApiaries(countFetched.apiaryCount);
-      }
-
-      if (profileFetched) {
-        setProfile(profileFetched);
-      }
-
-      if (tasksFetched) {
-        setPendingTasks(tasksFetched.filter(task => !task.completed).length);
-      }
-
-      if (typeof harvestingCountFetched === 'number') {
-        setHarvestingApiaries(harvestingCountFetched);
+      const summary = await getDashboardSummary();
+      if (summary) {
+        setProfile(summary);
+        setHives(summary.hiveCount);
+        setApiaries(summary.apiaryCount);
+        setUnreadNotifications(summary.unreadNotificationCount || 0);
       }
     } catch (error) {
-      logger.error('[HomeScreen] Error fetching user info:', error);
+      logger.error('[HomeScreen] Error fetching dashboard summary:', error);
     } finally {
       setLoading(false);
     }
@@ -138,55 +180,100 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       setSyncStatus(status);
       setSyncQueueItems(summaries);
     } catch (error) {
-      logger.warn('[HomeScreen] Error obteniendo estado de sincronización:', error);
+      logger.warn('[HomeScreen] Error obteniendo estado de sincronizacion:', error);
     }
   }, []);
 
-  const loadData = useCallback(async (showRefreshing = false) => {
+  const loadData = useCallback(async ({
+    showRefreshing = false,
+    syncOffline = false,
+    forceWeatherRefresh = false,
+  }: {
+    showRefreshing?: boolean;
+    syncOffline?: boolean;
+    forceWeatherRefresh?: boolean;
+  } = {}) => {
     if (showRefreshing) {
       setRefreshing(true);
     }
 
-    try {
-      await syncPendingRequests();
-    } catch (e) {
-      logger.warn('[HomeScreen] Error en sincronización:', e);
+    if (syncOffline) {
+      try {
+        await syncPendingRequests();
+      } catch (error) {
+        logger.warn('[HomeScreen] Error en sincronizacion:', error);
+      }
     }
 
     await Promise.all([
       loadSyncStatus(),
-      fetchUserInfo(),
-      fetchWeather()
+      fetchDashboardData(),
+      fetchWeather(forceWeatherRefresh),
     ]);
 
     if (showRefreshing) {
       setRefreshing(false);
     }
-  }, [fetchUserInfo, fetchWeather, loadSyncStatus]);
+  }, [fetchDashboardData, fetchWeather, loadSyncStatus]);
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (isFocused) {
-      logger.debug('[HomeScreen] Pantalla enfocada, actualizando datos...');
-      loadData();
+    if (!isFocused) {
+      return;
     }
+
+    logger.debug('[HomeScreen] Pantalla enfocada, actualizando datos...');
+    const isFirstLoad = !hasLoadedOnceRef.current;
+    hasLoadedOnceRef.current = true;
+
+    loadData({
+      syncOffline: isFirstLoad,
+      forceWeatherRefresh: isFirstLoad,
+    });
   }, [isFocused, loadData]);
 
   useEffect(() => {
+    if (!isFocused) {
+      return;
+    }
+
     const interval = setInterval(() => {
-      if (isFocused) {
-        loadData();
-      }
-    }, 30000);
+      loadData();
+    }, HOME_REFRESH_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, [isFocused, loadData]);
 
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnim]);
+
   const onRefresh = useCallback(() => {
-    loadData(true);
+    loadData({
+      showRefreshing: true,
+      syncOffline: true,
+      forceWeatherRefresh: true,
+    });
   }, [loadData]);
 
   const formatRetryText = (timestamp?: number) => {
@@ -224,8 +311,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         return 'Eliminar apiario';
       case 'updateSettings':
         return 'Actualizar configuracion';
-      case 'toggleHarvestAll':
-        return 'Cambiar cosecha global';
       case 'createTask':
         return 'Crear tarea';
       case 'updateTask':
@@ -249,36 +334,10 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     }
   }, [loadSyncStatus]);
 
-  // Animations
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.3,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [pulseAnim]);
-
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#f59e0b" />
+        <ActivityIndicator size="large" color={colors.WARNING_COLOR} />
         <Text style={styles.loadingText}>Cargando tu dashboard...</Text>
       </View>
     );
@@ -294,12 +353,11 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#f59e0b"
-            colors={['#f59e0b']}
+            tintColor={colors.WARNING_COLOR}
+            colors={[colors.WARNING_COLOR]}
           />
         }
       >
-        {/* Header */}
         <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
           <View>
             <View style={styles.greetingContainer}>
@@ -307,242 +365,179 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
               <Text style={styles.greetingSubtitle}>{getGreetingMessage()}</Text>
             </View>
             <Text style={styles.userName}>
-              {profile ? `${capitalizeFirstLetter(profile.name)} ${capitalizeFirstLetter(profile.surname)}` : 'Apicultor Profesional'}
+              {profile
+                ? `${capitalizeFirstLetter(profile.name)} ${capitalizeFirstLetter(profile.surname)}`
+                : 'Apicultor Profesional'}
             </Text>
-            <Text style={styles.userRole}>Apicultor Profesional</Text>
-            {syncStatus.pendingCount > 0 && (
-              <TouchableOpacity
-                style={[
-                  styles.syncBadge,
-                  syncStatus.retryingCount > 0 ? styles.syncBadgeRetrying : styles.syncBadgePending,
-                ]}
-                onPress={() => setSyncModalVisible(true)}
-                activeOpacity={0.85}
-              >
-                <MaterialIcons
-                  name={syncStatus.retryingCount > 0 ? 'sync-problem' : 'cloud-upload'}
-                  size={14}
-                  color={syncStatus.retryingCount > 0 ? '#92400e' : '#14532d'}
-                />
-                <Text
-                  style={[
-                    styles.syncBadgeText,
-                    syncStatus.retryingCount > 0 ? styles.syncBadgeTextRetrying : styles.syncBadgeTextPending,
-                  ]}
-                >
-                  {syncStatus.pendingCount} cambio{syncStatus.pendingCount === 1 ? '' : 's'} pendiente{syncStatus.pendingCount === 1 ? '' : 's'}
-                </Text>
-                {syncStatus.retryingCount > 0 && (
-                  <Text style={styles.syncBadgeSubtext}>
-                    {formatRetryText(syncStatus.nextRetryAt)}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            )}
+            <Text style={styles.userRole}>{`Plan actual: ${currentPlanLabel}`}</Text>
           </View>
           <TouchableOpacity
             style={styles.bellButton}
             onPress={() => navigation.navigate('NotificationScreen')}
             activeOpacity={0.7}
           >
-            <FontAwesome5 name="bell" size={18} color="#64748b" />
-            <View style={styles.bellBadge} />
+            <FontAwesome5 name="bell" size={18} color={colors.TEXT_SECONDARY} />
+            {unreadNotifications > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadNotifications > 9 ? '9+' : unreadNotifications}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Stats Overview */}
         <Animated.View style={[styles.statsCard, { opacity: fadeAnim }]}>
           <View style={styles.statsHeader}>
             <Text style={styles.statsTitle}>Resumen</Text>
-            <Text style={styles.statsUpdate}>{formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}</Text>
           </View>
 
           <View style={styles.statsRow}>
-            {/* Apiarios */}
-            <View style={styles.statBox}>
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}
+              activeOpacity={0.8}
+            >
               <View style={styles.statLabelRow}>
-                <FontAwesome5 name="map-marker-alt" size={12} color="#64748b" solid />
+                <MaterialCommunityIcons name="beehive-outline" size={13} color={colors.TEXT_SECONDARY} />
                 <Text style={styles.statLabel}>Apiarios</Text>
               </View>
               <Text style={styles.statValue}>{apiaries}</Text>
-              <View style={styles.statTrend}>
-                <FontAwesome5 name="arrow-up" size={10} color="#16a34a" />
-                <Text style={styles.statTrendText}>2.4%</Text>
-              </View>
-            </View>
+              <Text style={styles.statSubLabel}>Activos</Text>
+            </TouchableOpacity>
 
             <View style={styles.statDivider} />
 
-            {/* Colmenas */}
-            <View style={styles.statBox}>
+            <TouchableOpacity
+              style={styles.statBox}
+              onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}
+              activeOpacity={0.8}
+            >
               <View style={styles.statLabelRow}>
-                <FontAwesome5 name="layer-group" size={12} color="#64748b" solid />
+                <MaterialCommunityIcons name="hexagon-multiple-outline" size={13} color={colors.TEXT_SECONDARY} />
                 <Text style={styles.statLabel}>Colmenas</Text>
               </View>
               <Text style={styles.statValue}>{hives}</Text>
-              <View style={styles.statTrend}>
-                <FontAwesome5 name="arrow-up" size={10} color="#16a34a" />
-                <Text style={styles.statTrendText}>+12</Text>
-              </View>
-            </View>
+              <Text style={styles.statSubLabel}>Activas</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Weather Mini */}
           <View style={styles.weatherMini}>
-            <View style={styles.weatherLeft}>
-              {weatherLoading ? (
-                <ActivityIndicator size="small" color="#94a3b8" />
-              ) : weather ? (
-                <>
-                  {weather.current.condition.icon ? (
-                    <Image source={{ uri: `http:${weather.current.condition.icon}` }} style={styles.weatherIcon} />
-                  ) : (
-                    <Text style={{ fontSize: 24 }}>⛅</Text>
-                  )}
-                  <View style={{ marginLeft: 12 }}>
-                    <Text style={styles.weatherTemp}>{weather.current.temp_c}°C</Text>
-                    <Text style={styles.weatherDesc}>{weather.current.condition.text || 'Parcialmente nublado'}</Text>
-                    <Text style={styles.weatherFeelsLike}>ST: {weather.current.feelslike_c}°C</Text>
+            <Text style={styles.statsTitle}>Clima</Text>
+            <View style={styles.weatherRow}>
+              <View style={styles.weatherLeft}>
+                {weatherLoading ? (
+                  <ActivityIndicator size="small" color={colors.TEXT_TERTIARY} />
+                ) : weather?.current ? (
+                  <>
+                    {weather.current.condition?.icon ? (
+                      <Image source={{ uri: `http:${weather.current.condition.icon}` }} style={styles.weatherIcon} />
+                    ) : (
+                      <Text style={styles.weatherEmoji}>☁</Text>
+                    )}
+                    <View style={styles.weatherTextStack}>
+                      <Text style={styles.weatherTemp}>{weather.current.temp_c}°C</Text>
+                      <Text style={styles.weatherDesc}>{weather.current.condition?.text || 'Parcialmente nublado'}</Text>
+                      <Text style={styles.weatherFeelsLike}>ST: {weather.current.feelslike_c}°C</Text>
+                    </View>
+                  </>
+                ) : (
+                  <Text style={styles.errorText}>{errorMsg || 'Sin datos de clima'}</Text>
+                )}
+              </View>
+
+              {weather?.current && !weatherLoading && (
+                <View style={styles.weatherRight}>
+                  <View style={styles.weatherDetails}>
+                    <View style={styles.weatherDetailItem}>
+                      <FontAwesome5 name="tint" size={10} color={colors.HONEY[400]} solid />
+                      <Text style={styles.weatherDetailText}>{weather.current.humidity}%</Text>
+                    </View>
+                    <View style={styles.weatherDetailItem}>
+                      <FontAwesome5 name="wind" size={10} color={colors.TEXT_TERTIARY} solid />
+                      <Text style={styles.weatherDetailText}>{weather.current.wind_kph}km/h</Text>
+                    </View>
                   </View>
-                </>
-              ) : (
-                <Text style={styles.errorText}>{errorMsg || 'Sin clima'}</Text>
+                  <View style={styles.weatherHealth}>
+                    <View
+                      style={[
+                        styles.healthDot,
+                        { backgroundColor: (weather.current.uv ?? 0) > 5 ? colors.DANGER : colors.SUCCESS },
+                      ]}
+                    />
+                    <Text style={styles.healthText}>Indice UV: {weather.current.uv}</Text>
+                  </View>
+                </View>
               )}
             </View>
-
-            {weather && !weatherLoading && (
-              <View style={styles.weatherRight}>
-                <View style={styles.weatherDetails}>
-                  <View style={styles.weatherDetailItem}>
-                    <FontAwesome5 name="tint" size={10} color="#60a5fa" solid />
-                    <Text style={styles.weatherDetailText}>{weather.current.humidity}%</Text>
-                  </View>
-                  <View style={styles.weatherDetailItem}>
-                    <FontAwesome5 name="wind" size={10} color="#94a3b8" solid />
-                    <Text style={styles.weatherDetailText}>{weather.current.wind_kph}km/h</Text>
-                  </View>
-                </View>
-                <View style={styles.weatherHealth}>
-                  <View style={[styles.healthDot, { backgroundColor: weather.current.uv > 5 ? '#ef4444' : '#22c55e' }]} />
-                  <Text style={styles.healthText}>Índice UV: {weather.current.uv}</Text>
-                </View>
-              </View>
-            )}
           </View>
         </Animated.View>
 
         <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Estado Operativo</Text>
-            <Text style={styles.sectionCaption}>Panel rapido del dia</Text>
-          </View>
-
-          <View style={styles.operationalGrid}>
-            <View style={styles.operationalCard}>
-              <View style={[styles.operationalIcon, { backgroundColor: '#ecfdf5' }]}>
-                <FontAwesome5 name="check-circle" size={16} color="#059669" solid />
-              </View>
-              <Text style={styles.operationalLabel}>Tareas pendientes</Text>
-              <Text style={styles.operationalValue}>{pendingTasks}</Text>
-              <Text style={styles.operationalHint}>
-                {pendingTasks === 0 ? 'Todo al dia' : 'Requieren seguimiento'}
-              </Text>
-            </View>
-
-            <View style={styles.operationalCard}>
-              <View style={[styles.operationalIcon, { backgroundColor: '#fff7ed' }]}>
-                <FontAwesome5 name="seedling" size={16} color="#d97706" solid />
-              </View>
-              <Text style={styles.operationalLabel}>Apiarios en cosecha</Text>
-              <Text style={styles.operationalValue}>{harvestingApiaries}</Text>
-              <Text style={styles.operationalHint}>
-                {harvestingApiaries === 0 ? 'Sin actividad de cosecha' : 'Con actividad actual'}
-              </Text>
-            </View>
-
-            <View style={styles.operationalCardWide}>
-              <View style={styles.operationalWideHeader}>
-                <View style={[styles.operationalIcon, { backgroundColor: syncStatus.pendingCount > 0 ? '#fef3c7' : '#dcfce7' }]}>
-                  <MaterialIcons
-                    name={syncStatus.pendingCount > 0 ? 'cloud-off' : 'cloud-done'}
-                    size={16}
-                    color={syncStatus.pendingCount > 0 ? '#b45309' : '#15803d'}
-                  />
-                </View>
-                <View style={styles.operationalWideText}>
-                  <Text style={styles.operationalLabel}>Estado de sincronizacion</Text>
-                  <Text style={styles.operationalValueInline}>
-                    {syncStatus.pendingCount > 0
-                      ? `${syncStatus.pendingCount} pendientes`
-                      : 'Todo sincronizado'}
-                  </Text>
-                </View>
-              </View>
-              <Text style={styles.operationalHint}>
-                {syncStatus.pendingCount > 0
-                  ? (formatRetryText(syncStatus.nextRetryAt) || 'Listo para sincronizar')
-                  : formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}
-              </Text>
-              <TouchableOpacity
-                style={styles.operationalAction}
-                onPress={() => setSyncModalVisible(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.operationalActionText}>Ver detalle</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Quick Access */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
-          <Text style={styles.sectionTitle}>Accesos Rápidos</Text>
+          <Text style={styles.sectionTitle}>Accesos Rapidos</Text>
           <View style={styles.menuGrid}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#fffbeb' }]}>
-                <FontAwesome5 name="database" size={18} color="#d97706" />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="beehive-outline" size={22} color={colors.SLATE[700]} />
               </View>
               <Text style={styles.menuItemText}>Apiarios</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#f1f5f9' }]}>
-                <FontAwesome5 name="qrcode" size={18} color="#475569" />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="qrcode-scan" size={22} color={colors.SLATE[700]} />
               </View>
               <Text style={styles.menuItemText}>Escanear</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('TasksScreen')} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#ecfdf5' }]}>
-                <FontAwesome5 name="check-square" size={18} color="#059669" solid />
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="clipboard-check-outline" size={22} color={colors.SLATE[700]} />
               </View>
               <Text style={styles.menuItemText}>Tareas</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#eff6ff' }]}>
-                <FontAwesome5 name="chart-bar" size={18} color="#2563eb" solid />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="chart-bell-curve-cumulative" size={22} color={colors.SLATE[700]} />
               </View>
               <Text style={styles.menuItemText}>Datos</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Guides', { screen: 'GuidesListScreen' })} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#fff1f2' }]}>
-                <FontAwesome5 name="book-open" size={18} color="#e11d48" solid />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Guides', { screen: 'GuidesListScreen' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="book-open-page-variant-outline" size={22} color={colors.SLATE[700]} />
               </View>
-              <Text style={styles.menuItemText}>Guías</Text>
+              <Text style={styles.menuItemText}>Guias</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })} activeOpacity={0.7}>
-              <View style={[styles.iconBox, { backgroundColor: '#f1f5f9' }]}>
-                <FontAwesome5 name="cog" size={18} color="#475569" solid />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.iconBox}>
+                <MaterialCommunityIcons name="account-circle-outline" size={22} color={colors.SLATE[700]} />
               </View>
-              <Text style={styles.menuItemText}>Ajustes</Text>
+              <Text style={styles.menuItemText}>Perfil</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
 
-        {/* AI Assistant */}
         <Animated.View style={[styles.aiCard, { opacity: fadeAnim }]}>
           <View style={styles.aiContent}>
             <View style={styles.aiIconWrapper}>
@@ -561,7 +556,9 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
                   <Text style={styles.betaText}>BETA</Text>
                 </View>
               </View>
-              <Text style={styles.aiSubtitle}>Resuelve dudas sobre apicultura, enfermedades y manejo en tiempo real.</Text>
+              <Text style={styles.aiSubtitle}>
+                Resuelve dudas sobre apicultura, enfermedades y manejo en tiempo real.
+              </Text>
             </View>
           </View>
           <TouchableOpacity
@@ -569,7 +566,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
             onPress={() => navigation.navigate('AIChatScreen')}
             activeOpacity={0.8}
           >
-            <FontAwesome5 name="comment-dots" size={16} color="#d97706" style={{ marginRight: 8 }} solid />
+            <FontAwesome5 name="comment-dots" size={16} color={colors.ORANGE} style={{ marginRight: 8 }} solid />
             <Text style={styles.aiButtonText}>Iniciar chat</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -581,25 +578,18 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         animationType="fade"
         onRequestClose={() => setSyncModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.syncModalOverlay}
-          activeOpacity={1}
-          onPress={() => setSyncModalVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.syncModalCard}
-            activeOpacity={1}
-            onPress={() => { }}
-          >
+        <TouchableOpacity style={styles.syncModalOverlay} activeOpacity={1} onPress={() => setSyncModalVisible(false)}>
+          <TouchableOpacity style={styles.syncModalCard} activeOpacity={1} onPress={() => { }}>
             <View style={styles.syncModalHeader}>
               <View>
                 <Text style={styles.syncModalTitle}>Sincronizacion offline</Text>
                 <Text style={styles.syncModalSubtitle}>
-                  {syncStatus.pendingCount} cambio{syncStatus.pendingCount === 1 ? '' : 's'} pendiente{syncStatus.pendingCount === 1 ? '' : 's'}
+                  {syncStatus.pendingCount} cambio{syncStatus.pendingCount === 1 ? '' : 's'} pendiente
+                  {syncStatus.pendingCount === 1 ? '' : 's'}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setSyncModalVisible(false)} activeOpacity={0.7}>
-                <MaterialIcons name="close" size={20} color="#64748b" />
+                <MaterialIcons name="close" size={20} color={colors.TEXT_SECONDARY} />
               </TouchableOpacity>
             </View>
 
@@ -610,15 +600,15 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
               </View>
               <View style={styles.syncSummaryItem}>
                 <Text style={styles.syncSummaryLabel}>Proximo retry</Text>
-                <Text style={styles.syncSummaryValueSmall}>{formatRetryText(syncStatus.nextRetryAt) || 'Disponible ahora'}</Text>
+                <Text style={styles.syncSummaryValueSmall}>
+                  {formatRetryText(syncStatus.nextRetryAt) || 'Disponible ahora'}
+                </Text>
               </View>
             </View>
 
             <View style={styles.syncLastSuccessRow}>
-              <MaterialIcons name="cloud-done" size={15} color="#14532d" />
-              <Text style={styles.syncLastSuccessText}>
-                {formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}
-              </Text>
+              <MaterialIcons name="cloud-done" size={15} color={colors.SUCCESS_DARK} />
+              <Text style={styles.syncLastSuccessText}>{formatLastSyncText(syncStatus.lastSuccessfulSyncAt)}</Text>
             </View>
 
             {syncStatus.lastError && (
@@ -633,7 +623,19 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
                 <View key={item.id} style={styles.syncItemCard}>
                   <View style={styles.syncItemTopRow}>
                     <Text style={styles.syncItemTitle}>{formatQueueType(item.type)}</Text>
-                    <Text style={styles.syncItemAttempts}>Intentos: {item.attempts}</Text>
+                    <View style={styles.syncItemActions}>
+                      <Text style={styles.syncItemAttempts}>Intentos: {item.attempts}</Text>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          await removeFromQueue(item.id);
+                          await loadSyncStatus();
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.syncItemCancelBtn}
+                      >
+                        <MaterialIcons name="close" size={14} color={colors.DANGER} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   <Text style={styles.syncItemMeta}>
                     {item.nextRetryAt ? formatRetryText(item.nextRetryAt) : 'Listo para sincronizar'}
@@ -654,10 +656,10 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
               activeOpacity={0.8}
             >
               {syncingNow ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={colors.WHITE} />
               ) : (
                 <>
-                  <MaterialIcons name="sync" size={16} color="#ffffff" />
+                  <MaterialIcons name="sync" size={16} color={colors.WHITE} />
                   <Text style={styles.syncNowButtonText}>Sincronizar ahora</Text>
                 </>
               )}
@@ -666,36 +668,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Bottom Navigation */}
-      <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-        <View style={styles.bottomNavItems}>
-          <TouchableOpacity style={styles.navItem} onPress={() => { }} activeOpacity={0.7}>
-            <FontAwesome5 name="home" size={18} color="#0f172a" solid />
-            <Text style={[styles.navItemText, styles.navItemActive]}>Inicio</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })} activeOpacity={0.7}>
-            <FontAwesome5 name="database" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Apiarios</Text>
-          </TouchableOpacity>
-
-          <View style={styles.fabWrapper}>
-            <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })} activeOpacity={0.8}>
-              <FontAwesome5 name="camera" size={18} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })} activeOpacity={0.7}>
-            <FontAwesome5 name="chart-pie" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Stats</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })} activeOpacity={0.7}>
-            <FontAwesome5 name="user" size={18} color="#94a3b8" solid />
-            <Text style={styles.navItemText}>Perfil</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <BottomNavBar navigation={navigation} active="home" />
     </View>
   );
 };
@@ -703,18 +676,18 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.BG_APP,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fafaf9',
+    backgroundColor: colors.BG_APP,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     fontWeight: '500',
   },
   container: {
@@ -736,253 +709,74 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22c55e',
+    backgroundColor: colors.SUCCESS,
     marginRight: 8,
   },
   greetingSubtitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   userName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
     letterSpacing: -0.5,
   },
   userRole: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     marginTop: 2,
-  },
-  syncBadge: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  syncBadgePending: {
-    backgroundColor: '#dcfce7',
-  },
-  syncBadgeRetrying: {
-    backgroundColor: '#fef3c7',
-  },
-  syncBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  syncBadgeTextPending: {
-    color: '#14532d',
-  },
-  syncBadgeTextRetrying: {
-    color: '#92400e',
-  },
-  syncBadgeSubtext: {
-    fontSize: 11,
-    color: '#92400e',
-    marginLeft: 8,
-  },
-  syncModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  syncModalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
-    maxHeight: '78%',
-  },
-  syncModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  syncModalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  syncModalSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#64748b',
-  },
-  syncSummaryRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  syncLastSuccessRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 2,
-  },
-  syncLastSuccessText: {
-    marginLeft: 8,
-    fontSize: 12,
-    color: '#14532d',
-    fontWeight: '600',
-  },
-  syncSummaryItem: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  syncSummaryLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  syncSummaryValue: {
-    marginTop: 6,
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  syncSummaryValueSmall: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#0f172a',
-  },
-  syncErrorBox: {
-    backgroundColor: '#fff7ed',
-    borderWidth: 1,
-    borderColor: '#fed7aa',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  syncErrorLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9a3412',
-    textTransform: 'uppercase',
-  },
-  syncErrorText: {
-    marginTop: 6,
-    fontSize: 12,
-    color: '#9a3412',
-  },
-  syncItemsList: {
-    maxHeight: 260,
-    marginBottom: 16,
-  },
-  syncItemCard: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 10,
-  },
-  syncItemTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  syncItemTitle: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginRight: 8,
-  },
-  syncItemAttempts: {
-    fontSize: 11,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  syncItemMeta: {
-    marginTop: 6,
-    fontSize: 12,
-    color: '#334155',
-  },
-  syncItemError: {
-    marginTop: 6,
-    fontSize: 11,
-    color: '#b45309',
-  },
-  syncNowButton: {
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#0f172a',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
-  },
-  syncNowButtonDisabled: {
-    opacity: 0.7,
-  },
-  syncNowButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
   },
   bellButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
     justifyContent: 'center',
     alignItems: 'center',
   },
   bellBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    backgroundColor: '#ef4444',
-    borderRadius: 4,
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: colors.DANGER,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#ffffff',
+    borderColor: colors.WHITE,
+  },
+  bellBadgeText: {
+    color: colors.WHITE,
+    fontSize: 9,
+    fontWeight: '700',
   },
   statsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderRadius: 16,
-    padding: 20,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: colors.BORDER,
+    marginBottom: 16,
   },
   statsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
   },
   statsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
-  },
-  statsUpdate: {
-    fontSize: 12,
-    color: '#94a3b8',
+    color: colors.TEXT_PRIMARY,
   },
   statsRow: {
     flexDirection: 'row',
@@ -999,69 +793,76 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     marginLeft: 8,
   },
   statValue: {
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
-    letterSpacing: -1,
+    color: colors.TEXT_PRIMARY,
+    letterSpacing: -0.5,
   },
-  statTrend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  statTrendText: {
+  statSubLabel: {
     fontSize: 10,
-    color: '#16a34a',
-    marginLeft: 4,
+    color: colors.TEXT_TERTIARY,
+    marginTop: 2,
     fontWeight: '500',
   },
   statDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.BG_INPUT,
     marginHorizontal: 16,
   },
   weatherMini: {
+    flexDirection: 'column',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.BG_INPUT,
+    gap: 8,
+  },
+  weatherRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
   },
   weatherLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
   },
   weatherIcon: {
     width: 40,
     height: 40,
   },
+  weatherEmoji: {
+    fontSize: 24,
+  },
+  weatherTextStack: {
+    marginLeft: 12,
+  },
   weatherTemp: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
   },
   weatherDesc: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
   },
   weatherFeelsLike: {
     fontSize: 10,
-    color: '#94a3b8',
+    color: colors.TEXT_TERTIARY,
     marginTop: 1,
   },
   errorText: {
     fontSize: 12,
-    color: '#ef4444',
+    color: colors.DANGER,
   },
   weatherRight: {
     alignItems: 'flex-end',
+    marginLeft: 12,
   },
   weatherDetails: {
     flexDirection: 'row',
@@ -1074,7 +875,7 @@ const styles = StyleSheet.create({
   },
   weatherDetailText: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.TEXT_SECONDARY,
     marginLeft: 4,
   },
   weatherHealth: {
@@ -1086,112 +887,21 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#22c55e',
     marginRight: 4,
   },
   healthText: {
     fontSize: 10,
-    color: '#16a34a',
+    color: colors.SUCCESS_TEXT,
     fontWeight: '500',
   },
   section: {
     marginBottom: 0,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.TEXT_PRIMARY,
     marginBottom: 8,
-  },
-  sectionCaption: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '600',
-  },
-  operationalGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  operationalCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: 16,
-    marginBottom: 12,
-  },
-  operationalCardWide: {
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    padding: 16,
-    marginBottom: 8,
-  },
-  operationalIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  operationalLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    fontWeight: '600',
-  },
-  operationalValue: {
-    marginTop: 8,
-    fontSize: 28,
-    color: '#0f172a',
-    fontWeight: '700',
-    letterSpacing: -0.8,
-  },
-  operationalValueInline: {
-    marginTop: 2,
-    fontSize: 16,
-    color: '#0f172a',
-    fontWeight: '700',
-  },
-  operationalHint: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#64748b',
-    lineHeight: 18,
-  },
-  operationalWideHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  operationalWideText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  operationalAction: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  operationalActionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#334155',
   },
   menuGrid: {
     flexDirection: 'row',
@@ -1201,51 +911,55 @@ const styles = StyleSheet.create({
   menuItem: {
     width: '31%',
     aspectRatio: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.WHITE,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.BORDER,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+    backgroundColor: colors.SLATE[100],
+    borderWidth: 1,
+    borderColor: '#ede9e3',
   },
   menuItemText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#334155',
+    color: colors.TEXT_DARK,
   },
   aiCard: {
-    backgroundColor: '#0f172a',
+    backgroundColor: colors.WHITE,
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    marginTop: -8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#ede9e3',
   },
   aiContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   aiIconWrapper: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+    borderRadius: 12,
+    backgroundColor: colors.SLATE[100],
     padding: 2,
-    marginRight: 16,
+    marginRight: 14,
   },
   aiIconInner: {
     flex: 1,
-    backgroundColor: '#0f172a',
-    borderRadius: 22,
+    backgroundColor: colors.SLATE[100],
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -1265,97 +979,202 @@ const styles = StyleSheet.create({
   aiTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: colors.SLATE[900],
   },
   betaPill: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    backgroundColor: colors.SLATE[100],
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     marginLeft: 8,
+    borderWidth: 1,
+    borderColor: colors.SLATE[200],
   },
   betaText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#fbbf24',
+    color: colors.SLATE[500],
   },
   aiSubtitle: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.SLATE[400],
     lineHeight: 18,
   },
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.SLATE[900],
     paddingVertical: 12,
     borderRadius: 12,
   },
   aiButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.WHITE,
   },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 8,
-      }
-    })
+  syncModalOverlay: {
+    flex: 1,
+    backgroundColor: colors.OVERLAY_DARK,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
-  bottomNavItems: {
+  syncModalCard: {
+    backgroundColor: colors.WHITE,
+    borderRadius: 20,
+    padding: 20,
+    maxHeight: '78%',
+  },
+  syncModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  syncModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
+  },
+  syncModalSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.TEXT_SECONDARY,
+  },
+  syncSummaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  syncSummaryItem: {
+    flex: 1,
+    backgroundColor: colors.BG_CARD,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+  },
+  syncSummaryLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.TEXT_SECONDARY,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  syncSummaryValue: {
+    marginTop: 6,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
+  },
+  syncSummaryValueSmall: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.TEXT_PRIMARY,
+  },
+  syncLastSuccessRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 2,
+  },
+  syncLastSuccessText: {
+    marginLeft: 8,
+    fontSize: 12,
+    color: colors.SUCCESS_DARK,
+    fontWeight: '600',
+  },
+  syncErrorBox: {
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  syncErrorLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.WARNING_DARKER,
+    textTransform: 'uppercase',
+  },
+  syncErrorText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.WARNING_DARKER,
+  },
+  syncItemsList: {
+    maxHeight: 260,
+    marginBottom: 16,
+  },
+  syncItemCard: {
+    backgroundColor: colors.BG_CARD,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.BORDER,
+    marginBottom: 10,
+  },
+  syncItemTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  navItem: {
+  syncItemTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.TEXT_PRIMARY,
+    marginRight: 8,
+  },
+  syncItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  syncItemAttempts: {
+    fontSize: 11,
+    color: colors.TEXT_SECONDARY,
+    fontWeight: '600',
+  },
+  syncItemCancelBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.DANGER_BG,
+    borderWidth: 1,
+    borderColor: colors.DANGER_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
   },
-  navItemActive: {
-    color: '#0f172a',
+  syncItemMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.TEXT_DARK,
   },
-  navItemText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#94a3b8',
-    marginTop: 4,
+  syncItemError: {
+    marginTop: 6,
+    fontSize: 11,
+    color: colors.HONEY[700],
   },
-  fabWrapper: {
-    top: -16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fab: {
-    width: 48,
+  syncNowButton: {
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#0f172a',
-    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.ORANGE,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  }
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  syncNowButtonDisabled: {
+    opacity: 0.7,
+  },
+  syncNowButtonText: {
+    color: colors.WHITE,
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
 
 export default HomeScreen;

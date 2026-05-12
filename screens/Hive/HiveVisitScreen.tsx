@@ -1,6 +1,6 @@
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 import { View, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, ToastAndroid, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
 import ApiarySlider from '../../components/apiary/apiarySlider';
@@ -9,6 +9,7 @@ import { VoiceNoteRecorder } from "../../components/general/VoiceNoteRecorder";
 import colors from "../../constants/colors";
 import { IHiveData } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
+import { buildHiveHealthPreview } from "../../helpers/Hive/buildHiveHealthPreview";
 import { updateHive, checkHiveNameExists } from "../../modules/API/Hives";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
@@ -91,6 +92,7 @@ function HiveVisitScreen({ route, navigation }: any) {
     
     const [hiveStatus, setHiveStatus] = useState(hiveInfo ? getStatusValue(hiveInfo.status) : 0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const healthPreview = useMemo(() => buildHiveHealthPreview(hiveData), [hiveData]);
 
     const handleChangeData = (value: string | number | boolean, field: keyof IHiveData) => {
         setHiveData((prevState) => ({
@@ -123,6 +125,34 @@ function HiveVisitScreen({ route, navigation }: any) {
             case 3: return 'Excel.';
             default: return '';
         }
+    };
+
+    const getHealthTone = () => {
+        if (healthPreview.status === 'critica') {
+            return {
+                background: colors.DANGER_BG,
+                border: colors.DANGER_BORDER,
+                badge: colors.DANGER,
+                badgeText: colors.WHITE,
+                title: 'Crítica',
+            };
+        }
+        if (healthPreview.status === 'atencion') {
+            return {
+                background: colors.WARNING_BG,
+                border: colors.WARNING_BG_LIGHT,
+                badge: colors.WARNING_COLOR,
+                badgeText: colors.WHITE,
+                title: 'Atención',
+            };
+        }
+        return {
+            background: colors.SUCCESS_BG,
+            border: '#86efac',
+            badge: colors.SUCCESS,
+            badgeText: colors.WHITE,
+            title: 'Estable',
+        };
     };
 
     const handleSubmit = async () => {
@@ -216,6 +246,35 @@ function HiveVisitScreen({ route, navigation }: any) {
                     </View>
                 </View>
                 <View style={styles.hiveInfo}>
+                    <View style={[styles.healthPreviewCard, { backgroundColor: getHealthTone().background, borderColor: getHealthTone().border }]}>
+                        <View style={styles.healthPreviewHeader}>
+                            <View>
+                                <Text style={styles.healthPreviewLabel}>Resumen sanitario</Text>
+                                <Text style={styles.healthPreviewScore}>{healthPreview.score}/100</Text>
+                            </View>
+                            <View style={[styles.healthPreviewBadge, { backgroundColor: getHealthTone().badge }]}>
+                                <Text style={[styles.healthPreviewBadgeText, { color: getHealthTone().badgeText }]}>
+                                    {getHealthTone().title}
+                                </Text>
+                            </View>
+                        </View>
+                        {healthPreview.alerts.length > 0 ? (
+                            <View style={styles.healthPreviewAlerts}>
+                                {healthPreview.alerts.slice(0, 3).map((alert, index) => (
+                                    <Text key={`${alert}-${index}`} style={styles.healthPreviewAlertText}>
+                                        • {alert}
+                                    </Text>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.healthPreviewStableText}>Sin alertas fuertes con los datos cargados.</Text>
+                        )}
+                        {healthPreview.recommendedActions.length > 0 && (
+                            <Text style={styles.healthPreviewAction}>
+                                Próximo paso: {healthPreview.recommendedActions[0]}
+                            </Text>
+                        )}
+                    </View>
                     <View style={styles.hiveNameContainer}>
                         <TextInput
                             style={styles.hiveInfoName}
@@ -568,6 +627,59 @@ const styles = StyleSheet.create({
     hiveNameContainer: {
         marginVertical: 20,
         width: wp('80%'),
+    },
+    healthPreviewCard: {
+        width: '90%',
+        borderRadius: 14,
+        borderWidth: 1,
+        padding: 16,
+        marginBottom: 10,
+    },
+    healthPreviewHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    healthPreviewLabel: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: colors.TEXT_SECONDARY,
+        textTransform: 'uppercase',
+        letterSpacing: 0.4,
+    },
+    healthPreviewScore: {
+        fontSize: 28,
+        fontWeight: '800',
+        color: colors.TEXT_PRIMARY,
+        marginTop: 4,
+    },
+    healthPreviewBadge: {
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    healthPreviewBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    healthPreviewAlerts: {
+        gap: 4,
+    },
+    healthPreviewAlertText: {
+        fontSize: 13,
+        lineHeight: 18,
+        color: colors.TEXT_DARK,
+    },
+    healthPreviewStableText: {
+        fontSize: 13,
+        color: colors.TEXT_DARK,
+    },
+    healthPreviewAction: {
+        marginTop: 10,
+        fontSize: 12,
+        color: colors.TEXT_SECONDARY,
+        fontWeight: '600',
     },
     hiveInfoName: {
         backgroundColor: '#EEF0F3',

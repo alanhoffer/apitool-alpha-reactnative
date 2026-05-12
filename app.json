@@ -16,7 +16,9 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "usesCleartextTraffic": false
           }
         }
       ],
@@ -53,6 +55,11 @@
       "favicon": "./assets/images/logos/icon-white-yellow.png"
     },
     "extra": {
+      "apiBaseUrl": "http://192.99.145.170:7757/",
+      "subscriptionWebUrl": "https://cabanahofferapp.com.ar/suscripcion",
+      "revenueCatEntitlement": "Apitool Pro",
+      "revenueCatAppleApiKey": "",
+      "revenueCatGoogleApiKey": "",
       "eas": {
         "projectId": "08a09d84-4abe-477b-ba0f-6efb2172acf4"
       }

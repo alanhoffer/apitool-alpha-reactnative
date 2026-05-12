@@ -65,6 +65,9 @@ export type RootStackParamList = {
   Profile: NavigatorScreenParams<any>;
   ProfileScreen: undefined;
   DevicesScreen: undefined;
+  SubscriptionScreen: undefined;
+  SupportLegalScreen: undefined;
+  DeleteAccountScreen: undefined;
   EditProfileScreen: undefined;
   ChangePasswordScreen: undefined;
 
@@ -76,7 +79,7 @@ export type RootStackParamList = {
   AIChatScreen: undefined;
 
   // Tasks
-  TasksScreen: undefined;
+  TasksScreen: { apiaryId?: number; apiaryName?: string } | undefined;
   TaskAddScreen: { task?: any; apiaryId?: number }; // task object if editing, apiaryId if pre-selected
 
   // Guides

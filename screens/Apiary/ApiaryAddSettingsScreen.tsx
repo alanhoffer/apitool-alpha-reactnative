@@ -39,9 +39,8 @@ function ApiaryAddSettingsScreen({ route, navigation }: any) {
                 tAmitraz: false,
                 tFlumetrine: false,
                 tFence: false,
-                tComment: false,
-                harvesting: false,
                 transhumance: false,
+                tasks: false,
                 // Settings individuales
                 queenStatus: false,
                 population: false,
@@ -66,9 +65,8 @@ function ApiaryAddSettingsScreen({ route, navigation }: any) {
                 tAmitraz: false,
                 tFlumetrine: false,
                 tFence: false,
-                tComment: false,
-                harvesting: false,
                 transhumance: false,
+                tasks: false,
             };
         }
     };
@@ -131,9 +129,9 @@ function ApiaryAddSettingsScreen({ route, navigation }: any) {
                     ))}
                 </SettingCategory>
 
-                {/* Harvesting Category */}
+                {/* Harvest Category */}
                 <SettingCategory title="Cosecha">
-                    {categories.harvesting.map((item:UISettingsItem) => (
+                    {categories.harvest.map((item:UISettingsItem) => (
                         <SettingItem
                             key={item.key}
                             icon={item.image}

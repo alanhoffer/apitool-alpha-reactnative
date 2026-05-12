@@ -13,6 +13,6 @@ export type UISettingsItem = UICategoryItem;
 export interface UICategorizedSettings {
     [SettingsCategory.Food]: UICategoryItem[];
     [SettingsCategory.Treatment]: UICategoryItem[];
-    [SettingsCategory.Harvesting]: UICategoryItem[];
+    [SettingsCategory.Harvest]: UICategoryItem[];
     [SettingsCategory.Others]: UICategoryItem[];
 }
