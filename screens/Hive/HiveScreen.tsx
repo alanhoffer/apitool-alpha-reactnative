@@ -11,6 +11,7 @@ import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { getHiveById } from "../../modules/API/Hives";
 import { useIsFocused } from '@react-navigation/native';
+import { palette, fonts } from "../../constants/theme";
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
 import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
@@ -195,7 +196,7 @@ function HiveScreen({ route, navigation }: any) {
                         onPress={() => navigation.navigate('HiveHistoryScreen', { hiveInfo, apiaryInfo })}
                         style={{ paddingHorizontal: 8 }}
                     >
-                        <Text style={{ color: colors.YELLOW, fontSize: 16, fontWeight: '600' }}>Historial</Text>
+                        <Text style={{ color: palette.honeyDark, fontSize: 15, fontFamily: fonts.soraBold }}>Historial</Text>
                     </TouchableOpacity>
                     <HeaderNoIconButton
                         text='Visitar'
@@ -305,7 +306,7 @@ function HiveScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: colors.WHITE,
+        backgroundColor: palette.mist,
         flex: 1,
     },
     container: {
@@ -318,15 +319,15 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     hiveName: {
-        fontSize: 24,
-        fontWeight: '400',
-        color: colors.BLACK,
+        fontSize: 26,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         marginVertical: 5,
     },
     apiaryName: {
-        fontSize: 16,
-        fontWeight: '400',
-        color: colors.GREY,
+        fontSize: 14,
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.slate,
         marginBottom: 10,
     },
     pendingBadge: {
@@ -373,8 +374,8 @@ const styles = StyleSheet.create({
     },
     healthCardScore: {
         fontSize: 28,
-        fontWeight: '800',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         marginTop: 4,
     },
     healthCardBadge: {

@@ -7,6 +7,7 @@ import logger from '../../helpers/logger';
 import { ChangePasswordScreenProps } from '../../types/navigation';
 import { changePassword } from '../../modules/API/User';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { palette, fonts } from '../../constants/theme';
 
 const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -96,7 +97,7 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
             {/* Icon */}
             <View style={styles.iconSection}>
                 <View style={styles.iconCircle}>
-                    <Icon name="lock-closed-outline" size={32} color={colors.SLATE[600]} />
+                    <Icon name="lock-closed-outline" size={30} color={palette.honeyText} />
                 </View>
                 <Text style={styles.iconLabel}>Cambiar contraseña</Text>
                 <Text style={styles.iconSub}>Elige una clave segura para tu cuenta</Text>
@@ -161,7 +162,7 @@ const ChangePasswordScreen = ({ navigation }: ChangePasswordScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     header: {
         flexDirection: 'row',
@@ -171,9 +172,9 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: colors.SLATE[800],
+        fontSize: 18,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     iconSection: {
         alignItems: 'center',
@@ -184,21 +185,20 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: colors.SLATE[100],
-        borderWidth: 1.5,
-        borderColor: colors.SLATE[200],
+        backgroundColor: palette.honeyBg,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 4,
     },
     iconLabel: {
         fontSize: 18,
-        fontWeight: '600',
-        color: colors.SLATE[800],
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     iconSub: {
         fontSize: 13,
-        color: colors.SLATE[400],
+        fontFamily: fonts.manrope,
+        color: palette.slate,
     },
     form: {
         paddingHorizontal: 24,
@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     },
     fieldLabel: {
         fontSize: 13,
-        fontWeight: '500',
-        color: colors.SLATE[500],
+        fontFamily: fonts.soraBold,
+        color: palette.inkMuted,
         marginBottom: 8,
     },
     fieldInput: {
@@ -219,22 +219,23 @@ const styles = StyleSheet.create({
         backgroundColor: colors.WHITE,
         borderRadius: 14,
         borderWidth: 1.5,
-        borderColor: colors.BORDER,
+        borderColor: palette.border,
         paddingHorizontal: 16,
         height: 54,
     },
     fieldInputFocused: {
-        borderColor: colors.SLATE[400],
-        backgroundColor: colors.SLATE[50],
+        borderColor: palette.honey,
+        backgroundColor: '#fff',
     },
     textInput: {
         flex: 1,
         fontSize: 16,
-        color: colors.SLATE[800],
+        fontFamily: fonts.manrope,
+        color: palette.ink,
     },
     separator: {
         height: 1,
-        backgroundColor: '#ede9e3',
+        backgroundColor: palette.borderCool,
         marginVertical: 8,
         marginBottom: 20,
     },
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     saveBtn: {
-        backgroundColor: colors.SLATE[900],
+        backgroundColor: palette.navy,
         height: 54,
         borderRadius: 14,
         alignItems: 'center',
@@ -255,13 +256,13 @@ const styles = StyleSheet.create({
     },
     saveBtnText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: fonts.soraBold,
         color: colors.WHITE,
-        letterSpacing: 0.2,
     },
     cancelText: {
         fontSize: 15,
-        color: colors.SLATE[400],
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.slate,
         textAlign: 'center',
         paddingVertical: 4,
     },

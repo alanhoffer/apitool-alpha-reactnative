@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View, Image, Text, ImageSourcePropType } from "react-native";
 import colors from "../../constants/colors";
+import { palette, fonts } from "../../constants/theme";
 import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
 import { IApiarySettings } from "../../constants/interfaces/Apiary/IApiarySettings";
 
@@ -19,10 +20,9 @@ const ApiaryInfo: React.FC<ApiaryInfoProps> = ({ label, value, image, isActive =
 
   return (
     <View style={styles.apiaryDataContainer}>
-      <Image style={[
-        styles.apiaryIcon,
-        { tintColor: isActive ? colors.YELLOW : colors.BLACK_LIGHT } // Solo un conjunto de llaves aquí
-      ]} source={image} />
+      <View style={styles.iconBox}>
+        <Image style={styles.apiaryIcon} source={image} />
+      </View>
       <View style={styles.apiaryDataTextContainer}>
         <Text style={styles.apiaryDataTextValue}>{value}</Text>
         <Text style={styles.apiaryDataText}>{label}</Text>
@@ -35,25 +35,34 @@ const styles = StyleSheet.create({
   apiaryDataContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  iconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: palette.honeyBg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   apiaryIcon: {
-    height: 35,
-    tintColor: colors.YELLOW,
-    width: 35,
-    marginRight: 5,
+    height: 22,
+    width: 22,
+    tintColor: palette.honeyText,
     resizeMode: 'contain',
   },
   apiaryDataTextContainer: {
     justifyContent: 'center',
   },
   apiaryDataTextValue: {
-    color: colors.BLACK_LIGHT,
+    color: palette.ink,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: fonts.soraBold,
   },
   apiaryDataText: {
-    color: colors.BLACK_LIGHT,
+    color: palette.slate,
     fontSize: 12,
+    fontFamily: fonts.manrope,
   },
 });
 

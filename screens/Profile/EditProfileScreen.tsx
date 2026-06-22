@@ -9,6 +9,7 @@ import { EditProfileScreenProps } from '../../types/navigation';
 import getProfile, { updateProfile } from '../../modules/API/User';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { capitalizeFirstLetter } from '../../helpers/Apiary/capitalizeFirstLetter';
+import { palette, fonts } from '../../constants/theme';
 
 const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -166,13 +167,13 @@ const EditProfileScreen = ({ navigation }: EditProfileScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     header: {
         flexDirection: 'row',
@@ -182,9 +183,9 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: colors.SLATE[800],
+        fontSize: 18,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     avatarSection: {
         alignItems: 'center',
@@ -192,24 +193,22 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     avatarCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: colors.SLATE[100],
-        borderWidth: 2,
-        borderColor: colors.SLATE[200],
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        backgroundColor: palette.honey,
         alignItems: 'center',
         justifyContent: 'center',
     },
     avatarInitials: {
-        fontSize: 28,
-        fontWeight: '600',
-        color: colors.SLATE[600],
+        fontSize: 30,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.navy,
     },
     avatarName: {
         fontSize: 18,
-        fontWeight: '600',
-        color: colors.SLATE[700],
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     form: {
         paddingHorizontal: 24,
@@ -221,24 +220,25 @@ const styles = StyleSheet.create({
     },
     fieldLabel: {
         fontSize: 13,
-        fontWeight: '500',
-        color: colors.SLATE[500],
+        fontFamily: fonts.soraBold,
+        color: palette.inkMuted,
         marginBottom: 8,
     },
     fieldInput: {
         backgroundColor: colors.WHITE,
         borderRadius: 14,
         borderWidth: 1.5,
-        borderColor: colors.BORDER,
+        borderColor: palette.border,
         paddingHorizontal: 16,
         paddingVertical: 15,
         fontSize: 16,
-        color: colors.SLATE[800],
+        fontFamily: fonts.manrope,
+        color: palette.ink,
         height: 54,
     },
     fieldInputFocused: {
-        borderColor: colors.SLATE[400],
-        backgroundColor: colors.SLATE[50],
+        borderColor: palette.honey,
+        backgroundColor: '#fff',
     },
     actions: {
         paddingHorizontal: 24,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     saveBtn: {
-        backgroundColor: colors.SLATE[900],
+        backgroundColor: palette.navy,
         height: 54,
         borderRadius: 14,
         alignItems: 'center',
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
     },
     saveBtnText: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: fonts.soraBold,
         color: colors.WHITE,
-        letterSpacing: 0.2,
     },
     cancelText: {
         fontSize: 15,
-        color: colors.SLATE[400],
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.slate,
         textAlign: 'center',
         paddingVertical: 4,
     },

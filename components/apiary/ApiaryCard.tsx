@@ -1,62 +1,56 @@
 import React from 'react';
 import { StyleSheet, View, Text, Image } from 'react-native';
-import { statusToColor } from '../../modules/Apiary/ApiaryStatus';
 import Capitalize from '../../modules/Capitalize';
-import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png';
-import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png';
-import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png';
-import DatePretty from '../../modules/DatePretty';
 import { resolveApiaryImageUrl } from '../../constants/api';
-import colors from '../../constants/colors';
-import { Ionicons } from '@expo/vector-icons';
+import { palette, fonts, radius, shadow, statusToHealth, healthMeta } from '../../constants/theme';
+import { Hexagon, ChevronRight, ImagePlaceholder } from '../v2/icons';
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+function lastVisitLabel(date: any): string {
+  if (!date) return 'Sin visitas';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'Sin visitas';
+  return `Última visita · ${d.getDate()} ${MESES[d.getMonth()]}`;
+}
 
 export const ApiaryCard = ({ apiaryInfo }: any) => {
   const updatedAt = apiaryInfo?.updatedAt || apiaryInfo?.updated_at;
-  const settings = apiaryInfo?.settings || {};
-
-  const isTreatmentsActive = () => settings.tAmitraz || settings.tOxalic || settings.tFlumetrine;
-  const isFoodActive = () => settings.honey || settings.sugar || settings.levudex;
+  const health = statusToHealth(apiaryInfo?.status);
+  const meta = healthMeta[health];
+  const imageUri = resolveApiaryImageUrl(apiaryInfo?.image, apiaryInfo?.imageUrl);
 
   return (
     <View style={styles.card}>
-      {/* Image */}
-      <View style={styles.imageContainer}>
-        <Image
-          style={styles.image}
-          source={resolveApiaryImageUrl(apiaryInfo.image, apiaryInfo.imageUrl)
-            ? { uri: resolveApiaryImageUrl(apiaryInfo.image, apiaryInfo.imageUrl) as string }
-            : require('../../assets/images/icons/beehive_box_general.png')}
-          defaultSource={require('../../assets/images/icons/beehive_box_general.png')}
-        />
-        <View style={[styles.statusDot, { backgroundColor: statusToColor(apiaryInfo.status) }]} />
+      {/* Imagen + dot de estado */}
+      <View style={styles.imageWrap}>
+        {imageUri ? (
+          <Image style={styles.image} source={{ uri: imageUri as string }} />
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <ImagePlaceholder />
+          </View>
+        )}
+        <View style={[styles.statusDot, { backgroundColor: meta.dot }]} />
       </View>
 
       {/* Info */}
       <View style={styles.info}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>{Capitalize(apiaryInfo.name || '')}</Text>
-          {apiaryInfo.managementType === 'individual' && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Individual</Text>
-            </View>
-          )}
+        <Text style={styles.name} numberOfLines={1}>{Capitalize(apiaryInfo?.name || '')}</Text>
+        <Text style={styles.date}>{lastVisitLabel(updatedAt)}</Text>
+        <View style={[styles.pill, { backgroundColor: meta.bg }]}>
+          <View style={[styles.pillDot, { backgroundColor: meta.dot }]} />
+          <Text style={[styles.pillText, { color: meta.text }]}>{meta.label}</Text>
         </View>
-
-        <Text style={styles.date}>{DatePretty(updatedAt)}</Text>
-
-        {(isFoodActive() || isTreatmentsActive() || (settings.tFence && Number(apiaryInfo.tFence) >= 1)) && (
-          <View style={styles.indicators}>
-            {isFoodActive() && <Image source={beehiveFoodHoney} style={styles.indicator} />}
-            {isTreatmentsActive() && <Image source={beehiveTreatmentGeneral} style={styles.indicator} />}
-            {settings.tFence && Number(apiaryInfo.tFence) >= 1 && <Image source={beeHiveBateryNocarge} style={styles.indicator} />}
-          </View>
-        )}
       </View>
 
-      {/* Hives count */}
-      <View style={styles.hivesContainer}>
-        <Ionicons name="grid-outline" size={14} color={colors.SLATE[500]} />
-        <Text style={styles.hivesText}>{apiaryInfo.hives ?? 0}</Text>
+      {/* Colmenas + chevron */}
+      <View style={styles.right}>
+        <View style={styles.hivesBadge}>
+          <Hexagon size={15} color={palette.ink} />
+          <Text style={styles.hivesText}>{apiaryInfo?.hives ?? 0}</Text>
+        </View>
+        <ChevronRight />
       </View>
     </View>
   );
@@ -66,92 +60,92 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.WHITE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ede9e3',
-    padding: 14,
-    marginBottom: 10,
+    gap: 14,
+    backgroundColor: palette.white,
+    borderRadius: radius.xl,
+    padding: 12,
+    ...shadow.card,
   },
-  imageContainer: {
+  imageWrap: {
     position: 'relative',
-    marginRight: 14,
+    width: 64,
+    height: 64,
   },
   image: {
-    height: 64,
     width: 64,
+    height: 64,
+    borderRadius: 15,
     resizeMode: 'cover',
-    borderRadius: 12,
-    backgroundColor: colors.SLATE[100],
+    backgroundColor: '#E4E8ED',
+  },
+  imagePlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 15,
+    backgroundColor: '#E4E8ED',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusDot: {
     position: 'absolute',
-    width: 12,
-    height: 12,
-    bottom: 0,
-    right: 0,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.WHITE,
+    bottom: 5,
+    right: 5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2.5,
+    borderColor: palette.white,
   },
   info: {
     flex: 1,
-    justifyContent: 'center',
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-    flexWrap: 'wrap',
+    minWidth: 0,
   },
   name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.SLATE[800],
-  },
-  badge: {
-    backgroundColor: colors.SLATE[100],
-    borderWidth: 1,
-    borderColor: colors.SLATE[200],
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: colors.SLATE[500],
+    fontFamily: fonts.soraBold,
+    fontSize: 17,
+    color: palette.ink,
   },
   date: {
-    fontSize: 12,
-    color: colors.SLATE[400],
-    marginBottom: 6,
+    fontFamily: fonts.manrope,
+    fontSize: 12.5,
+    color: palette.slate,
+    marginTop: 2,
   },
-  indicators: {
+  pill: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
+    marginTop: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
   },
-  indicator: {
-    width: 20,
-    height: 20,
-    resizeMode: 'contain',
+  pillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  hivesContainer: {
+  pillText: {
+    fontFamily: fonts.manropeBold,
+    fontSize: 11,
+  },
+  right: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  hivesBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.SLATE[50],
-    borderWidth: 1,
-    borderColor: colors.SLATE[200],
+    gap: 5,
+    backgroundColor: palette.fieldBg,
+    borderRadius: radius.sm,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
   },
   hivesText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.SLATE[700],
+    fontFamily: fonts.soraExtraBold,
+    fontSize: 15,
+    color: palette.ink,
   },
 });

@@ -6,6 +6,7 @@ import colors from '../../constants/colors';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { DevicesScreenProps } from '../../types/navigation';
 import logger from '../../helpers/logger';
+import { palette, fonts } from '../../constants/theme';
 
 export const DevicesScreen = ({ navigation }: DevicesScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -80,7 +81,7 @@ export const DevicesScreen = ({ navigation }: DevicesScreenProps) => {
                 onLongPress={devices.length > 1 ? () => handleRemoveDevice(item) : undefined}
             >
                 <View style={styles.deviceIcon}>
-                    <Icon name={getPlatformIcon(item.platform)} size={22} color={colors.SLATE[500]} />
+                    <Icon name={getPlatformIcon(item.platform)} size={20} color={palette.honeyText} />
                 </View>
                 <View style={styles.deviceContent}>
                     <Text style={styles.deviceName} numberOfLines={1}>
@@ -122,7 +123,7 @@ export const DevicesScreen = ({ navigation }: DevicesScreenProps) => {
                 ListHeaderComponent={() => (
                     <View style={styles.listHeader}>
                         <View style={styles.iconCircle}>
-                            <Icon name="phone-portrait-outline" size={28} color={colors.SLATE[500]} />
+                            <Icon name="phone-portrait-outline" size={28} color={palette.honeyText} />
                         </View>
                         <Text style={styles.listTitle}>Sesiones activas</Text>
                         <Text style={styles.listSubtitle}>
@@ -145,13 +146,13 @@ export const DevicesScreen = ({ navigation }: DevicesScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     header: {
         flexDirection: 'row',
@@ -161,12 +162,12 @@ const styles = StyleSheet.create({
         paddingBottom: 16,
     },
     headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: colors.SLATE[800],
+        fontSize: 18,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     list: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 18,
     },
     listHeader: {
         alignItems: 'center',
@@ -178,55 +179,55 @@ const styles = StyleSheet.create({
         width: 68,
         height: 68,
         borderRadius: 34,
-        backgroundColor: colors.SLATE[100],
-        borderWidth: 1.5,
-        borderColor: colors.SLATE[200],
+        backgroundColor: palette.honeyBg,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 4,
     },
     listTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        color: colors.SLATE[800],
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     listSubtitle: {
         fontSize: 13,
-        color: colors.SLATE[400],
+        fontFamily: fonts.manrope,
+        color: palette.slate,
     },
     deviceRow: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.WHITE,
-        paddingHorizontal: 16,
+        paddingHorizontal: 14,
         paddingVertical: 15,
     },
     deviceIcon: {
         width: 40,
         height: 40,
         borderRadius: 12,
-        backgroundColor: '#f4f1ec',
+        backgroundColor: palette.honeyBg,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 14,
+        marginRight: 13,
     },
     deviceContent: {
         flex: 1,
     },
     deviceName: {
         fontSize: 15,
-        fontWeight: '500',
-        color: colors.SLATE[800],
+        fontFamily: fonts.soraSemiBold,
+        color: palette.ink,
         marginBottom: 2,
     },
     deviceMeta: {
         fontSize: 12,
-        color: colors.SLATE[400],
+        fontFamily: fonts.manrope,
+        color: palette.slate,
     },
     itemDivider: {
         height: 1,
-        backgroundColor: '#f0ece6',
-        marginLeft: 70,
+        backgroundColor: palette.borderCool,
+        marginLeft: 67,
     },
     emptyContainer: {
         paddingTop: 60,
@@ -235,7 +236,8 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 14,
-        color: colors.SLATE[300],
+        fontFamily: fonts.manrope,
+        color: palette.slate,
     },
 });
 

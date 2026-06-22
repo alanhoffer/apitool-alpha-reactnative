@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
 import { APICULTURE_GUIDES, GUIDE_CATEGORIES, GuideItem } from '../../constants/guides';
 
 const SCREEN_PADDING = 16;
@@ -68,7 +69,7 @@ export default function GuidesListScreen({ navigation }: any) {
 
                 <View style={styles.cardFooter}>
                     <Text style={styles.readMoreText}>Leer guia</Text>
-                    <Icon name="arrow-forward" size={16} color={colors.HONEY[600]} />
+                    <Icon name="arrow-forward" size={16} color={palette.honeyDark} />
                 </View>
             </TouchableOpacity>
         </View>
@@ -82,7 +83,7 @@ export default function GuidesListScreen({ navigation }: any) {
         >
             <View style={styles.featuredHeader}>
                 <View style={styles.featuredLabel}>
-                    <Icon name="sparkles-outline" size={13} color={colors.HONEY[700]} />
+                    <Icon name="sparkles-outline" size={13} color={palette.honeyText} />
                     <Text style={styles.featuredLabelText}>Guia destacada</Text>
                 </View>
                 <View style={styles.featuredTimeBadge}>
@@ -103,7 +104,7 @@ export default function GuidesListScreen({ navigation }: any) {
 
             <View style={styles.featuredFooter}>
                 <Text style={styles.featuredFooterText}>Abrir guia completa</Text>
-                <Icon name="arrow-forward-circle" size={20} color={colors.HONEY[600]} />
+                <Icon name="arrow-forward-circle" size={20} color={palette.honeyDark} />
             </View>
         </TouchableOpacity>
     );
@@ -120,7 +121,7 @@ export default function GuidesListScreen({ navigation }: any) {
 
             <View style={styles.heroCard}>
                 <View style={styles.kickerBadge}>
-                    <Icon name="library-outline" size={14} color={colors.HONEY[700]} />
+                    <Icon name="library-outline" size={14} color={palette.honeyText} />
                     <Text style={styles.kickerText}>Guias practicas</Text>
                 </View>
                 <Text style={styles.mainTitle}>Guias para trabajar mejor el apiario</Text>
@@ -247,7 +248,7 @@ export default function GuidesListScreen({ navigation }: any) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#f6f3ec',
+        backgroundColor: palette.mist,
     },
     headerContent: {
         paddingHorizontal: SCREEN_PADDING,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        backgroundColor: colors.HONEY[100],
+        backgroundColor: palette.honeyBg,
         borderRadius: 999,
         paddingHorizontal: 12,
         paddingVertical: 7,
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     kickerText: {
         fontSize: 12,
         fontWeight: '700',
-        color: colors.HONEY[700],
+        color: palette.honeyText,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
@@ -388,8 +389,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     categoryPillActive: {
-        backgroundColor: colors.HONEY[500],
-        borderColor: colors.HONEY[500],
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     categoryPillText: {
         fontSize: 14,
@@ -416,13 +417,13 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.HONEY[100],
+        backgroundColor: palette.honeyBg,
         paddingHorizontal: 10,
     },
     resultsBadgeText: {
         fontSize: 12,
         fontWeight: '800',
-        color: colors.HONEY[700],
+        color: palette.honeyText,
     },
     featuredCard: {
         backgroundColor: colors.WHITE,
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
     featuredLabelText: {
         fontSize: 12,
         fontWeight: '800',
-        color: colors.HONEY[700],
+        color: palette.honeyText,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
@@ -481,7 +482,7 @@ const styles = StyleSheet.create({
     featuredCategory: {
         fontSize: 12,
         fontWeight: '800',
-        color: colors.HONEY[600],
+        color: palette.honeyDark,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: 8,
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
     featuredFooterText: {
         fontSize: 14,
         fontWeight: '700',
-        color: colors.HONEY[700],
+        color: palette.honeyText,
     },
     sectionTitle: {
         fontSize: 16,
@@ -568,7 +569,7 @@ const styles = StyleSheet.create({
     categoryBadgeText: {
         fontSize: 11,
         fontWeight: '800',
-        color: colors.HONEY[600],
+        color: palette.honeyDark,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: 8,
@@ -596,7 +597,7 @@ const styles = StyleSheet.create({
     readMoreText: {
         fontSize: 14,
         fontWeight: '700',
-        color: colors.HONEY[600],
+        color: palette.honeyDark,
     },
     emptyContainer: {
         alignItems: 'center',

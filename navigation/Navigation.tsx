@@ -2,6 +2,7 @@
 import { useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as Linking from 'expo-linking';
 import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
 
 
@@ -63,11 +64,27 @@ const StatisticsStack = createNativeStackNavigator<any>();
 const ProfileStack = createNativeStackNavigator<any>();
 const GuidesStack = createNativeStackNavigator<any>();
 
+const linking = {
+    prefixes: [
+        Linking.createURL('/'),
+        'apitool://',
+        'https://cabanahofferapp.com.ar',
+    ],
+    config: {
+        screens: {
+            LoginScreen: 'login',
+            RegisterScreen: 'registro',
+            ForgotPasswordScreen: 'reset-password/:token?',
+            HomeScreen: 'home',
+        },
+    },
+};
+
 // Apiary Stack Navigator to group Apiary screens
 function ApiaryNavigator() {
     return (
         <ApiaryStack.Navigator>
-            <ApiaryStack.Screen name="ApiaryListScreen" component={ApiaryListScreen as any} options={(navigation) => ApiaryListHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryListScreen" component={ApiaryListScreen as any} options={{ headerShown: false }} />
             <ApiaryStack.Screen name="ApiaryMapScreen" component={ApiaryMapScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             {/* <ApiaryStack.Screen name="ApiaryMapScreen" component={ApiaryMapScreen} options={(navigation) => ApiaryHeader(navigation)} /> Comentado - no se usa mapa por ahora */}
             <ApiaryStack.Screen name="ApiaryScreen" component={ApiaryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
@@ -75,9 +92,9 @@ function ApiaryNavigator() {
             <ApiaryStack.Screen name="ApiaryHistoryScreen" component={ApiaryHistoryScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiarySettingsScreen" component={ApiarySettingsScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="ApiaryIndividualSettingsScreen" component={ApiaryIndividualSettingsScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryManagementTypeScreen" component={ApiaryManagementTypeScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
-            <ApiaryStack.Screen name="ApiaryAddSettingsScreen" component={ApiaryAddSettingsScreen} options={(navigation) => ApiarySettingsHeader(navigation)} />
+            <ApiaryStack.Screen name="ApiaryManagementTypeScreen" component={ApiaryManagementTypeScreen} options={{ headerShown: false }} />
+            <ApiaryStack.Screen name="ApiaryAddScreen" component={ApiaryAddScreen as any} options={{ headerShown: false }} />
+            <ApiaryStack.Screen name="ApiaryAddSettingsScreen" component={ApiaryAddSettingsScreen} options={{ headerShown: false }} />
             <ApiaryStack.Screen name="HiveAddScreen" component={HiveAddScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
             <ApiaryStack.Screen name="HiveScreen" component={HiveScreen as any} options={(navigation) => ApiaryHeader(navigation)} />
             <ApiaryStack.Screen name="HiveVisitScreen" component={HiveVisitScreen as any} options={(navigation) => ApiaryAddHeader(navigation)} />
@@ -142,7 +159,7 @@ export default function Navigation() {
     const { accessToken, isLoading } = useContext(AuthContext);
 
     return (
-        <NavigationContainer>
+        <NavigationContainer linking={linking}>
             <NotificationHandler isAuthenticated={!!accessToken} />
             <Stack.Navigator>
                 {isLoading ? (

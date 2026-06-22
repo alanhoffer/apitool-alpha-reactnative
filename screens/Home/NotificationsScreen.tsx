@@ -1,71 +1,72 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Platform, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+
 import BottomNavBar from '../../components/navigation/BottomNavBar';
+import AppLoadingScreen from '../../components/general/AppLoadingScreen';
 import { useNotifications, Notification } from '../../hooks/useNotifications';
 import logger from '../../helpers/logger';
 import colors from '../../constants/colors';
+import { palette, fonts, radius, shadow } from '../../constants/theme';
+import { ChevronLeft } from '../../components/v2/icons';
+
+const filters = ['Todas', 'Urgentes', 'Visitas', 'Sistema'];
+const groupOrder = ['Hoy', 'Ayer', 'Esta semana', 'Anteriores'];
 
 const NotificationScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
-  const { notifications, loading, error, refresh, markAsRead, markAllAsRead } = useNotifications({
+  const { notifications, loading, refresh, markAsRead, markAllAsRead } = useNotifications({
     enabled: isFocused,
     refreshIntervalMs: 120000,
   });
   const [activeFilter, setActiveFilter] = useState('Todas');
 
-  const filters = ['Todas', 'Urgentes', 'Visitas', 'Sistema'];
-
-  // Formatting date for grouping
-  const groupDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Hoy';
-    if (days === 1) return 'Ayer';
-    if (days < 7) return 'Esta semana';
-    return 'Anteriores';
-  };
-
-  const formatDateLabel = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-      if (diffInSeconds < 60) return 'Ahora';
-      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
-      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
-      return `${Math.floor(diffInSeconds / 86400)}d`;
-    } catch {
-      return '';
-    }
-  };
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
 
   const filteredNotifications = useMemo(() => {
-    let list = notifications;
     if (activeFilter === 'Urgentes') {
-      list = notifications.filter(n => n.type === 'ALERT' || n.type === 'WARNING');
-    } else if (activeFilter === 'Visitas') {
-      list = notifications.filter(n => n.message?.toLowerCase().includes('visita') || n.title?.toLowerCase().includes('visita'));
-    } else if (activeFilter === 'Sistema') {
-      list = notifications.filter(n => n.type !== 'ALERT' && n.type !== 'WARNING' && !n.message?.toLowerCase().includes('visita'));
+      return notifications.filter((notification) => isUrgentNotification(notification));
     }
-    return list;
-  }, [notifications, activeFilter]);
+
+    if (activeFilter === 'Visitas') {
+      return notifications.filter((notification) => {
+        const title = notification.title?.toLowerCase() || '';
+        const message = notification.message?.toLowerCase() || '';
+        return title.includes('visita') || message.includes('visita');
+      });
+    }
+
+    if (activeFilter === 'Sistema') {
+      return notifications.filter((notification) => {
+        const message = notification.message?.toLowerCase() || '';
+        return !isUrgentNotification(notification) && !message.includes('visita');
+      });
+    }
+
+    return notifications;
+  }, [activeFilter, notifications]);
 
   const groupedNotifications = useMemo(() => {
     const groups: { [key: string]: Notification[] } = {};
-    filteredNotifications.forEach(n => {
-      const label = groupDate(n.createdAt);
-      if (!groups[label]) groups[label] = [];
-      groups[label].push(n);
+    filteredNotifications.forEach((notification) => {
+      const label = groupDate(notification.createdAt);
+      if (!groups[label]) {
+        groups[label] = [];
+      }
+      groups[label].push(notification);
     });
     return groups;
   }, [filteredNotifications]);
@@ -79,7 +80,6 @@ const NotificationScreen = () => {
       }
     }
 
-    // Navigate to related resource if context data is available
     const data = notification.data;
     if (data?.hiveId && data?.apiaryId) {
       navigation.navigate('Apiary', {
@@ -96,95 +96,74 @@ const NotificationScreen = () => {
     }
   };
 
-  const getIconConfig = (type: string) => {
-    if (type === 'ALERT' || type === 'WARNING') {
-      return { name: 'exclamation-circle', color: colors.DANGER, bgColor: colors.DANGER_BG };
-    }
-    return { name: 'info-circle', color: colors.TEXT_SECONDARY, bgColor: colors.BG_INPUT };
-  };
-
   if (loading && notifications.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.TEXT_PRIMARY} />
-        <Text style={styles.loadingText}>Cargando notificaciones...</Text>
-      </View>
-    );
+    return <AppLoadingScreen message="cargando alertas" />;
   }
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <View style={styles.wrapper}>
-      {/* Header Sticky */}
+      <StatusBar barStyle="light-content" backgroundColor={palette.navy} />
+
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTop}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
-          >
-            <FontAwesome5 name="arrow-left" size={18} color={colors.TEXT_SECONDARY} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.75}>
+            <ChevronLeft size={20} color="#fff" />
           </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
+
+          <View style={styles.headerCopy}>
             <Text style={styles.headerTitle}>Notificaciones</Text>
             <Text style={styles.headerSubtitle}>{unreadCount} sin leer</Text>
           </View>
-          <TouchableOpacity onPress={markAllAsRead} activeOpacity={0.7}>
+
+          <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead} activeOpacity={0.78}>
             <Text style={styles.markAllText}>Marcar todo</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Filter Pills */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterScroll}
           contentContainerStyle={styles.filterContainer}
         >
-          {filters.map(filter => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterPill,
-                activeFilter === filter && styles.filterPillActive
-              ]}
-              onPress={() => setActiveFilter(filter)}
-              activeOpacity={0.8}
-            >
-              <Text style={[
-                styles.filterPillText,
-                activeFilter === filter && styles.filterPillTextActive
-              ]}>
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {filters.map((filter) => {
+            const active = activeFilter === filter;
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+                onPress={() => setActiveFilter(filter)}
+                activeOpacity={0.82}
+              >
+                <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 124 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={loading}
             onRefresh={refresh}
-            tintColor={colors.TEXT_PRIMARY}
+            tintColor={colors.WARNING_COLOR}
+            colors={[colors.WARNING_COLOR]}
           />
         }
       >
         <View style={styles.listSection}>
           {Object.keys(groupedNotifications).length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <FontAwesome5 name="bell-slash" size={48} color={colors.BORDER} />
-              <Text style={styles.emptyText}>No hay notificaciones para mostrar</Text>
-            </View>
+            <EmptyState activeFilter={activeFilter} />
           ) : (
-            ['Hoy', 'Ayer', 'Esta semana', 'Anteriores'].map(group => {
+            groupOrder.map((group) => {
               const groupItems = groupedNotifications[group];
-              if (!groupItems || groupItems.length === 0) return null;
+              if (!groupItems || groupItems.length === 0) {
+                return null;
+              }
 
               return (
                 <View key={group} style={styles.dateGroup}>
@@ -193,40 +172,42 @@ const NotificationScreen = () => {
                     <View style={styles.dateLine} />
                   </View>
 
-                  {groupItems.map(item => {
+                  {groupItems.map((item) => {
                     const iconConfig = getIconConfig(item.type);
-                    const isUrgent = item.type === 'ALERT' || item.type === 'WARNING';
+                    const isUrgent = isUrgentNotification(item);
 
                     return (
                       <TouchableOpacity
                         key={item.id}
-                        style={styles.notificationCard}
+                        style={[styles.notificationCard, !item.isRead && styles.notificationCardUnread]}
                         onPress={() => handleNotificationPress(item)}
                         activeOpacity={0.9}
                       >
                         <View style={styles.cardContent}>
-                          <View style={styles.iconWrapper}>
-                            <View style={[styles.iconInner, { backgroundColor: iconConfig.bgColor }]}>
-                              <FontAwesome5 name={iconConfig.name} size={16} color={iconConfig.color} solid />
-                            </View>
-                            {!item.isRead && <View style={styles.unreadDot} />}
+                          <View style={[styles.iconBadge, { backgroundColor: iconConfig.bgColor }]}>
+                            <FontAwesome5 name={iconConfig.name} size={15} color={iconConfig.color} solid />
                           </View>
 
                           <View style={styles.textContainer}>
                             <View style={styles.titleRow}>
-                              <Text style={[styles.cardTitle, !item.isRead && styles.cardTitleUnread]}>
-                                {item.title || 'Notificación'}
+                              <Text style={[styles.cardTitle, !item.isRead && styles.cardTitleUnread]} numberOfLines={2}>
+                                {item.title || 'Notificacion'}
                               </Text>
                               <Text style={styles.cardTime}>{formatDateLabel(item.createdAt)}</Text>
                             </View>
+
                             <Text style={styles.cardMessage} numberOfLines={3}>
                               {item.message}
                             </Text>
-                            {isUrgent && (
-                              <View style={styles.urgentBadge}>
-                                <Text style={styles.urgentText}>URGENTE</Text>
-                              </View>
-                            )}
+
+                            <View style={styles.cardMetaRow}>
+                              {isUrgent && (
+                                <View style={styles.urgentBadge}>
+                                  <View style={styles.urgentDot} />
+                                  <Text style={styles.urgentText}>URGENTE</Text>
+                                </View>
+                              )}
+                            </View>
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -237,13 +218,6 @@ const NotificationScreen = () => {
             })
           )}
         </View>
-
-        {notifications.length > 0 && (
-          <TouchableOpacity style={styles.largeMarkAll} onPress={markAllAsRead} activeOpacity={0.8}>
-            <FontAwesome5 name="check-double" size={14} color={colors.TEXT_TERTIARY} style={{ marginRight: 8 }} />
-            <Text style={styles.largeMarkAllText}>Marcar todas como leídas</Text>
-          </TouchableOpacity>
-        )}
       </ScrollView>
 
       <BottomNavBar navigation={navigation} active="notifications" />
@@ -251,110 +225,149 @@ const NotificationScreen = () => {
   );
 };
 
+const groupDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (days === 0) return 'Hoy';
+  if (days === 1) return 'Ayer';
+  if (days < 7) return 'Esta semana';
+  return 'Anteriores';
+};
+
+const formatDateLabel = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Ahora';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    return `${Math.floor(diffInSeconds / 86400)}d`;
+  } catch {
+    return '';
+  }
+};
+
+const isUrgentNotification = (notification: Notification) => (
+  notification.type === 'ALERT' || notification.type === 'WARNING'
+);
+
+const getIconConfig = (type: string) => {
+  if (type === 'ALERT' || type === 'WARNING') {
+    return { name: 'exclamation', color: '#F26D7D', bgColor: '#FFE7EC' };
+  }
+
+  if (type === 'INFO') {
+    return { name: 'info', color: '#0F1B2D', bgColor: '#FFF6DC' };
+  }
+
+  return { name: 'bell', color: '#667085', bgColor: '#EEF3F6' };
+};
+
+const EmptyState = ({ activeFilter }: { activeFilter: string }) => (
+  <View style={styles.emptyContainer}>
+    <View style={styles.emptyIcon}>
+      <FontAwesome5 name="bell-slash" size={22} color="#A65F00" />
+    </View>
+    <Text style={styles.emptyTitle}>Sin notificaciones</Text>
+    <Text style={styles.emptyText}>
+      {activeFilter === 'Todas'
+        ? 'Cuando haya movimientos importantes van a aparecer aca.'
+        : `No hay alertas dentro de ${activeFilter.toLowerCase()}.`}
+    </Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: colors.BG_APP,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.BG_APP,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: colors.TEXT_SECONDARY,
+    backgroundColor: palette.mist,
   },
   header: {
-    backgroundColor: 'rgba(250, 250, 249, 0.9)',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.BG_INPUT,
+    backgroundColor: palette.navy,
+    paddingHorizontal: 22,
+    paddingBottom: 16,
+    borderBottomLeftRadius: radius.header,
+    borderBottomRightRadius: radius.header,
     zIndex: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
   },
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    marginBottom: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.WHITE,
-    borderWidth: 1,
-    borderColor: colors.BORDER,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: palette.onNavy10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitleContainer: {
+  headerCopy: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 13,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.TEXT_PRIMARY,
+    fontSize: 22,
+    fontFamily: fonts.soraBold,
+    color: '#fff',
   },
   headerSubtitle: {
+    marginTop: 3,
     fontSize: 12,
-    color: colors.TEXT_SECONDARY,
-    marginTop: 1,
+    color: palette.steel,
+    fontFamily: fonts.manropeSemiBold,
+  },
+  markAllButton: {
+    paddingVertical: 8,
+    paddingLeft: 10,
   },
   markAllText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.TEXT_SECONDARY,
+    fontSize: 12,
+    fontFamily: fonts.manropeBold,
+    color: palette.honey,
   },
   filterScroll: {
-    paddingBottom: 12,
+    marginHorizontal: -28,
   },
   filterContainer: {
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: 28,
+    gap: 10,
   },
   filterPill: {
+    minHeight: 34,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.WHITE,
-    borderWidth: 1,
-    borderColor: colors.BORDER,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: palette.onNavy10,
+    justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: colors.BG_DARK,
-    borderColor: colors.BG_DARK,
+    backgroundColor: palette.honey,
   },
-  filterPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.TEXT_SECONDARY,
+  filterText: {
+    fontSize: 12,
+    fontFamily: fonts.manropeBold,
+    color: palette.steel,
   },
-  filterPillTextActive: {
-    color: colors.WHITE,
+  filterTextActive: {
+    color: palette.navy,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 28,
+    backgroundColor: 'transparent',
   },
   listSection: {
-    paddingTop: 20,
+    paddingTop: 22,
   },
   dateGroup: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   dateHeader: {
     flexDirection: 'row',
@@ -363,173 +376,134 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 11,
-    fontWeight: '700',
-    color: colors.TEXT_TERTIARY,
+    lineHeight: 14,
+    fontWeight: '900',
+    color: '#A9A2A0',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   dateLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.BORDER,
+    backgroundColor: '#E8DFC9',
     marginLeft: 12,
   },
   notificationCard: {
     backgroundColor: colors.WHITE,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.BORDER,
+    borderRadius: radius.lg,
+    padding: 15,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    ...shadow.soft,
+  },
+  notificationCardUnread: {
+    borderLeftWidth: 3,
+    borderLeftColor: palette.honey,
   },
   cardContent: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'flex-start',
   },
-  iconWrapper: {
-    position: 'relative',
-  },
-  iconInner: {
+  iconBadge: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  unreadDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    backgroundColor: colors.DANGER,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: colors.WHITE,
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 5,
+    gap: 10,
   },
   cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.TEXT_PRIMARY,
     flex: 1,
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: fonts.soraSemiBold,
+    color: palette.ink,
   },
   cardTitleUnread: {
-    fontWeight: '700',
+    fontFamily: fonts.soraBold,
   },
   cardTime: {
     fontSize: 10,
-    color: colors.TEXT_TERTIARY,
-    marginLeft: 8,
+    lineHeight: 14,
+    color: '#8C939F',
+    fontWeight: '900',
   },
   cardMessage: {
     fontSize: 12,
-    color: colors.TEXT_SECONDARY,
     lineHeight: 18,
-    marginBottom: 8,
+    color: '#5B6573',
+    fontWeight: '600',
+  },
+  cardMetaRow: {
+    minHeight: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
   },
   urgentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.DANGER_BG,
+    backgroundColor: '#FFE7EC',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  urgentDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#F26D7D',
+    marginRight: 6,
   },
   urgentText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.DANGER,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: '900',
+    color: '#F26D7D',
   },
-  largeMarkAll: {
-    flexDirection: 'row',
+  emptyContainer: {
+    minHeight: 280,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.WHITE,
-    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.BORDER,
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 40,
+    borderColor: '#ECE3CF',
+    borderRadius: 22,
+    paddingHorizontal: 28,
   },
-  largeMarkAllText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.TEXT_PRIMARY,
-  },
-  emptyContainer: {
+  emptyIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FFF6DC',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '900',
+    color: '#0F1B2D',
   },
   emptyText: {
-    marginTop: 16,
+    marginTop: 7,
     fontSize: 13,
-    color: colors.TEXT_TERTIARY,
+    lineHeight: 20,
+    color: '#667085',
+    fontWeight: '700',
     textAlign: 'center',
   },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.OVERLAY_WHITE_90,
-    borderTopWidth: 1,
-    borderTopColor: colors.BORDER,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    zIndex: 100,
-  },
-  bottomNavItems: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  navItemActive: {
-    color: colors.TEXT_PRIMARY,
-  },
-  navItemText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: colors.TEXT_TERTIARY,
-    marginTop: 4,
-  },
-  fabWrapper: {
-    top: -24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.BG_DARK,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  }
 });
 
 export default NotificationScreen;

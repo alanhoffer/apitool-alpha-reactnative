@@ -7,6 +7,8 @@ import { createTask, updateTask } from '../../modules/API/Tasks';
 import { getApiarys } from '../../modules/API/Apiarys';
 import { TaskAddScreenProps } from '../../types/navigation';
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
+import { palette, fonts, radius, shadow } from '../../constants/theme';
+import { Close } from '../../components/v2/icons';
 
 const TaskAddScreen = ({ navigation, route }: TaskAddScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -69,17 +71,13 @@ const TaskAddScreen = ({ navigation, route }: TaskAddScreenProps) => {
 
     return (
         <View style={styles.container}>
-            <View style={[styles.header, { marginTop: insets.top }]}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="close" size={24} color={colors.BLACK} />
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
+                    <Close size={18} color={palette.navy} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{task ? 'Editar Tarea' : 'Nueva Tarea'}</Text>
-                <TouchableOpacity onPress={handleSave} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator size="small" color={colors.YELLOW} />
-                    ) : (
-                        <Text style={styles.saveText}>Guardar</Text>
-                    )}
+                <TouchableOpacity style={[styles.saveBtn, loading && { opacity: 0.6 }]} onPress={handleSave} disabled={loading} activeOpacity={0.85}>
+                    {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.saveBtnText}>Guardar</Text>}
                 </TouchableOpacity>
             </View>
 
@@ -131,50 +129,65 @@ const TaskAddScreen = ({ navigation, route }: TaskAddScreenProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.WHITE,
+        backgroundColor: palette.cream,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.BORDER_XLIGHT,
+        paddingHorizontal: 18,
+        paddingBottom: 14,
     },
     backButton: {
-        padding: 5,
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        backgroundColor: palette.white,
+        borderWidth: 1,
+        borderColor: palette.border,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     headerTitle: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: colors.BLACK,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
-    saveText: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.YELLOW,
+    saveBtn: {
+        backgroundColor: palette.navy,
+        paddingHorizontal: 18,
+        paddingVertical: 9,
+        borderRadius: 12,
+        minWidth: 92,
+        alignItems: 'center',
+    },
+    saveBtnText: {
+        color: '#fff',
+        fontSize: 14,
+        fontFamily: fonts.soraBold,
     },
     content: {
-        padding: 20,
+        padding: 22,
     },
     inputGroup: {
-        marginBottom: 25,
+        marginBottom: 24,
     },
     label: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.BLACK_LIGHT,
-        marginBottom: 8,
+        fontSize: 14,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
+        marginBottom: 10,
     },
     input: {
-        backgroundColor: colors.BG_SECTION,
-        borderRadius: 10,
-        padding: 15,
-        fontSize: 16,
-        color: colors.BLACK,
+        backgroundColor: palette.white,
+        borderRadius: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 15,
+        fontSize: 15,
+        fontFamily: fonts.manrope,
+        color: palette.ink,
         borderWidth: 1,
-        borderColor: colors.BORDER_XLIGHT,
+        borderColor: palette.border,
     },
     textArea: {
         minHeight: 100,
@@ -184,24 +197,25 @@ const styles = StyleSheet.create({
     },
     chip: {
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#F5F5F5',
+        paddingVertical: 9,
+        borderRadius: radius.pill,
+        backgroundColor: palette.white,
         marginRight: 10,
         borderWidth: 1,
-        borderColor: colors.BORDER_XLIGHT,
+        borderColor: palette.border,
     },
     chipActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     chipText: {
         fontSize: 14,
-        color: colors.GREY,
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.inkMuted,
     },
     chipTextActive: {
-        color: colors.BLACK,
-        fontWeight: '600',
+        color: palette.navy,
+        fontFamily: fonts.manropeBold,
     },
 });
 

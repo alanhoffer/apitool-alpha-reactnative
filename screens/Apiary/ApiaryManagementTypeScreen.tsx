@@ -1,13 +1,10 @@
-import React, { useEffect, useState, type ComponentProps } from "react";
-import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { View, StyleSheet, Text, TouchableOpacity, Image, ScrollView } from "react-native";
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-
-import VisitApiaryButton from "../../components/buttons/HeaderNoIconButton";
-import colors from "../../constants/colors";
+import React, { useState } from "react";
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, StatusBar } from "react-native";
+import { palette, fonts, radius, shadow } from "../../constants/theme";
+import { WizardTopBar, StepProgress } from "../../components/v2/wizard";
+import { Glyph } from "../../components/v2/icons";
 
 type ManagementType = 'apiary' | 'individual';
-type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 function ApiaryManagementTypeScreen({ navigation }: any) {
     const [selectedType, setSelectedType] = useState<ManagementType | null>(null);
@@ -18,107 +15,50 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
         }
     };
 
-    useEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <VisitApiaryButton
-                    text='Siguiente'
-                    move={handleContinue}
-                    disabled={!selectedType}
-                />
-            ),
-        });
-    }, [navigation, selectedType]);
-
-    const renderOption = (
-        type: ManagementType,
-        title: string,
-        description: string,
-        iconName: IconName,
-        iconColor: string,
-        iconBackground: string
-    ) => {
+    const renderOption = (type: ManagementType, glyph: string, title: string, description: string) => {
         const selected = selectedType === type;
-
         return (
             <TouchableOpacity
-                style={[
-                    styles.optionCard,
-                    selected && styles.optionCardSelected,
-                ]}
+                style={[styles.card, selected ? styles.cardOn : styles.cardOff]}
                 onPress={() => setSelectedType(type)}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
             >
-                <View style={[
-                    styles.optionIconContainer,
-                    selected ? styles.optionIconContainerSelected : { backgroundColor: iconBackground }
-                ]}>
-                    <MaterialCommunityIcons
-                        name={iconName}
-                        size={32}
-                        color={selected ? colors.SLATE[900] : iconColor}
-                    />
+                <View style={[styles.iconBox, { backgroundColor: selected ? palette.honeyBg : palette.mist }]}>
+                    <Glyph name={glyph} size={28} color={selected ? palette.honeyText : palette.navy} strokeWidth={2} />
                 </View>
-                <View style={styles.optionTextContainer}>
-                    <Text style={[
-                        styles.optionTitle,
-                        selected && styles.optionTitleSelected,
-                    ]}>
-                        {title}
-                    </Text>
-                    <Text style={styles.optionDescription}>
-                        {description}
-                    </Text>
+                <View style={styles.textWrap}>
+                    <Text style={styles.optTitle}>{title}</Text>
+                    <Text style={styles.optDesc}>{description}</Text>
                 </View>
-                {selected ? (
-                    <View style={styles.radioContainerSelected}>
-                        <View style={styles.radioInner} />
-                    </View>
-                ) : (
-                    <View style={styles.radioContainer} />
-                )}
+                <View style={[styles.ring, selected ? styles.ringOn : styles.ringOff]}>
+                    {selected && <View style={styles.ringDot} />}
+                </View>
             </TouchableOpacity>
         );
     };
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.imageContainer}>
-                    <Image
-                        source={require('../../assets/images/apiary-default.png')}
-                        style={styles.headerImage}
-                    />
-                    <View style={styles.imageOverlay} />
+            <StatusBar barStyle="dark-content" backgroundColor={palette.cream} />
+            <WizardTopBar
+                variant="cancel"
+                onCancel={() => navigation.goBack()}
+                actionLabel="Siguiente"
+                onAction={handleContinue}
+                actionDisabled={!selectedType}
+            />
+
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                <View style={{ paddingTop: 12 }}>
+                    <StepProgress step={1} />
                 </View>
 
-                <View style={styles.content}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Tipo de Manejo</Text>
-                        <Text style={styles.subtitle}>
-                            Selecciona como quieres manejar la informacion de este apiario
-                        </Text>
-                    </View>
+                <Text style={styles.title}>Tipo de Manejo</Text>
+                <Text style={styles.subtitle}>Seleccioná cómo querés manejar la información de este apiario.</Text>
 
-                    <View style={styles.optionsContainer}>
-                        {renderOption(
-                            'apiary',
-                            'Apiario (Conjunto)',
-                            'Gestion unificada de todas las colmenas. Ideal para la mayoria de apicultores.',
-                            'beehive-outline',
-                            colors.SLATE[600],
-                            colors.SLATE[100]
-                        )}
-
-                        {renderOption(
-                            'individual',
-                            'Colmena Individual',
-                            'Seguimiento especifico de cada colmena de forma independiente.',
-                            'hexagon-multiple-outline',
-                            colors.SLATE[600],
-                            colors.SLATE[100]
-                        )}
-                    </View>
+                <View style={{ gap: 0 }}>
+                    {renderOption('apiary', 'manageGroup', 'Apiario (Conjunto)', 'Gestión unificada de todas las colmenas. Ideal para la mayoría de apicultores.')}
+                    {renderOption('individual', 'manageIndividual', 'Colmena Individual', 'Seguimiento específico de cada colmena de forma independiente.')}
                 </View>
             </ScrollView>
         </View>
@@ -126,131 +66,21 @@ function ApiaryManagementTypeScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingBottom: hp('5%'),
-    },
-    imageContainer: {
-        width: '100%',
-        height: hp('22%'),
-        position: 'relative',
-        borderBottomLeftRadius: 30,
-        borderBottomRightRadius: 30,
-        overflow: 'hidden',
-        marginBottom: hp('3%'),
-    },
-    headerImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    imageOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-    },
-    content: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    titleContainer: {
-        width: wp('85%'),
-        marginBottom: hp('3%'),
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '800',
-        color: colors.BLACK,
-        marginBottom: 8,
-        letterSpacing: 0.5,
-    },
-    subtitle: {
-        color: '#666666',
-        fontSize: 15,
-        fontWeight: '400',
-        lineHeight: 22,
-    },
-    optionsContainer: {
-        width: wp('90%'),
-        gap: 20,
-    },
-    optionCard: {
-        backgroundColor: colors.WHITE,
-        borderRadius: 20,
-        padding: 20,
-        borderWidth: 2,
-        borderColor: '#F0F4F8',
-        flexDirection: 'row',
-        alignItems: 'center',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
-    },
-    optionCardSelected: {
-        borderColor: colors.SLATE[900],
-        backgroundColor: colors.SLATE[50],
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-    },
-    optionIconContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    optionIconContainerSelected: {
-        backgroundColor: colors.SLATE[200],
-    },
-    optionTextContainer: {
-        flex: 1,
-        paddingRight: 4,
-    },
-    optionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
-        marginBottom: 4,
-    },
-    optionTitleSelected: {
-        color: colors.BLACK,
-    },
-    optionDescription: {
-        fontSize: 13,
-        color: '#555555',
-        lineHeight: 18,
-    },
-    radioContainer: {
-        width: 26,
-        height: 26,
-        borderRadius: 13,
-        borderWidth: 2,
-        borderColor: '#D0D0D0',
-        marginLeft: 8,
-    },
-    radioContainerSelected: {
-        width: 26,
-        height: 26,
-        borderRadius: 13,
-        borderWidth: 2,
-        borderColor: colors.SLATE[900],
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 8,
-    },
-    radioInner: {
-        width: 14,
-        height: 14,
-        borderRadius: 7,
-        backgroundColor: colors.SLATE[900],
-    },
+    container: { flex: 1, backgroundColor: palette.cream },
+    scroll: { paddingHorizontal: 24, paddingBottom: 40 },
+    title: { fontFamily: fonts.soraExtraBold, fontSize: 30, color: palette.ink, letterSpacing: -0.5, marginTop: 14 },
+    subtitle: { fontFamily: fonts.manrope, fontSize: 15, color: palette.inkMuted, marginTop: 8, lineHeight: 22 },
+    card: { marginTop: 18, backgroundColor: palette.white, borderRadius: radius.xxl, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16 },
+    cardOn: { borderWidth: 2, borderColor: palette.honey, shadowColor: '#E08A1C', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.28, shadowRadius: 18, elevation: 5 },
+    cardOff: { borderWidth: 2, borderColor: palette.borderSoft, ...shadow.soft },
+    iconBox: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    textWrap: { flex: 1 },
+    optTitle: { fontFamily: fonts.soraBold, fontSize: 18, color: palette.ink },
+    optDesc: { fontFamily: fonts.manrope, fontSize: 13, color: palette.inkSubtle, marginTop: 4, lineHeight: 18 },
+    ring: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    ringOn: { backgroundColor: palette.honey, borderWidth: 2, borderColor: palette.honey },
+    ringOff: { borderWidth: 2, borderColor: '#D8D2C4', backgroundColor: palette.white },
+    ringDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: palette.navy },
 });
 
 export default ApiaryManagementTypeScreen;

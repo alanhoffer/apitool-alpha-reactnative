@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import colors from '../../constants/colors';
+import { palette } from '../../constants/theme';
 
 export default function SubscriptionScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -49,7 +50,7 @@ export default function SubscriptionScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.YELLOW} />
+        <ActivityIndicator size="large" color={palette.honey} />
       </View>
     );
   }
@@ -68,7 +69,7 @@ export default function SubscriptionScreen({ navigation }: any) {
       </View>
 
       <View style={styles.currentBadge}>
-        <Ionicons name="checkmark-circle" size={16} color={colors.YELLOW} />
+        <Ionicons name="checkmark-circle" size={16} color={palette.honey} />
         <Text style={styles.currentBadgeText}>
           Plan actual: <Text style={styles.currentPlanText}>{currentPlanLabel}</Text>
         </Text>

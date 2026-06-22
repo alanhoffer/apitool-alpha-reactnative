@@ -7,6 +7,7 @@ import colors from '../../constants/colors';
 import AuthContext from '../../modules/API/AuthContext';
 import { deleteMyAccount } from '../../modules/API/User';
 import logger from '../../helpers/logger';
+import { palette, fonts } from '../../constants/theme';
 
 export default function DeleteAccountScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -105,7 +106,7 @@ export default function DeleteAccountScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf9f7',
+    backgroundColor: palette.mist,
   },
   header: {
     flexDirection: 'row',
@@ -115,9 +116,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.SLATE[800],
+    fontSize: 18,
+    fontFamily: fonts.soraBold,
+    color: palette.ink,
   },
   section: {
     paddingHorizontal: 20,
@@ -125,34 +126,36 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
-    color: colors.DANGER,
+    fontFamily: fonts.soraExtraBold,
+    color: palette.bad,
     marginBottom: 10,
   },
   text: {
     fontSize: 14,
     lineHeight: 22,
-    color: colors.SLATE[600],
+    fontFamily: fonts.manrope,
+    color: palette.inkMuted,
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
-    color: colors.SLATE[500],
+    fontFamily: fonts.soraBold,
+    color: palette.inkMuted,
     marginBottom: 8,
   },
   input: {
     backgroundColor: colors.WHITE,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderWidth: 1.5,
+    borderColor: palette.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: colors.TEXT_PRIMARY,
+    fontFamily: fonts.manrope,
+    color: palette.ink,
   },
   deleteButton: {
-    backgroundColor: colors.DANGER,
+    backgroundColor: palette.bad,
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 15,
     alignItems: 'center',
   },
   deleteButtonDisabled: {
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: colors.WHITE,
-    fontWeight: '700',
+    fontFamily: fonts.soraBold,
     fontSize: 15,
   },
 });

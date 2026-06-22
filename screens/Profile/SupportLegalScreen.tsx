@@ -5,6 +5,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import colors from '../../constants/colors';
 import { APP_ACCOUNT_DELETION_URL, APP_PRIVACY_POLICY_URL, APP_SUPPORT_URL } from '../../constants/appConfig';
+import { palette, fonts, radius, shadow } from '../../constants/theme';
 
 const openUrl = async (url: string, fallbackLabel: string) => {
   const canOpen = await Linking.canOpenURL(url);
@@ -20,12 +21,14 @@ export default function SupportLegalScreen({ navigation }: any) {
 
   const Item = ({ icon, title, subtitle, onPress }: any) => (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.75}>
-      <MaterialCommunityIcons name={icon} size={20} color={colors.SLATE[500]} style={styles.itemIcon} />
+      <View style={styles.itemIconBox}>
+        <MaterialCommunityIcons name={icon} size={19} color={palette.honeyText} />
+      </View>
       <View style={styles.itemText}>
         <Text style={styles.itemTitle}>{title}</Text>
         <Text style={styles.itemSubtitle}>{subtitle}</Text>
       </View>
-      <MaterialCommunityIcons name="open-in-new" size={18} color={colors.SLATE[300]} />
+      <MaterialCommunityIcons name="open-in-new" size={18} color={palette.slate} />
     </TouchableOpacity>
   );
 
@@ -75,7 +78,7 @@ export default function SupportLegalScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#faf9f7',
+    backgroundColor: palette.mist,
   },
   header: {
     flexDirection: 'row',
@@ -85,55 +88,60 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.SLATE[800],
+    fontSize: 18,
+    fontFamily: fonts.soraBold,
+    color: palette.ink,
   },
   section: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: colors.SLATE[400],
+    fontFamily: fonts.manropeBold,
+    color: palette.slate,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
     marginBottom: 8,
     marginLeft: 4,
   },
   card: {
     backgroundColor: colors.WHITE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ede9e3',
+    borderRadius: radius.lg,
     overflow: 'hidden',
+    ...shadow.soft,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 13,
   },
-  itemIcon: {
-    marginRight: 14,
-    width: 22,
+  itemIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: palette.honeyBg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itemText: {
     flex: 1,
   },
   itemTitle: {
     fontSize: 15,
-    fontWeight: '500',
-    color: colors.SLATE[800],
+    fontFamily: fonts.soraSemiBold,
+    color: palette.ink,
   },
   itemSubtitle: {
     fontSize: 12,
-    color: colors.SLATE[400],
-    marginTop: 1,
+    fontFamily: fonts.manrope,
+    color: palette.slate,
+    marginTop: 2,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0ece6',
-    marginLeft: 52,
+    backgroundColor: palette.borderCool,
+    marginLeft: 65,
   },
 });

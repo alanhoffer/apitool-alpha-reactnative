@@ -7,6 +7,8 @@ import { getTasks, updateTask, deleteTask } from '../../modules/API/Tasks';
 import { ITask } from '../../constants/interfaces/Task/ITask';
 import { TasksScreenProps } from '../../types/navigation';
 import colors from '../../constants/colors';
+import { palette, fonts, radius, shadow } from '../../constants/theme';
+import { ChevronLeft, Plus } from '../../components/v2/icons';
 
 const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
     const insets = useSafeAreaInsets();
@@ -140,21 +142,23 @@ const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
     );
 
     return (
-        <View style={[styles.wrapper, { paddingTop: insets.top }]}>
-            {/* Header */}
-            <View style={styles.header}>
+        <View style={styles.wrapper}>
+            {/* Header navy */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} activeOpacity={0.7}>
-                    <FontAwesome5 name="arrow-left" size={16} color={colors.TEXT_PRIMARY} />
+                    <ChevronLeft size={20} color="#fff" />
                 </TouchableOpacity>
-                <View>
-                    <Text style={styles.headerTitle}>{isApiaryScoped ? 'Tareas del apiario' : 'Tareas'}</Text>
+                <View style={styles.headerTitleBlock}>
+                    <Text style={styles.headerTitle} numberOfLines={1}>{isApiaryScoped ? 'Tareas del apiario' : 'Tareas'}</Text>
                     {isApiaryScoped && apiaryName ? (
-                        <Text style={styles.headerSubtitle}>{apiaryName}</Text>
+                        <Text style={styles.headerSubtitle} numberOfLines={1}>{apiaryName}</Text>
                     ) : pendingCount > 0 ? (
                         <Text style={styles.headerSubtitle}>{pendingCount} pendiente{pendingCount === 1 ? '' : 's'}</Text>
                     ) : null}
                 </View>
-                <View style={{ width: 36 }} />
+                <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('TaskAddScreen', isApiaryScoped ? { apiaryId } : {})} activeOpacity={0.85}>
+                    <Plus size={18} color={palette.navy} />
+                </TouchableOpacity>
             </View>
 
             {/* Category Tabs */}
@@ -224,7 +228,7 @@ const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
                     data={filteredTasks}
                     renderItem={renderItem}
                     keyExtractor={item => item.id.toString()}
-                    contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 90 }]}
+                    contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.WARNING_COLOR} />
@@ -243,13 +247,6 @@ const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
                 />
             )}
 
-            <TouchableOpacity
-                style={[styles.fab, { bottom: insets.bottom + 20 }]}
-                onPress={() => navigation.navigate('TaskAddScreen', isApiaryScoped ? { apiaryId } : {})}
-                activeOpacity={0.85}
-            >
-                <FontAwesome5 name="plus" size={18} color={colors.TEXT_PRIMARY} />
-            </TouchableOpacity>
         </View>
     );
 };
@@ -257,7 +254,7 @@ const TasksScreen = ({ navigation, route }: TasksScreenProps) => {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        backgroundColor: colors.BG_APP,
+        backgroundColor: palette.mist,
     },
     loadingContainer: {
         flex: 1,
@@ -268,110 +265,110 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        backgroundColor: colors.WHITE,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.BG_INPUT,
+        paddingHorizontal: 18,
+        paddingBottom: 18,
+        backgroundColor: palette.navy,
+        borderBottomLeftRadius: radius.header,
+        borderBottomRightRadius: radius.header,
     },
     backButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.BG_CARD,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        backgroundColor: palette.onNavy10,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    addBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: palette.honey,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitleBlock: {
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: 12,
+    },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: colors.TEXT_PRIMARY,
+        fontSize: 19,
+        fontFamily: fonts.soraBold,
+        color: '#fff',
         textAlign: 'center',
-        letterSpacing: -0.3,
     },
     headerSubtitle: {
         fontSize: 12,
-        color: colors.TEXT_TERTIARY,
-        fontWeight: '500',
+        color: palette.steel,
+        fontFamily: fonts.manropeSemiBold,
         textAlign: 'center',
-        marginTop: 2,
+        marginTop: 3,
     },
     categoryRow: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingVertical: 14,
+        paddingHorizontal: 18,
+        paddingTop: 16,
         gap: 10,
-        backgroundColor: colors.WHITE,
     },
     categoryTab: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 10,
+        paddingVertical: 11,
         borderRadius: 12,
-        backgroundColor: colors.BG_CARD,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
+        backgroundColor: palette.white,
+        ...shadow.soft,
     },
     categoryTabActive: {
-        backgroundColor: colors.HONEY[100],
-        borderColor: colors.WARNING_COLOR,
+        backgroundColor: palette.honeyBg,
     },
     categoryText: {
         fontSize: 13,
-        fontWeight: '600',
-        color: colors.TEXT_TERTIARY,
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.slate,
     },
     categoryTextActive: {
-        color: colors.TEXT_PRIMARY,
+        color: palette.honeyText,
+        fontFamily: fonts.manropeBold,
     },
     filterRow: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingBottom: 14,
+        paddingHorizontal: 18,
+        paddingTop: 14,
         gap: 8,
-        backgroundColor: colors.WHITE,
     },
     filterPill: {
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 999,
-        backgroundColor: colors.BG_INPUT,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
+        paddingVertical: 7,
+        paddingHorizontal: 16,
+        borderRadius: radius.pill,
+        backgroundColor: palette.white,
+        ...shadow.soft,
     },
     filterPillActive: {
-        backgroundColor: colors.TEXT_PRIMARY,
-        borderColor: colors.TEXT_PRIMARY,
+        backgroundColor: palette.navy,
     },
     filterText: {
         fontSize: 13,
-        fontWeight: '600',
-        color: colors.TEXT_SECONDARY,
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.inkMuted,
     },
     filterTextActive: {
-        color: colors.WHITE,
+        color: '#fff',
+        fontFamily: fonts.manropeBold,
     },
     listContent: {
-        padding: 20,
+        padding: 18,
         gap: 10,
     },
     taskCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: colors.WHITE,
-        borderRadius: 16,
+        backgroundColor: palette.white,
+        borderRadius: radius.lg,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 6,
-        elevation: 2,
+        ...shadow.soft,
     },
     checkbox: {
         marginRight: 14,
@@ -379,29 +376,29 @@ const styles = StyleSheet.create({
     checkboxInner: {
         width: 22,
         height: 22,
-        borderRadius: 6,
+        borderRadius: 7,
         borderWidth: 1.5,
-        borderColor: colors.BORDER_MEDIUM,
-        backgroundColor: colors.BG_CARD,
+        borderColor: palette.border,
+        backgroundColor: palette.white,
         alignItems: 'center',
         justifyContent: 'center',
     },
     checkboxChecked: {
-        backgroundColor: colors.SUCCESS,
-        borderColor: colors.SUCCESS,
+        backgroundColor: palette.good,
+        borderColor: palette.good,
     },
     taskContent: {
         flex: 1,
     },
     taskTitle: {
         fontSize: 15,
-        fontWeight: '600',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraSemiBold,
+        color: palette.ink,
         marginBottom: 4,
     },
     taskTitleCompleted: {
         textDecorationLine: 'line-through',
-        color: colors.TEXT_TERTIARY,
+        color: palette.slate,
     },
     dateRow: {
         flexDirection: 'row',
@@ -410,18 +407,16 @@ const styles = StyleSheet.create({
     },
     dateText: {
         fontSize: 12,
-        color: colors.TEXT_TERTIARY,
-        fontWeight: '500',
+        color: palette.slate,
+        fontFamily: fonts.manrope,
     },
     deleteBtn: {
         width: 34,
         height: 34,
-        borderRadius: 10,
-        backgroundColor: colors.BG_CARD,
+        borderRadius: 11,
+        backgroundColor: palette.fieldBg,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.BORDER,
         marginLeft: 8,
     },
     emptyContainer: {
@@ -432,39 +427,23 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 24,
-        backgroundColor: colors.BG_CARD,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
+        backgroundColor: palette.white,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
+        ...shadow.soft,
     },
     emptyText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         marginBottom: 6,
     },
     emptySubText: {
         fontSize: 13,
-        color: colors.TEXT_TERTIARY,
-        fontWeight: '500',
+        color: palette.slate,
+        fontFamily: fonts.manrope,
         textAlign: 'center',
-    },
-    fab: {
-        position: 'absolute',
-        right: 20,
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: colors.WARNING_COLOR,
-        alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: colors.WARNING_COLOR,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        elevation: 6,
     },
 });
 

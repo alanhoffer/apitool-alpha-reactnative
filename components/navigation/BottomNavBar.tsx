@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
+import { HomeIcon, ApiaryIcon, DataIcon, ProfileIcon, ScanGrid } from '../v2/icons';
 
 type ActiveScreen = 'home' | 'apiary' | 'notifications' | 'stats' | 'profile';
 
@@ -13,40 +13,35 @@ interface BottomNavBarProps {
 
 export default function BottomNavBar({ navigation, active }: BottomNavBarProps) {
   const insets = useSafeAreaInsets();
-
-  const iconColor = (screen: ActiveScreen) =>
-    active === screen ? colors.TEXT_PRIMARY : colors.TEXT_TERTIARY;
-
-  const textStyle = (screen: ActiveScreen) =>
-    active === screen ? [styles.navItemText, styles.navItemActive] : styles.navItemText;
+  const color = (screen: ActiveScreen) => (active === screen ? palette.honeyDark : palette.slate);
 
   return (
-    <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <View style={styles.bottomNavItems}>
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('HomeScreen')} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="home-outline" size={22} color={iconColor('home')} />
-          <Text style={textStyle('home')}>Inicio</Text>
+    <View style={[styles.bottomNav, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+      <View style={styles.items}>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('HomeScreen')} activeOpacity={0.7}>
+          <HomeIcon size={22} color={color('home')} strokeWidth={active === 'home' ? 2.2 : 2} />
+          <Text style={[styles.label, { color: color('home') }]}>Inicio</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="beehive-outline" size={22} color={iconColor('apiary')} />
-          <Text style={textStyle('apiary')}>Apiarios</Text>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Apiary', { screen: 'ApiaryListScreen' })} activeOpacity={0.7}>
+          <ApiaryIcon size={22} color={color('apiary')} strokeWidth={active === 'apiary' ? 2.4 : 2.2} />
+          <Text style={[styles.label, { color: color('apiary') }]}>Apiarios</Text>
         </TouchableOpacity>
 
         <View style={styles.fabWrapper}>
-          <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })} activeOpacity={0.8}>
-            <MaterialCommunityIcons name="qrcode-scan" size={20} color={colors.WHITE} />
+          <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('Scanner', { screen: 'ScannerInstructionsScreen' })} activeOpacity={0.85}>
+            <ScanGrid size={24} color={palette.honey} />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('NotificationScreen')} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="bell-outline" size={22} color={iconColor('notifications')} />
-          <Text style={textStyle('notifications')}>Alertas</Text>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Statistics', { screen: 'StatisticsScreen' })} activeOpacity={0.7}>
+          <DataIcon size={22} color={color('stats')} strokeWidth={active === 'stats' ? 2.2 : 2} />
+          <Text style={[styles.label, { color: color('stats') }]}>Datos</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="account-circle-outline" size={22} color={iconColor('profile')} />
-          <Text style={textStyle('profile')}>Perfil</Text>
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('Profile', { screen: 'ProfileScreen' })} activeOpacity={0.7}>
+          <ProfileIcon size={22} color={color('profile')} strokeWidth={active === 'profile' ? 2.2 : 2} />
+          <Text style={[styles.label, { color: color('profile') }]}>Perfil</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -59,58 +54,49 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.OVERLAY_WHITE_90,
+    backgroundColor: palette.white,
     borderTopWidth: 1,
-    borderTopColor: colors.BORDER,
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    borderTopColor: palette.borderCool,
+    paddingHorizontal: 18,
+    paddingTop: 10,
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 8,
-      },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+      android: { elevation: 8 },
     }),
   },
-  bottomNavItems: {
+  items: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
-  navItem: {
+  item: {
+    width: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    gap: 4,
   },
-  navItemText: {
+  label: {
+    fontFamily: fonts.manropeBold,
     fontSize: 10,
-    fontWeight: '500',
-    color: colors.TEXT_TERTIARY,
-    marginTop: 4,
-  },
-  navItemActive: {
-    color: colors.TEXT_PRIMARY,
   },
   fabWrapper: {
-    top: -16,
-    justifyContent: 'center',
+    width: 54,
     alignItems: 'center',
   },
   fab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.SLATE[900],
-    justifyContent: 'center',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    marginTop: -30,
+    backgroundColor: palette.navy,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: palette.white,
+    shadowColor: '#15263B',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 10,
   },
 });

@@ -1,144 +1,92 @@
-import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { View, ScrollView, StyleSheet, Text, Image, TextInput, RefreshControl, TouchableOpacity, ToastAndroid, Pressable, ActivityIndicator, Alert } from 'react-native';
-import ApiarySlider from '../../components/apiary/apiarySlider';
-import ApiaryTreatment from '../../components/apiary/ApiaryTreatment';
-import { useEffect, useState } from 'react';
-import HeaderNoIconButton from "../../components/buttons/HeaderNoIconButton";
+import React, { useEffect, useState } from 'react';
+import { View, ScrollView, StyleSheet, Text, Image, TextInput, TouchableOpacity, ToastAndroid, StatusBar } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { createApiary } from "../../modules/API/Apiarys";
-import ImagePick from "../../components/imagePicker";
-import ApiaryLocationPicker from "../../components/apiary/ApiaryLocationPicker";
 import { getApiErrorMessage } from "../../helpers/apiErrors";
 import logger from "../../helpers/logger";
 import { ApiaryAddScreenProps } from "../../types/navigation";
 import { isValidCoordinate } from "../../helpers/Apiary/mapCoordinates";
-
-import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
-import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
-import beehiveFoodSugar from '../../assets/images/icons/beehive_food_sugar.png'
-import beehiveFoodLevudex from '../../assets/images/icons/beehive_food_levudex.png'
-import beehiveTreatmentGeneral from '../../assets/images/icons/beehive_treatment_general.png'
-import beehiveTreatmentFlumetrine from '../../assets/images/icons/beehive_treatment_flumetrine.png'
-import beehiveTreatmentOxalic from '../../assets/images/icons/beehive_treatment_oxalic.png'
-import beehiveBoxGeneral from '../../assets/images/icons/beehive_box_general.png'
-import beeHiveBateryNocarge from '../../assets/images/icons/beehive-batery-nocarge.png'
-import colors from "../../constants/colors";
-import { apiaryItems } from "../../constants/Apiary/apiaryItems";
-import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
 import { IApiaryData } from "../../constants/interfaces/Apiary/IApiary";
 import { getApiaryStatusLabel } from "../../helpers/Apiary/getApiaryStatusLabel";
+import { palette, fonts, radius, shadow } from "../../constants/theme";
+import { WizardTopBar, CounterRow, SegmentControl } from "../../components/v2/wizard";
+import { Glyph, Camera, ChevronRight } from "../../components/v2/icons";
+
+const ESTADOS = [
+    { v: 0, label: 'Malo', color: palette.bad },
+    { v: 1, label: 'Medio', color: palette.warn },
+    { v: 2, label: 'Bueno', color: '#5BA86B' },
+    { v: 3, label: 'Excel.', color: palette.good },
+];
+
+const TREAT_OPTS = [{ key: '0', label: 'Off' }, { key: '45', label: '45' }, { key: '90', label: '90' }];
+const FENCE_OPTS = [{ key: '0', label: 'Off' }, { key: '30', label: '30' }, { key: '45', label: '45' }, { key: '90', label: '90' }, { key: '365', label: 'Anual' }];
 
 function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
-    const apiarySettings = route.params?.apiarySettings;
-    const managementType = route.params?.managementType || 'apiary'; // Por defecto 'apiary' (conjunto)
-    const [apiaryStatus, setApiaryStatus] = useState(0)
+    const apiarySettings = route.params?.apiarySettings || {};
+    const managementType = route.params?.managementType || 'apiary';
+    const [apiaryStatus, setApiaryStatus] = useState(0);
+    const [photoUri, setPhotoUri] = useState<string>('');
+    const [apiaryImage, setApiaryImage] = useState<any>();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [apiaryData, setApiaryData] = useState<IApiaryData>({
-        name: '',
-        image: '',
-        hives: 12,
-        status: 'Malo',
-        honey: 0,
-        levudex: 0,
-        sugar: 0,
-        box: 0,
-        boxMedium: 0,
-        boxSmall: 0,
-        tOxalic: 0,
-        tAmitraz: 0,
-        tFlumetrine: 0,
-        transhumance: 0,
-        tFence: 0,
-        settings: apiarySettings,
-        latitude: 0,
-        longitude: 0
-    })
+        name: '', image: '', hives: 12, status: 'Malo',
+        honey: 0, levudex: 0, sugar: 0, box: 0, boxMedium: 0, boxSmall: 0,
+        tOxalic: 0, tAmitraz: 0, tFlumetrine: 0, transhumance: 0, tFence: 0,
+        settings: apiarySettings, latitude: 0, longitude: 0,
+    });
 
-
-    const [apiaryImage, setApiaryImage] = useState()
-
-    const openLocationPicker = () => {
-        const currentLocation = isValidCoordinate(apiaryData.latitude, apiaryData.longitude)
-            ? {
-                latitude: Number(apiaryData.latitude),
-                longitude: Number(apiaryData.longitude),
-            }
-            : null;
-
-        navigation.navigate('MapSelectionScreen', {
-            initialLocation: currentLocation,
-            returnScreen: 'ApiaryAddScreen',
-            returnParams: {
-                apiarySettings,
-                managementType,
-            },
-        });
-    };
-
-    const renderTreatments = () => {
-        // Filtrar los ítems de tratamiento
-        const items = []
-        const treatments = apiaryItems(apiaryData).filter(item => item.category === ApiaryItemCategory.TREATMENT);
-        const tfence = apiaryItems(apiaryData).filter(item => item.key === 'tFence')
-        items.push(...treatments, ...tfence)
-
-        return (
-            <View style={styles.apiaryInfoContainer}>
-                {items.map((item, index) => (
-                    <ApiaryTreatment
-                        key={index}
-                        name={item.key}
-                        title={item.title}
-                        image={item.image}
-                        isVisible={item.isVisible}
-                        value={Number(apiaryData[item.key as keyof IApiaryData]) || 0}
-                        onChange={(value: number, key: string) => handleChangeData(value, key as keyof IApiaryData)}
-                    />
-                ))}
-            </View>
-        );
-    };
+    const set = (value: any, field: keyof IApiaryData) => setApiaryData(prev => ({ ...prev, [field]: value }));
+    const bump = (field: keyof IApiaryData, delta: number, min = 0) =>
+        setApiaryData(prev => ({ ...prev, [field]: Math.max(min, (Number(prev[field]) || 0) + delta) }));
 
     const handleApiaryStatus = (value: number) => {
         setApiaryStatus(value);
-        const statusLabel = getApiaryStatusLabel(value);
-        handleChangeData(statusLabel, 'status');
+        set(getApiaryStatusLabel(value), 'status');
     };
 
-    const handleChangeData = (value: string | number | boolean, field: keyof IApiaryData) => {
-        setApiaryData((prevState) => ({
-            ...prevState,
-            [field]: value as any
-        }));
+    async function pickImage() {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (perm.status !== 'granted') {
+            ToastAndroid.show('Sin permiso de galería', ToastAndroid.SHORT);
+            return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.82,
+        });
+        if (!result.canceled) {
+            setPhotoUri(result.assets[0].uri);
+            setApiaryImage(result.assets[0]);
+            set(result.assets[0].uri, 'image');
+        }
+    }
+
+    const openLocationPicker = () => {
+        const currentLocation = isValidCoordinate(apiaryData.latitude, apiaryData.longitude)
+            ? { latitude: Number(apiaryData.latitude), longitude: Number(apiaryData.longitude) }
+            : null;
+        navigation.navigate('MapSelectionScreen', {
+            initialLocation: currentLocation,
+            returnScreen: 'ApiaryAddScreen',
+            returnParams: { apiarySettings, managementType },
+        });
     };
-
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
-        if (isSubmitting) return; // Evitar múltiples envíos
-
-        // Validaciones
+        if (isSubmitting) return;
         if (!apiaryData.name || apiaryData.name.trim().length < 4) {
-            ToastAndroid.show('El nombre debe tener al menos 4 caracteres', ToastAndroid.SHORT);
-            return;
+            ToastAndroid.show('El nombre debe tener al menos 4 caracteres', ToastAndroid.SHORT); return;
         }
         if (apiaryData.name.length > 20) {
-            ToastAndroid.show('El nombre no puede tener más de 20 caracteres', ToastAndroid.SHORT);
-            return;
+            ToastAndroid.show('El nombre no puede tener más de 20 caracteres', ToastAndroid.SHORT); return;
         }
         if (apiaryData.hives < 1) {
-            ToastAndroid.show('Debe tener al menos 1 colmena', ToastAndroid.SHORT);
-            return;
+            ToastAndroid.show('Debe tener al menos 1 colmena', ToastAndroid.SHORT); return;
         }
-
         setIsSubmitting(true);
         try {
-            // Agregar managementType a los datos del apiario
-            const apiaryDataWithType = {
-                ...apiaryData,
-                managementType: managementType,
-            };
-
-            const response = await createApiary(apiaryImage, apiaryDataWithType);
+            const response = await createApiary(apiaryImage, { ...apiaryData, managementType });
             if (response && (response.status === 200 || response.status === 201)) {
                 ToastAndroid.show('Apiario creado exitosamente', ToastAndroid.SHORT);
                 navigation.navigate('ApiaryListScreen');
@@ -146,437 +94,180 @@ function ApiaryAddScreen({ route, navigation }: ApiaryAddScreenProps) {
                 ToastAndroid.show('No se pudo crear el apiario', ToastAndroid.SHORT);
             }
         } catch (error: any) {
-            const errorMessage = getApiErrorMessage(error, 'Error desconocido');
-            ToastAndroid.show(`Error al crear apiario: ${errorMessage}`, ToastAndroid.SHORT);
+            ToastAndroid.show(`Error al crear apiario: ${getApiErrorMessage(error, 'Error desconocido')}`, ToastAndroid.SHORT);
             logger.error('[ApiaryAddScreen] Error al crear apiario:', error);
         } finally {
             setIsSubmitting(false);
         }
-    }
-
-
-    useEffect(() => {
-        navigation.setOptions({
-            headerRight: () =>
-                <HeaderNoIconButton
-                    text={isSubmitting ? 'Creando...' : 'Crear'}
-                    move={handleSubmit}
-                    disabled={isSubmitting}
-                />,
-        })
-    }, [apiaryData, isSubmitting])
+    };
 
     useEffect(() => {
         const selectedLocation = route.params?.selectedLocation;
-
-        if (!selectedLocation || !isValidCoordinate(selectedLocation.latitude, selectedLocation.longitude)) {
-            return;
-        }
-
-        setApiaryData((prevState) => ({
-            ...prevState,
-            latitude: Number(selectedLocation.latitude),
-            longitude: Number(selectedLocation.longitude),
-        }));
+        if (!selectedLocation || !isValidCoordinate(selectedLocation.latitude, selectedLocation.longitude)) return;
+        setApiaryData(prev => ({ ...prev, latitude: Number(selectedLocation.latitude), longitude: Number(selectedLocation.longitude) }));
     }, [route.params?.selectedLocation?.latitude, route.params?.selectedLocation?.longitude]);
 
+    const s = apiarySettings;
+    const hasLocation = isValidCoordinate(apiaryData.latitude, apiaryData.longitude);
+    const isIndividual = managementType === 'individual';
 
-    const getStatusColor = (status: number) => {
-        switch (status) {
-            case 0: return colors.RED_LIGHT;
-            case 1: return colors.YELLOW;
-            case 2: return colors.BLUE_LIGHT;
-            case 3: return colors.BLUE;
-            default: return colors.GREY;
-        }
-    };
-
-    const getStatusLabel = (status: number) => {
-        switch (status) {
-            case 0: return 'Malo';
-            case 1: return 'Medio';
-            case 2: return 'Bueno';
-            case 3: return 'Excel.';
-            default: return '';
-        }
-    };
-
-    // Si es manejo individual, mostrar formulario simplificado
-    if (managementType === 'individual') {
-        return (
-            <ScrollView style={styles.scrollContainer}>
-                <View style={styles.container}>
-                    <View style={styles.addApiaryTitle}>
-                        <Text style={styles.addApiaryTitleText}>Creación del Apiario</Text>
-                        <Text style={styles.addApiarySubTitleText}>
-                            Crea el apiario para manejar colmenas individuales. Podrás agregar colmenas después de crearlo.
-                        </Text>
-                    </View>
-                </View>
-                <View style={styles.apiaryInfo}>
-                    <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={require('../../assets/images/apiary-default.png')} />
-
-                    <View style={styles.apiaryNameContainer}>
-                        <TextInput
-                            style={styles.apiaryInfoName}
-                            maxLength={20}
-                            onChangeText={(value) => handleChangeData(value, 'name')}
-                            placeholder='Nombre del Apiario'
-                            placeholderTextColor={colors.GREY}
-                        />
-                    </View>
-
-                    <ApiaryLocationPicker
-                        latitude={apiaryData.latitude}
-                        longitude={apiaryData.longitude}
-                        onPress={openLocationPicker}
-                    />
-
-                    {/* CANTIDAD DE COLMENAS */}
-                    <ApiarySlider
-                        max={1000}
-                        min={1}
-                        step={1}
-                        text="Número de Colmenas"
-                        name="hives"
-                        image={beehiveCollonySize}
-                        unity=""
-                        isActive={true}
-                        quantity={apiaryData.hives}
-                        functionchange={handleChangeData}
-                    />
-                </View>
-            </ScrollView>
-        );
-    }
-
-    // Vista normal para apiarios con manejo conjunto
     return (
-        <ScrollView style={styles.scrollContainer} >
-            <View style={styles.container}>
-                <View style={styles.addApiaryTitle}>
-                    <Text style={styles.addApiaryTitleText}>Creacion del apiario</Text>
-                    <Text style={styles.addApiarySubTitleText}>Crea el apiario y utiliza la configuracion anterior para darle informacion de inicio.</Text>
-                </View>
-            </View>
-            <View style={styles.apiaryInfo}>
-                <ImagePick imageChange={handleChangeData} uploadImage={setApiaryImage} image={require('../../assets/images/apiary-default.png')} />
+        <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor={palette.cream} />
+            <WizardTopBar
+                variant="back"
+                onBack={() => navigation.goBack()}
+                actionLabel={isSubmitting ? 'Creando…' : 'Crear'}
+                onAction={handleSubmit}
+                actionDisabled={isSubmitting}
+            />
 
-                <View style={styles.apiaryNameContainer}>
-                    <TextInput
-                        style={styles.apiaryInfoName}
-                        maxLength={20}
-                        onChangeText={(value) => handleChangeData(value, 'name')}
-                        placeholder='Nombre del Apiario'
-                        placeholderTextColor={colors.GREY}
-                    />
-                </View>
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                <Text style={styles.title}>Creación del apiario</Text>
+                <Text style={styles.subtitle}>
+                    {isIndividual
+                        ? 'Creá el apiario para manejar colmenas individuales. Podrás agregar colmenas después.'
+                        : 'Creá el apiario y usá la configuración anterior para darle su información de inicio.'}
+                </Text>
 
-                <ApiaryLocationPicker
-                    latitude={apiaryData.latitude}
-                    longitude={apiaryData.longitude}
-                    onPress={openLocationPicker}
+                {/* Foto */}
+                <TouchableOpacity style={styles.photo} onPress={pickImage} activeOpacity={0.85}>
+                    {photoUri ? (
+                        <Image source={{ uri: photoUri }} style={styles.photoImg} />
+                    ) : (
+                        <View style={styles.photoPlaceholder}>
+                            <Camera size={30} color={palette.slate} />
+                            <Text style={styles.photoText}>Agregar foto del apiario</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                {/* Nombre */}
+                <TextInput
+                    style={styles.input}
+                    maxLength={20}
+                    onChangeText={(v) => set(v, 'name')}
+                    placeholder="Nombre del Apiario"
+                    placeholderTextColor="#A8A296"
                 />
 
-
-
-                {/* CANTIDAD DE COLMENAS */}
-                <ApiarySlider
-                    max={1000}
-                    min={1}
-                    step={1}
-                    text="Colmenas"
-                    name="hives"
-                    image={beehiveCollonySize}
-                    unity=""
-                    isActive={true}
-                    quantity={apiaryData.hives}
-                    functionchange={handleChangeData}
-                />
-
-
-                {/* ESTADO DEL APIARIO */}
-                <View style={styles.apiaryStatusContainer}>
-                    <Image style={styles.apiaryIcon} source={beehiveCollonySize} />
-                    <View style={styles.apiaryInfoItem}>
-
-                        <View style={styles.apiaryInfoItemData}>
-                            <Text style={styles.apiaryInfoItemDataText}>
-                                Estado
-                            </Text>
-                            <Text style={[styles.apiaryInfoItemDataText, { fontWeight: 'bold', color: getStatusColor(apiaryStatus) }]}>
-                                {apiaryData.status}
-                            </Text>
-                        </View>
-
-                        <View style={styles.statusButtonsContainer}>
-                            {[0, 1, 2, 3].map((status) => (
-                                <TouchableOpacity
-                                    key={status}
-                                    onPress={() => handleApiaryStatus(status)}
-                                    style={[
-                                        styles.statusButton,
-                                        apiaryStatus === status && { backgroundColor: getStatusColor(status), borderColor: getStatusColor(status) }
-                                    ]}
-                                >
-                                    <Text style={[
-                                        styles.statusButtonText,
-                                        apiaryStatus === status ? { color: colors.WHITE } : { color: colors.GREY }
-                                    ]}>
-                                        {getStatusLabel(status)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                {/* Ubicación */}
+                <TouchableOpacity style={styles.locCard} onPress={openLocationPicker} activeOpacity={0.85}>
+                    <View style={styles.locIcon}><Glyph name="pin" size={20} color={palette.honeyText} strokeWidth={2} /></View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.locTitle}>Ubicación del apiario</Text>
+                        <Text style={styles.locSub}>{hasLocation ? 'Ubicación cargada' : 'Sin ubicación cargada'}</Text>
                     </View>
-                </View>
+                    <View style={styles.locAction}>
+                        <Text style={styles.locActionText}>{hasLocation ? 'Cambiar' : 'Elegir'}</Text>
+                        <ChevronRight size={16} color={palette.honeyDark} />
+                    </View>
+                </TouchableOpacity>
 
-                {/* ALIMENTO */}
-                <ApiarySlider
-                    max={30}
-                    min={0}
-                    step={0.25}
-                    text="Miel"
-                    name="honey"
-                    image={beehiveFoodHoney}
-                    unity=" kg"
-                    isActive={apiaryData.settings.honey}
-                    quantity={apiaryData.honey}
-                    functionchange={handleChangeData}
-                />
+                {/* Colmenas */}
+                <CounterRow label="Colmenas" glyph="colony" value={apiaryData.hives}
+                    onDec={() => bump('hives', -1, 1)} onInc={() => bump('hives', 1, 1)} />
 
-                {/* LEVUDEX */}
-                <ApiarySlider
-                    max={20}
-                    min={0}
-                    step={0.25}
-                    text="Levudex"
-                    name="levudex"
-                    image={beehiveFoodLevudex}
-                    unity=" kg"
-                    isActive={apiaryData.settings.levudex}
-                    quantity={apiaryData.levudex}
-                    functionchange={handleChangeData}
-                />
+                {!isIndividual && (
+                    <>
+                        {/* Estado */}
+                        <View style={styles.estadoCard}>
+                            <View style={styles.estadoHead}>
+                                <View style={styles.locIcon}><Glyph name="estado" size={20} color={palette.honeyText} strokeWidth={2} /></View>
+                                <Text style={styles.estadoLabel}>Estado</Text>
+                                <Text style={[styles.estadoValue, { color: ESTADOS[apiaryStatus].color }]}>
+                                    {getApiaryStatusLabel(apiaryStatus)}
+                                </Text>
+                            </View>
+                            <View style={styles.estadoPills}>
+                                {ESTADOS.map((e) => {
+                                    const active = apiaryStatus === e.v;
+                                    return (
+                                        <TouchableOpacity key={e.v} onPress={() => handleApiaryStatus(e.v)} activeOpacity={0.8}
+                                            style={[styles.pill, active ? { backgroundColor: e.color, borderColor: e.color } : styles.pillOff]}>
+                                            <Text style={[styles.pillText, { color: active ? '#fff' : palette.inkSubtle, fontFamily: active ? fonts.soraBold : fonts.manropeSemiBold }]}>{e.label}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </View>
 
-                {/* AZUCAR */}
-                <ApiarySlider
-                    max={30}
-                    min={0}
-                    step={0.25}
-                    text="Azucar"
-                    name="sugar"
-                    image={beehiveFoodSugar}
-                    unity=" kg"
-                    isActive={apiaryData.settings.sugar}
-                    quantity={apiaryData.sugar}
-                    functionchange={handleChangeData}
-                />
+                        {/* Alimentos */}
+                        {s.honey && <CounterRow label="Miel" glyph="honey" value={apiaryData.honey} unit="kg" onDec={() => bump('honey', -1)} onInc={() => bump('honey', 1)} />}
+                        {s.levudex && <CounterRow label="Levudex" glyph="levudex" value={apiaryData.levudex} unit="kg" onDec={() => bump('levudex', -1)} onInc={() => bump('levudex', 1)} />}
+                        {s.sugar && <CounterRow label="Azúcar" glyph="sugar" value={apiaryData.sugar} unit="kg" onDec={() => bump('sugar', -1)} onInc={() => bump('sugar', 1)} />}
 
-                {/* ALZAS STANDART */}
-                <ApiarySlider
-                    max={1000}
-                    min={0}
-                    step={1}
-                    text="Alza"
-                    name="box"
-                    image={beehiveBoxGeneral}
-                    unity=" Unidades"
-                    isActive={apiaryData.settings.box}
-                    quantity={apiaryData.box}
-                    functionchange={handleChangeData}
-                />
+                        {/* Cosecha */}
+                        {s.box && <CounterRow label="Alza" glyph="alza" value={apiaryData.box} unit="Un." onDec={() => bump('box', -1)} onInc={() => bump('box', 1)} />}
+                        {s.boxMedium && <CounterRow label="Alza 3/4" glyph="alza34" value={apiaryData.boxMedium} unit="Un." onDec={() => bump('boxMedium', -1)} onInc={() => bump('boxMedium', 1)} />}
+                        {s.boxSmall && <CounterRow label="Alza 1/2" glyph="alza12" value={apiaryData.boxSmall} unit="Un." onDec={() => bump('boxSmall', -1)} onInc={() => bump('boxSmall', 1)} />}
 
-                {/* ALZAS 3/4 */}
-                <ApiarySlider
-                    max={1000}
-                    min={0}
-                    step={1}
-                    text="Alza 3/4"
-                    name="boxMedium"
-                    image={beehiveBoxGeneral}
-                    unity=" Unidades"
-                    isActive={apiaryData.settings.boxMedium}
-                    quantity={apiaryData.boxMedium}
-                    functionchange={handleChangeData}
-                />
+                        {/* Tratamientos */}
+                        {(s.tOxalic || s.tAmitraz || s.tFlumetrine) && (
+                            <View style={styles.treatGrid}>
+                                {s.tOxalic && <TreatCard title="Oxálico" value={String(apiaryData.tOxalic)} opts={TREAT_OPTS} onChange={(v) => set(Number(v), 'tOxalic')} />}
+                                {s.tAmitraz && <TreatCard title="Amitraz" value={String(apiaryData.tAmitraz)} opts={TREAT_OPTS} onChange={(v) => set(Number(v), 'tAmitraz')} />}
+                                {s.tFlumetrine && <TreatCard title="Flumetrina" value={String(apiaryData.tFlumetrine)} opts={TREAT_OPTS} onChange={(v) => set(Number(v), 'tFlumetrine')} />}
+                            </View>
+                        )}
 
-                {/* ALZAS 1/2 */}
-                <ApiarySlider
-                    max={1000}
-                    min={0}
-                    step={1}
-                    text="Alza 1/2"
-                    name="boxSmall"
-                    image={beehiveBoxGeneral}
-                    unity=" Unidades"
-                    isActive={apiaryData.settings.boxSmall}
-                    quantity={apiaryData.boxSmall}
-                    functionchange={handleChangeData}
-                />
+                        {/* Eléctrico */}
+                        {s.tFence && (
+                            <View style={styles.fenceCard}>
+                                <Text style={styles.treatTitle}>Eléctrico</Text>
+                                <Text style={styles.treatSub}>{fenceLabel(apiaryData.tFence)}</Text>
+                                <SegmentControl options={FENCE_OPTS} value={String(apiaryData.tFence)} onChange={(v) => set(Number(v), 'tFence')} />
+                            </View>
+                        )}
+                    </>
+                )}
+            </ScrollView>
+        </View>
+    );
+}
 
+function treatLabel(v: string) { return v === '0' ? 'Inactivo' : `Cada ${v} días`; }
+function fenceLabel(v: number) { return v === 0 ? 'Inactivo' : v === 365 ? 'Cada año' : `Cada ${v} días`; }
 
-                {/* TRATAMIENTOS */}
-                <View style={styles.apiaryTreatments}>
-
-                    {renderTreatments()}
-
-                </View>
-            </View>
-        </ScrollView>
-    )
+function TreatCard({ title, value, opts, onChange }: { title: string; value: string; opts: { key: string; label: string }[]; onChange: (v: string) => void }) {
+    return (
+        <View style={styles.treatCard}>
+            <Text style={styles.treatTitle}>{title}</Text>
+            <Text style={styles.treatSub}>{treatLabel(value)}</Text>
+            <SegmentControl options={opts} value={value} onChange={onChange} />
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-    scrollContainer: {
-        backgroundColor: colors.BG_SECTION
-    },
-    container: {
-        alignItems: 'center',
-    },
-
-    addApiaryTitle: {
-        marginVertical: 20,
-        width: wp('80%'),
-    },
-    addApiaryTitleText: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
-        fontFamily: 'Bebas Neue', // Assuming you have this font linked, otherwise remove this line
-    },
-    addApiarySubTitleText: {
-        color: colors.GREY,
-        fontSize: 16,
-        fontWeight: '400',
-        marginTop: 5,
-    },
-    apiaryNameContainer: {
-        marginVertical: 20,
-        width: wp('80%'),
-    },
-    apiaryInfo: {
-        width: wp('100%'),
-        marginVertical: 10,
-        alignItems: 'center'
-    },
-    apiaryInfoName: {
-        backgroundColor: colors.BORDER_FORM,
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 5,
-    },
-
-
-    apiaryStatusContainer: {
-        width: '90%',
-        backgroundColor: colors.WHITE,
-        borderRadius: 12,
-        padding: 15,
-        justifyContent: 'flex-start',
-        alignItems:'center',
-        flexDirection: 'row',
-        marginVertical: 8,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2.22,
-        elevation: 3,
-    },
-    apiaryInfoItem: {
-        flex: 1,
-    },
-    apiaryIcon: {
-        height: 40,
-        width: 40,
-        marginRight: 15,
-        tintColor: colors.YELLOW,
-        resizeMode: 'contain',
-    },
-    apiaryInfoItemData: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    apiaryInfoItemDataText: {
-        color: colors.BLACK_LIGHT,
-        fontSize: 16,
-        fontWeight: '600'
-    },
-    statusButtonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 5,
-    },
-    statusButton: {
-        flex: 1,
-        marginHorizontal: 4,
-        paddingVertical: 8,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: colors.BORDER_LIGHT,
-        backgroundColor: '#F5F5F7',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statusButtonText: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    apiaryInfoItemSlider: {
-        margin: 5,
-    },
-    apiaryInfoItemSliderThumb: {
-        width: 18,
-        height: 18,
-    },
-    apiaryInfoContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        width: '90%',
-        justifyContent: 'space-between',
-    },
-    apiaryTreatments: {
-        width: '100%',
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-
-    apiaryTreatmentRow: {
-        flexDirection: 'row',
-        width: wp('80%'),
-        marginVertical: 10,
-        justifyContent: 'space-around',
-    },
-
-    apiaryTreatment: {
-        alignItems: 'center',
-    },
-    apiaryTreatmentText: {
-        color: colors.BORDER_INPUT,
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    apiaryTreatmentBackground: {
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderWidth: 0.3,
-        borderColor: '#F5F3F3',
-        borderRadius: 5,
-        backgroundColor: '#F5F5F7',
-        marginBottom: 5,
-    },
-    apiaryTreatmentTextBackground: {
-        color: colors.BORDER_INPUT,
-        fontSize: 16,
-        height: 20,
-        fontWeight: '500',
-    },
+    container: { flex: 1, backgroundColor: palette.cream },
+    scroll: { paddingHorizontal: 22, paddingBottom: 40 },
+    title: { fontFamily: fonts.soraExtraBold, fontSize: 27, color: palette.ink, letterSpacing: -0.4, marginTop: 4 },
+    subtitle: { fontFamily: fonts.manrope, fontSize: 14.5, color: palette.inkMuted, marginTop: 7, lineHeight: 21 },
+    photo: { height: 200, borderRadius: 22, marginTop: 18, overflow: 'hidden', backgroundColor: palette.white, borderWidth: 1, borderColor: palette.border },
+    photoImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+    photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+    photoText: { fontFamily: fonts.manropeSemiBold, fontSize: 14, color: palette.inkMuted },
+    input: { marginTop: 16, borderWidth: 1, borderColor: palette.border, backgroundColor: palette.white, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 15, fontFamily: fonts.manrope, fontSize: 15, color: palette.ink },
+    locCard: { marginTop: 12, backgroundColor: palette.white, borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', gap: 13, ...shadow.soft },
+    locIcon: { width: 42, height: 42, borderRadius: 13, backgroundColor: palette.honeyBg, alignItems: 'center', justifyContent: 'center' },
+    locTitle: { fontFamily: fonts.soraBold, fontSize: 15.5, color: palette.ink },
+    locSub: { fontFamily: fonts.manrope, fontSize: 12.5, color: palette.slate, marginTop: 2 },
+    locAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    locActionText: { fontFamily: fonts.manropeBold, fontSize: 13, color: palette.honeyDark },
+    estadoCard: { marginTop: 12, backgroundColor: palette.white, borderRadius: radius.lg, padding: 16, ...shadow.soft },
+    estadoHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    estadoLabel: { flex: 1, fontFamily: fonts.soraBold, fontSize: 16, color: palette.ink },
+    estadoValue: { fontFamily: fonts.soraBold, fontSize: 15 },
+    estadoPills: { flexDirection: 'row', gap: 8, marginTop: 14 },
+    pill: { flex: 1, paddingVertical: 9, borderRadius: radius.pill, alignItems: 'center' },
+    pillOff: { borderWidth: 1, borderColor: palette.border, backgroundColor: palette.white },
+    pillText: { fontSize: 13 },
+    treatGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12, marginTop: 12 },
+    treatCard: { width: '48.5%', backgroundColor: palette.white, borderRadius: radius.lg, padding: 15, ...shadow.soft },
+    fenceCard: { marginTop: 12, backgroundColor: palette.white, borderRadius: radius.lg, padding: 16, ...shadow.soft },
+    treatTitle: { fontFamily: fonts.soraBold, fontSize: 15, color: palette.ink },
+    treatSub: { fontFamily: fonts.manrope, fontSize: 12, color: palette.slate, marginBottom: 11, marginTop: 2 },
 });
-
-
 
 export default ApiaryAddScreen;

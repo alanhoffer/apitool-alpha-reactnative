@@ -2,14 +2,16 @@
   "expo": {
     "name": "Apitool",
     "slug": "apitool-alpha-reactnative",
+    "scheme": "apitool",
     "version": "1.0.1",
+    "runtimeVersion": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/images/logos/icon-white-yellow.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F8F2E4"
     },
     "plugins": [
       [
@@ -55,7 +57,7 @@
       "favicon": "./assets/images/logos/icon-white-yellow.png"
     },
     "extra": {
-      "apiBaseUrl": "http://192.99.145.170:7757/",
+      "apiBaseUrl": "https://api.xn--cabaahoffer-4db.com.ar/",
       "mapTileUrlTemplate": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       "mapAttribution": "\u00A9 OpenStreetMap contributors",
       "mapMaximumZ": 19,

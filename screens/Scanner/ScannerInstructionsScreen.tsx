@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import colors from '../../constants/colors';
+import { palette, fonts, radius, shadow } from '../../constants/theme';
 
 const tips = [
   { icon: 'ruler', text: 'Mantén el código de barras a una distancia de 15-30 cm de la cámara para un escaneo óptimo.' },
@@ -23,7 +24,7 @@ const InstructionsScreen: React.FC = ({ navigation }: any) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.iconWrap}>
-          <FontAwesome5 name="qrcode" size={32} color={colors.TEXT_PRIMARY} />
+          <FontAwesome5 name="qrcode" size={32} color={palette.honeyText} />
         </View>
         <Text style={styles.title}>ApiScanner</Text>
         <Text style={styles.subtitle}>Escaneá tambores de miel fácilmente</Text>
@@ -35,7 +36,7 @@ const InstructionsScreen: React.FC = ({ navigation }: any) => {
         {tips.map((tip, index) => (
           <View key={index} style={[styles.tipRow, index < tips.length - 1 && styles.tipBorder]}>
             <View style={styles.tipIcon}>
-              <FontAwesome5 name={tip.icon} size={14} color={colors.TEXT_SECONDARY} />
+              <FontAwesome5 name={tip.icon} size={14} color={palette.honeyText} />
             </View>
             <Text style={styles.tipText}>{tip.text}</Text>
           </View>
@@ -58,7 +59,7 @@ const InstructionsScreen: React.FC = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: colors.BG_APP,
+    backgroundColor: palette.mist,
   },
   content: {
     paddingHorizontal: 20,
@@ -71,44 +72,36 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: colors.BG_HIGHLIGHT,
-    borderWidth: 1,
-    borderColor: colors.WARNING_BG_LIGHT,
+    backgroundColor: palette.honeyBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
     fontSize: 26,
-    fontWeight: '700',
-    color: colors.TEXT_PRIMARY,
+    fontFamily: fonts.soraExtraBold,
+    color: palette.ink,
     letterSpacing: -0.5,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: colors.TEXT_SECONDARY,
-    fontWeight: '500',
+    color: palette.inkMuted,
+    fontFamily: fonts.manrope,
   },
   tipsCard: {
     backgroundColor: colors.WHITE,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.BORDER,
+    borderRadius: radius.lg,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    ...shadow.soft,
   },
   tipsTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.TEXT_SECONDARY,
+    fontSize: 12,
+    fontFamily: fonts.manropeBold,
+    color: palette.slate,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 16,
   },
   tipRow: {
@@ -121,12 +114,10 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.BG_INPUT,
   },
   tipIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: colors.BG_CARD,
-    borderWidth: 1,
-    borderColor: colors.BORDER,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: palette.honeyBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -135,27 +126,22 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: 14,
-    color: colors.TEXT_DARK,
+    color: palette.inkMuted,
     lineHeight: 22,
-    fontWeight: '500',
+    fontFamily: fonts.manrope,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.BG_DARK,
+    backgroundColor: palette.navy,
     paddingVertical: 16,
-    borderRadius: 14,
-    shadowColor: colors.BG_DARK,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: radius.lg,
   },
   buttonText: {
     color: colors.WHITE,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: fonts.soraBold,
   },
 });
 

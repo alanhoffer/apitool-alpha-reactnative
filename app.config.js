@@ -32,9 +32,14 @@ const withBuildPropertiesConfig = (plugin) => {
 
 module.exports = () => ({
   ...appJson.expo,
+  // En desarrollo (Expo Go / dev) desactivamos expo-updates para evitar que el
+  // dev server invoque el subproceso runtimeversion:resolve, que falla de forma
+  // intermitente en Windows (exit 0xC0000142) y tira la app a la pantalla de error.
+  // En builds de producción no se toca: EAS Update sigue funcionando.
+  ...(isProductionBuild ? {} : { updates: { ...(appJson.expo.updates || {}), enabled: false } }),
   extra: {
     ...appJson.expo.extra,
     apiBaseUrl,
   },
-  plugins: appJson.expo.plugins.map(withBuildPropertiesConfig),
+  plugins: [...appJson.expo.plugins.map(withBuildPropertiesConfig), 'expo-font'],
 });

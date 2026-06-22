@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import logger from "../../helpers/logger";
 import { ApiaryHistoryScreenProps } from "../../types/navigation";
 import { Ionicons } from '@expo/vector-icons';
+import { palette, fonts, shadow as v2shadow } from "../../constants/theme";
 
 // Orden y categorías de campos
 const FIELD_ORDER: Record<string, { category: string; color: string; priority: number }> = {
@@ -206,7 +207,7 @@ export default function ApiaryHistoryScreen({ route }: ApiaryHistoryScreenProps)
 const styles = StyleSheet.create({
     scrollContainer: {
         flex: 1,
-        backgroundColor: colors.BG_SECTION,
+        backgroundColor: palette.mist,
     },
     container: {
         paddingHorizontal: 20,
@@ -217,13 +218,14 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 26,
-        fontWeight: 'bold',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         marginBottom: 4,
     },
     headerSubtitle: {
         fontSize: 14,
-        color: colors.TEXT_SECONDARY,
+        fontFamily: fonts.manrope,
+        color: palette.inkMuted,
     },
     emptyContainer: {
         alignItems: 'center',
@@ -255,9 +257,9 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 15,
-        backgroundColor: colors.YELLOW + '22',
+        backgroundColor: palette.honeyBg,
         borderWidth: 2,
-        borderColor: colors.YELLOW,
+        borderColor: palette.honey,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
@@ -275,25 +277,23 @@ const styles = StyleSheet.create({
     card: {
         flex: 1,
         backgroundColor: colors.WHITE,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
+        borderRadius: 16,
         overflow: 'hidden',
+        ...v2shadow.soft,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 14,
-        paddingVertical: 10,
+        paddingVertical: 11,
         borderBottomWidth: 1,
-        borderBottomColor: colors.BORDER,
-        backgroundColor: colors.BG_CARD,
+        borderBottomColor: palette.borderCool,
     },
     cardDate: {
         fontSize: 15,
-        fontWeight: '700',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         marginBottom: 3,
     },
     cardMeta: {
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
         color: colors.TEXT_TERTIARY,
     },
     badge: {
-        backgroundColor: colors.YELLOW,
+        backgroundColor: palette.honey,
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 2,
@@ -319,8 +319,8 @@ const styles = StyleSheet.create({
     },
     badgeText: {
         fontSize: 12,
-        fontWeight: 'bold',
-        color: colors.BLACK,
+        fontFamily: fonts.soraBold,
+        color: palette.navy,
     },
 
     // Categorías

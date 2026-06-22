@@ -16,6 +16,8 @@ import logger from '../../helpers/logger';
 import { getStatisticsOverview, StatisticsOverview, StatisticsPeriod } from '../../modules/API/User';
 import StatisticsSkeleton from '../../components/skeletons/StatisticsSkeleton';
 import { StatisticsScreenProps } from '../../types/navigation';
+import BottomNavBar from '../../components/navigation/BottomNavBar';
+import { palette, fonts, shadow as v2shadow } from '../../constants/theme';
 
 const PERIOD_LABELS: Record<StatisticsPeriod, string> = {
     day: 'Día',
@@ -129,7 +131,7 @@ const StatisticsScreen = ({ navigation }: StatisticsScreenProps) => {
         <View style={styles.wrapper}>
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 40 }}
+                contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: insets.bottom + 110 }}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -270,6 +272,7 @@ const StatisticsScreen = ({ navigation }: StatisticsScreenProps) => {
                     </Text>
                 </View>
             </ScrollView>
+            <BottomNavBar navigation={navigation} active="stats" />
         </View>
     );
 };
@@ -277,7 +280,7 @@ const StatisticsScreen = ({ navigation }: StatisticsScreenProps) => {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        backgroundColor: colors.BG_APP,
+        backgroundColor: palette.mist,
     },
     container: {
         flex: 1,
@@ -305,15 +308,15 @@ const styles = StyleSheet.create({
     },
     headerEyebrow: {
         fontSize: 12,
-        fontWeight: '700',
-        color: colors.TEXT_SECONDARY,
+        fontFamily: fonts.manropeBold,
+        color: palette.honeyDark,
         textTransform: 'uppercase',
         letterSpacing: 0.6,
     },
     headerTitle: {
         fontSize: 26,
-        fontWeight: '800',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         letterSpacing: -0.7,
         marginTop: 2,
     },
@@ -331,31 +334,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     periodButtonActive: {
-        backgroundColor: colors.WHITE,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 2,
+        backgroundColor: palette.navy,
     },
     periodButtonText: {
         fontSize: 13,
-        fontWeight: '700',
-        color: colors.SLATE[500],
+        fontFamily: fonts.manropeSemiBold,
+        color: palette.slate,
     },
     periodButtonTextActive: {
-        color: colors.SLATE[900],
+        color: '#fff',
+        fontFamily: fonts.manropeBold,
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: '800',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         marginBottom: 12,
     },
     sectionTitleInline: {
         fontSize: 15,
-        fontWeight: '700',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     summaryGrid: {
         flexDirection: 'row',
@@ -385,8 +384,8 @@ const styles = StyleSheet.create({
     },
     summaryValue: {
         fontSize: 22,
-        fontWeight: '800',
-        color: colors.TEXT_PRIMARY,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         letterSpacing: -0.5,
     },
     sectionCard: {
@@ -444,7 +443,7 @@ const styles = StyleSheet.create({
     seriesBarFill: {
         height: '100%',
         borderRadius: 999,
-        backgroundColor: colors.HONEY[500],
+        backgroundColor: palette.honey,
     },
     twoColumnSection: {
         flexDirection: 'row',

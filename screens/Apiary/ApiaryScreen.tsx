@@ -22,6 +22,7 @@ import { ITask } from "../../constants/interfaces/Task/ITask";
 import logger from "../../helpers/logger";
 import { ApiaryScreenProps } from "../../types/navigation";
 import { isValidCoordinate } from "../../helpers/Apiary/mapCoordinates";
+import { palette, fonts, shadow as v2shadow } from "../../constants/theme";
 
 function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
     const insets = useSafeAreaInsets();
@@ -540,8 +541,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             <View style={[styles.quickActionsWrapper, { width: '100%' }]}>
                                 <View style={styles.glassCard}>
                                     <View style={styles.quickActionBtn}>
-                                        <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                            <Ionicons name="cube" size={24} color={colors.SLATE[600]} />
+                                        <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                            <Ionicons name="cube" size={24} color={palette.honeyText} />
                                         </View>
                                         <Text style={styles.actionBtnLabel}>{filteredHives.length} Activas</Text>
                                     </View>
@@ -550,8 +551,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                         style={styles.quickActionBtn}
                                         onPress={() => apiaryInfoState && navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}
                                     >
-                                        <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                            <Ionicons name="time" size={24} color={colors.SLATE[600]} />
+                                        <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                            <Ionicons name="time" size={24} color={palette.honeyText} />
                                         </View>
                                         <Text style={styles.actionBtnLabel}>Historial</Text>
                                     </TouchableOpacity>
@@ -562,8 +563,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                                 style={styles.quickActionBtn}
                                                 onPress={() => navigation.navigate('TaskAddScreen', { apiaryId: apiaryInfoState.id })}
                                             >
-                                                <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                                    <Ionicons name="checkmark-circle-outline" size={24} color={colors.SLATE[600]} />
+                                                <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                                    <Ionicons name="checkmark-circle-outline" size={24} color={palette.honeyText} />
                                                 </View>
                                                 <Text style={styles.actionBtnLabel}>Tareas</Text>
                                             </TouchableOpacity>
@@ -574,8 +575,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                         style={styles.quickActionBtn}
                                         onPress={() => navigation.navigate('ApiaryIndividualSettingsScreen', { apiaryInfo: apiaryInfoState, apiarySettings: apiaryInfoState.settings })}
                                     >
-                                        <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                            <Ionicons name="options" size={24} color={colors.SLATE[600]} />
+                                        <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                            <Ionicons name="options" size={24} color={palette.honeyText} />
                                         </View>
                                         <Text style={styles.actionBtnLabel}>Ajustes</Text>
                                     </TouchableOpacity>
@@ -709,8 +710,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             style={styles.quickActionBtn}
                             onPress={() => apiaryInfoState && navigation.navigate('ApiaryHistoryScreen', { apiaryInfo: apiaryInfoState })}
                         >
-                            <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                <Ionicons name="time" size={24} color={colors.SLATE[600]} />
+                            <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                <Ionicons name="time" size={24} color={palette.honeyText} />
                             </View>
                             <Text style={styles.actionBtnLabel}>Historial</Text>
                         </TouchableOpacity>
@@ -722,8 +723,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                                     style={styles.quickActionBtn}
                                     onPress={() => navigation.navigate('TaskAddScreen', { apiaryId: apiaryInfoState.id })}
                                 >
-                                    <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                        <Ionicons name="checkmark-circle-outline" size={24} color={colors.SLATE[600]} />
+                                    <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                        <Ionicons name="checkmark-circle-outline" size={24} color={palette.honeyText} />
                                     </View>
                                     <Text style={styles.actionBtnLabel}>Tareas</Text>
                                 </TouchableOpacity>
@@ -736,8 +737,8 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
                             style={styles.quickActionBtn}
                             onPress={() => apiaryInfoState && navigation.navigate('ApiarySettingsScreen', { apiaryInfo: apiaryInfoState, apiarySettings: apiaryInfoState.settings })}
                         >
-                            <View style={[styles.actionIconBox, { backgroundColor: colors.SLATE[100] }]}>
-                                <Ionicons name="options" size={24} color={colors.SLATE[600]} />
+                            <View style={[styles.actionIconBox, { backgroundColor: palette.honeyBg }]}>
+                                <Ionicons name="options" size={24} color={palette.honeyText} />
                             </View>
                             <Text style={styles.actionBtnLabel}>Ajustes</Text>
                         </TouchableOpacity>
@@ -1076,13 +1077,13 @@ function ApiaryScreen({ route, navigation }: ApiaryScreenProps) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#faf9f7',
+        backgroundColor: palette.mist,
     },
     scrollContainer: {
         flex: 1,
     },
     contentPadding: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 22,
         paddingBottom: 24,
     },
     // Hero Section
@@ -1146,21 +1147,21 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     activeBadge: {
-        paddingHorizontal: 8,
+        paddingHorizontal: 9,
         paddingVertical: 4,
-        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        backgroundColor: palette.honey,
         borderRadius: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(34, 197, 94, 0.4)',
     },
     activeBadgeText: {
-        color: '#86efac',
+        color: palette.navy,
         fontSize: 10,
-        fontWeight: '800',
+        fontFamily: fonts.manropeBold,
+        letterSpacing: 0.5,
     },
     heroHiveCount: {
-        color: 'rgba(255,255,255,0.8)',
+        color: 'rgba(255,255,255,0.85)',
         fontSize: 14,
+        fontFamily: fonts.manropeSemiBold,
     },
     heroTitleRow: {
         flexDirection: 'row',
@@ -1168,8 +1169,8 @@ const styles = StyleSheet.create({
         alignItems: 'flex-end',
     },
     heroTitle: {
-        fontSize: 32,
-        fontWeight: '800',
+        fontSize: 30,
+        fontFamily: fonts.soraExtraBold,
         color: colors.WHITE,
     },
     editButtonCircle: {
@@ -1203,11 +1204,10 @@ const styles = StyleSheet.create({
     },
     glassCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 16,
-        padding: 16,
+        borderRadius: 18,
+        padding: 14,
         flexDirection: 'row',
-        borderWidth: 1,
-        borderColor: '#ede9e3',
+        ...v2shadow.card,
     },
     quickActionBtn: {
         flex: 1,
@@ -1223,9 +1223,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     actionBtnLabel: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: colors.SLATE[700],
+        fontSize: 12.5,
+        fontFamily: fonts.manropeBold,
+        color: palette.ink,
     },
     actionDivider: {
         width: 1,
@@ -1242,10 +1242,10 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     sectionTitle: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: colors.SLATE[700],
-        marginBottom: 16,
+        fontSize: 18,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
+        marginBottom: 14,
     },
     sectionLink: {
         fontSize: 14,
@@ -1290,10 +1290,9 @@ const styles = StyleSheet.create({
     gridCard: {
         flex: 1,
         backgroundColor: colors.WHITE,
-        borderRadius: 12,
-        padding: 10,
-        borderWidth: 1,
-        borderColor: '#ede9e3',
+        borderRadius: 16,
+        padding: 12,
+        ...v2shadow.soft,
     },
     gridCardHeader: {
         flexDirection: 'row',
@@ -1315,8 +1314,8 @@ const styles = StyleSheet.create({
     },
     gridValue: {
         fontSize: 18,
-        fontWeight: '800',
-        color: colors.SLATE[900],
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
     },
     gridUnit: {
         fontSize: 14,
@@ -1374,13 +1373,12 @@ const styles = StyleSheet.create({
     },
     rowCard: {
         backgroundColor: colors.WHITE,
-        borderRadius: 14,
+        borderRadius: 16,
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
-        borderWidth: 1,
-        borderColor: '#ede9e3',
+        ...v2shadow.soft,
     },
     rowIconBox: {
         width: 48,
@@ -1397,8 +1395,8 @@ const styles = StyleSheet.create({
     },
     rowTitle: {
         fontSize: 16,
-        fontWeight: '700',
-        color: colors.SLATE[900],
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
     },
     rowValueText: {
         fontSize: 14,
@@ -1425,9 +1423,8 @@ const styles = StyleSheet.create({
     tasksCard: {
         backgroundColor: colors.WHITE,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.BORDER,
         overflow: 'hidden',
+        ...v2shadow.soft,
     },
     taskRow: {
         flexDirection: 'row',
@@ -1599,15 +1596,14 @@ const styles = StyleSheet.create({
     hiveCardGrid: {
         flex: 1,
         backgroundColor: colors.WHITE,
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 10,
         margin: 6,
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#ede9e3',
         minHeight: 120,
         justifyContent: 'space-between',
         position: 'relative',
+        ...v2shadow.soft,
     },
     hivePendingBadge: {
         position: 'absolute',
@@ -1630,8 +1626,8 @@ const styles = StyleSheet.create({
     },
     hiveCardGridName: {
         fontSize: 14,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         textAlign: 'center',
         marginBottom: 8,
     },
