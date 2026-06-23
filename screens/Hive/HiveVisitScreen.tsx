@@ -11,6 +11,7 @@ import { IHiveData } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { buildHiveHealthPreview } from "../../helpers/Hive/buildHiveHealthPreview";
 import { updateHive, checkHiveNameExists } from "../../modules/API/Hives";
+import { palette, fonts } from "../../constants/theme";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -110,7 +111,7 @@ function HiveVisitScreen({ route, navigation }: any) {
     const getStatusColor = (status: number) => {
         switch (status) {
             case 0: return colors.RED_LIGHT;
-            case 1: return colors.YELLOW;
+            case 1: return palette.honey;
             case 2: return colors.BLUE_LIGHT;
             case 3: return colors.BLUE;
             default: return colors.GREY;
@@ -599,7 +600,7 @@ function HiveVisitScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: palette.cream
     },
     container: {
         alignItems: 'center',
@@ -609,15 +610,15 @@ const styles = StyleSheet.create({
         width: wp('80%'),
     },
     addHiveTitleText: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
+        fontSize: 26,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
     },
     addHiveSubTitleText: {
-        color: colors.GREY,
-        fontSize: 16,
-        fontWeight: '400',
-        marginTop: 5,
+        color: palette.inkMuted,
+        fontSize: 14,
+        fontFamily: fonts.manrope,
+        marginTop: 6,
     },
     hiveInfo: {
         width: wp('100%'),
@@ -706,7 +707,7 @@ const styles = StyleSheet.create({
         height: 40,
         width: 40,
         marginRight: 15,
-        tintColor: colors.YELLOW,
+        tintColor: palette.honey,
         resizeMode: 'contain',
     },
     hiveInfoItem: {
@@ -784,8 +785,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.WHITE,
     },
     selectButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     selectButtonText: {
         fontSize: 14,
@@ -816,8 +817,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.WHITE,
     },
     swarmingButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     swarmingButtonText: {
         fontSize: 14,

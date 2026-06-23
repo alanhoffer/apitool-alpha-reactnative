@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import VisitApiaryButton from "../../components/buttons/HeaderNoIconButton";
 import { SettingCategory } from "../../components/apiary/ApiarySettingCategory";
 import { SettingItem } from "../../components/apiary/ApiarySettingItem";
+import { palette, fonts } from "../../constants/theme";
 import { settingsItemsIndividual } from "../../constants/Apiary/settingsItems";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { IApiarySettings, IApiarySettingsItems } from "../../constants/interfaces/Apiary/IApiarySettings";
@@ -125,27 +126,27 @@ function ApiaryIndividualSettingsScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: colors.BG_SECTION,
+        backgroundColor: palette.cream,
     },
     container: {
         alignItems: 'center',
     },
     settingsTitle: {
-        marginVertical: 25,
-        width: wp('85%'),
+        marginVertical: 24,
+        width: '88%',
     },
     settingsTitleText: {
         fontSize: 28,
-        fontWeight: '700',
-        color: colors.TEXT_LINK,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         marginBottom: 8,
-        letterSpacing: 0.5,
+        letterSpacing: -0.4,
     },
     settingsSubTitleText: {
-        color: colors.TEXT_MUTED,
-        fontSize: 16,
-        fontWeight: '400',
-        lineHeight: 24,
+        color: palette.inkMuted,
+        fontSize: 14.5,
+        fontFamily: fonts.manrope,
+        lineHeight: 21,
     },
 });
 

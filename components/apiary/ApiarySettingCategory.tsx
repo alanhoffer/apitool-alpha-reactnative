@@ -1,5 +1,6 @@
 // React Imports //
 import { StyleSheet, Text, View } from "react-native";
+import { palette, fonts } from "../../constants/theme";
 
 
 interface SettingCategoryProps {
@@ -16,18 +17,20 @@ export const SettingCategory = ({ title, children }: SettingCategoryProps) => (
 
 const styles = StyleSheet.create({
     container: {
-        width: '80%',
-        justifyContent:'center',
-        marginBottom: 5,
+        width: '88%',
+        justifyContent: 'center',
+        marginBottom: 6,
     },
     categoryTitle: {
-        fontSize: 20,
-        fontWeight: '400',
-        color: '#3C4256',
-        marginBottom: 10,
+        fontSize: 19,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
+        marginBottom: 12,
+        marginTop: 10,
     },
     listContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
 });

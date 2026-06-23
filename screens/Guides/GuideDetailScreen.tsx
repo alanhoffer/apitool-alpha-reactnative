@@ -4,6 +4,7 @@ import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
 import { getGuideById } from '../../constants/guides';
 
 export default function GuideDetailScreen({ route, navigation }: any) {
@@ -15,7 +16,7 @@ export default function GuideDetailScreen({ route, navigation }: any) {
     const category = guide?.category || 'Guia';
     const readTime = guide?.readTime || 'Lectura';
     const iconName = guide?.icon || 'book-outline';
-    const iconColor = guide?.color || colors.HONEY[500];
+    const iconColor = guide?.color || palette.honey;
     const markdownContent = guide?.markdown || '# Guia no encontrada\n\nNo pudimos cargar esta guia en este momento.';
 
     return (
@@ -71,7 +72,7 @@ export default function GuideDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: '#f6f3ec',
+        backgroundColor: palette.mist,
     },
     header: {
         flexDirection: 'row',
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
         paddingVertical: 18,
         borderWidth: 1,
         borderColor: '#ece8df',
-        shadowColor: colors.SLATE[900],
+        shadowColor: palette.navy,
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.05,
         shadowRadius: 16,
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     categoryText: {
         fontSize: 12,
         fontWeight: '800',
-        color: colors.HONEY[600],
+        color: palette.honeyDark,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: 8,
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
     heroTitle: {
         fontSize: 28,
         fontWeight: '800',
-        color: colors.SLATE[900],
+        color: palette.navy,
         lineHeight: 34,
         marginBottom: 10,
     },
@@ -196,7 +197,7 @@ const markdownStyles = StyleSheet.create({
     heading1: {
         fontSize: 26,
         fontWeight: '800',
-        color: colors.SLATE[900],
+        color: palette.navy,
         marginTop: 6,
         marginBottom: 18,
         letterSpacing: -0.5,
@@ -236,11 +237,11 @@ const markdownStyles = StyleSheet.create({
     },
     strong: {
         fontWeight: '800',
-        color: colors.SLATE[900],
+        color: palette.navy,
     },
     blockquote: {
-        backgroundColor: colors.HONEY[50],
-        borderLeftColor: colors.HONEY[500],
+        backgroundColor: palette.honeyBg,
+        borderLeftColor: palette.honey,
         borderLeftWidth: 4,
         padding: 16,
         marginTop: 12,

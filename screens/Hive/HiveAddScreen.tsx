@@ -10,6 +10,7 @@ import colors from "../../constants/colors";
 import { IHiveData } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { createHive, checkHiveNameExists } from "../../modules/API/Hives";
+import { palette, fonts } from "../../constants/theme";
 
 import beehiveCollonySize from '../../assets/images/icons/beehive_collony_size.png'
 import beehiveFoodHoney from '../../assets/images/icons/beehive_food_honey.png'
@@ -72,7 +73,7 @@ function HiveAddScreen({ route, navigation }: any) {
     const getStatusColor = (status: number) => {
         switch (status) {
             case 0: return colors.RED_LIGHT;
-            case 1: return colors.YELLOW;
+            case 1: return palette.honey;
             case 2: return colors.BLUE_LIGHT;
             case 3: return colors.BLUE;
             default: return colors.GREY;
@@ -496,7 +497,7 @@ function HiveAddScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: '#F9F9F9'
+        backgroundColor: palette.mist
     },
     container: {
         alignItems: 'center',
@@ -506,15 +507,15 @@ const styles = StyleSheet.create({
         width: wp('80%'),
     },
     addHiveTitleText: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
+        fontSize: 26,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
     },
     addHiveSubTitleText: {
-        color: colors.GREY,
-        fontSize: 16,
-        fontWeight: '400',
-        marginTop: 5,
+        color: palette.inkMuted,
+        fontSize: 14,
+        fontFamily: fonts.manrope,
+        marginTop: 6,
     },
     hiveInfo: {
         width: wp('100%'),
@@ -526,10 +527,15 @@ const styles = StyleSheet.create({
         width: wp('80%'),
     },
     hiveInfoName: {
-        backgroundColor: '#EEF0F3',
-        paddingHorizontal: 20,
-        paddingVertical: 6,
-        borderRadius: 5,
+        backgroundColor: colors.WHITE,
+        borderWidth: 1.5,
+        borderColor: palette.border,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderRadius: 14,
+        fontFamily: fonts.manrope,
+        fontSize: 15,
+        color: palette.ink,
     },
     hiveStatusContainer: {
         width: '90%',
@@ -550,7 +556,7 @@ const styles = StyleSheet.create({
         height: 40,
         width: 40,
         marginRight: 15,
-        tintColor: colors.YELLOW,
+        tintColor: palette.honey,
         resizeMode: 'contain',
     },
     hiveInfoItem: {
@@ -577,7 +583,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: palette.border,
         backgroundColor: '#F5F5F7',
         alignItems: 'center',
         justifyContent: 'center',
@@ -592,8 +598,8 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         marginBottom: 15,
     },
     treatmentsContainer: {
@@ -624,12 +630,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: palette.border,
         backgroundColor: colors.WHITE,
     },
     selectButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     selectButtonText: {
         fontSize: 14,
@@ -656,12 +662,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        borderColor: palette.border,
         backgroundColor: colors.WHITE,
     },
     swarmingButtonActive: {
-        backgroundColor: colors.YELLOW,
-        borderColor: colors.YELLOW,
+        backgroundColor: palette.honey,
+        borderColor: palette.honey,
     },
     swarmingButtonText: {
         fontSize: 14,
@@ -683,7 +689,7 @@ const styles = StyleSheet.create({
     },
     commentInput: {
         width: wp('80%'),
-        backgroundColor: '#EEF0F3',
+        backgroundColor: palette.fieldBg,
         paddingHorizontal: 20,
         paddingVertical: 6,
         borderRadius: 5,

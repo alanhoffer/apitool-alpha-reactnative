@@ -1,60 +1,68 @@
-// React Imports //
-import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
-import { ScrollView, View, StyleSheet, Text, Pressable, Image } from "react-native";
-import Icon from 'react-native-vector-icons/Ionicons';
-import { useEffect, useState } from "react";
-import colors from "../../constants/colors";
-
+import { StyleSheet, Text, Pressable, Image, View } from "react-native";
+import { palette, fonts, radius, shadow } from "../../constants/theme";
 
 export const SettingItem = ({ icon, label, isActive, onPress }: any) => (
-    <Pressable 
-        style={[styles.itemContainer, isActive && styles.activeItemContainer]} 
+    <Pressable
+        style={[styles.chip, isActive ? styles.chipOn : styles.chipOff]}
         onPress={onPress}
     >
-        <Image style={[styles.itemIcon, isActive ? { tintColor: colors.YELLOW } : null]} source={icon}  />
-        <Text style={[styles.itemText, isActive ? { color: colors.YELLOW } : null]}>{label}</Text>
+        <View style={[styles.iconBox, { backgroundColor: isActive ? palette.honeyBg : '#F1EFE7' }]}>
+            <Image
+                style={[styles.icon, { tintColor: isActive ? palette.honeyText : palette.navy }]}
+                source={icon}
+            />
+        </View>
+        <Text
+            style={[styles.label, { color: isActive ? palette.ink : palette.inkSubtle, fontFamily: isActive ? fonts.manropeBold : fonts.manropeSemiBold }]}
+            numberOfLines={2}
+        >
+            {label}
+        </Text>
     </Pressable>
 );
 
-
 const styles = StyleSheet.create({
-    itemContainer: {
-        marginRight: 10,
-        minWidth: 90,
-        marginBottom: 10,
+    chip: {
+        width: '31%',
+        borderRadius: radius.lg,
+        paddingTop: 16,
+        paddingBottom: 13,
+        paddingHorizontal: 8,
         alignItems: 'center',
-        backgroundColor: colors.WHITE, // Fondo blanco para que parezca botón
-        paddingVertical: 10,
-        paddingHorizontal: 5,
-        borderRadius: 10, // Bordes redondeados
-        shadowColor: "#000", // Sombra suave
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2, // Elevación para Android
-        borderWidth: 1,
-        borderColor: 'transparent'
+        gap: 9,
+        marginBottom: 12,
     },
-    activeItemContainer: {
-        // backgroundColor: '#FFFBF0', // Comentado para no cambiar fondo
-        // borderColor: colors.YELLOW, // Comentado para no cambiar borde
-        shadowOpacity: 0.15,
-        elevation: 3,
+    chipOn: {
+        backgroundColor: palette.white,
+        borderWidth: 2,
+        borderColor: palette.honey,
+        shadowColor: '#E08A1C',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 14,
+        elevation: 4,
     },
-    itemIcon: {
-        width: 40,
-        height: 40,
+    chipOff: {
+        backgroundColor: palette.white,
+        borderWidth: 2,
+        borderColor: palette.borderSoft,
+        ...shadow.soft,
+    },
+    iconBox: {
+        width: 46,
+        height: 46,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    icon: {
+        width: 24,
+        height: 24,
         resizeMode: 'contain',
-        marginBottom: 5,
-        // opacity: 0.7, // Comentado para mantener opacidad
     },
-    itemText: {
-        fontSize: 14, // Un poco más pequeño para encajar mejor en el botón
-        fontWeight: '500',
+    label: {
+        fontSize: 12,
         textAlign: 'center',
-        color: colors.GREY,
+        lineHeight: 15,
     },
 });

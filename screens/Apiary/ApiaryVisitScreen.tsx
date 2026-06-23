@@ -29,6 +29,7 @@ import colors from "../../constants/colors";
 import { apiaryItems } from "../../constants/Apiary/apiaryItems";
 import { ApiaryItemCategory } from "../../constants/Enums/ApiaryItemCategory";
 import { resolveApiaryImageUrl } from "../../constants/api";
+import { palette, fonts } from "../../constants/theme";
 
 
 
@@ -175,7 +176,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
     const getStatusColor = (status: number) => {
         switch (status) {
             case 0: return colors.RED_LIGHT;
-            case 1: return colors.YELLOW;
+            case 1: return palette.honey;
             case 2: return colors.BLUE_LIGHT;
             case 3: return colors.BLUE;
             default: return colors.GREY;
@@ -389,7 +390,7 @@ function ApiaryVisitScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: colors.BG_SECTION
+        backgroundColor: palette.cream
     },
     container: {
         alignItems: 'center',
@@ -404,16 +405,15 @@ const styles = StyleSheet.create({
         width: wp('80%'),
     },
     addApiaryTitleText: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: colors.BLACK_LIGHT,
-        fontFamily: 'Bebas Neue', // Assuming you have this font linked, otherwise remove this line
+        fontSize: 27,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
     },
     addApiarySubTitleText: {
-        color: colors.GREY,
-        fontSize: 16,
-        fontWeight: '400',
-        marginTop: 5,
+        color: palette.inkMuted,
+        fontSize: 14,
+        fontFamily: fonts.manrope,
+        marginTop: 6,
     },
     apiaryNameContainer: {
         marginVertical: 20,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
         height: 40,
         width: 40,
         marginRight: 15,
-        tintColor: colors.YELLOW,
+        tintColor: palette.honey,
         resizeMode: 'contain',
     },
     apiaryInfoItemData: {

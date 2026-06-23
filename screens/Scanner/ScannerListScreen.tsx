@@ -10,6 +10,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import logger from '../../helpers/logger';
 import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
 
 const ListScreen: React.FC = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -311,7 +312,7 @@ const ListScreen: React.FC = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     wrapper: {
         flex: 1,
-        backgroundColor: colors.BG_APP,
+        backgroundColor: palette.mist,
     },
     header: {
         flexDirection: 'row',
@@ -375,8 +376,8 @@ const styles = StyleSheet.create({
         borderColor: colors.BORDER,
     },
     filterPillActive: {
-        backgroundColor: colors.BG_DARK,
-        borderColor: colors.BG_DARK,
+        backgroundColor: palette.navy,
+        borderColor: palette.navy,
     },
     filterText: {
         fontSize: 13,
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
     itemCardDuplicate: {
         borderColor: colors.WARNING_COLOR,
         borderWidth: 1.5,
-        backgroundColor: colors.HONEY[50],
+        backgroundColor: palette.honeyBg,
     },
     itemLeft: {
         flexDirection: 'row',

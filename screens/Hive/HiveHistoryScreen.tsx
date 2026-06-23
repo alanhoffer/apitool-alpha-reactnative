@@ -9,6 +9,7 @@ import { IHive } from "../../constants/interfaces/Apiary/IHive";
 import { IApiary } from "../../constants/interfaces/Apiary/IApiary";
 import { getHiveHistory, IHiveHistoryEntry } from "../../modules/API/Hives";
 import Capitalize from "../../modules/Capitalize";
+import { palette, fonts, shadow as v2shadow } from "../../constants/theme";
 
 const QUEEN_STATUS_LABELS: Record<string, string> = {
     present: 'Reina: Presente',
@@ -123,7 +124,7 @@ function HiveHistoryScreen({ route, navigation }: any) {
                                     {/* Timeline */}
                                     <View style={styles.timelineContainer}>
                                         <View style={styles.timelineCircle}>
-                                            <Ionicons name="time-outline" size={14} color={colors.YELLOW} />
+                                            <Ionicons name="time-outline" size={14} color={palette.honeyText} />
                                         </View>
                                         {index !== entries.length - 1 && <View style={styles.timelineLine} />}
                                     </View>
@@ -173,7 +174,7 @@ function HiveHistoryScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
     scrollContainer: {
         flex: 1,
-        backgroundColor: colors.BG_SECTION,
+        backgroundColor: palette.mist,
     },
     container: {
         flex: 1,
@@ -184,14 +185,15 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: colors.BLACK,
-        marginBottom: 8,
+        fontSize: 26,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
+        marginBottom: 6,
     },
     headerSubtitle: {
-        fontSize: 16,
-        color: colors.BLACK_TRANSPARENT,
+        fontSize: 14,
+        fontFamily: fonts.manrope,
+        color: palette.inkMuted,
     },
     list: {
         flex: 1,
@@ -230,9 +232,9 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: colors.YELLOW + '20',
+        backgroundColor: palette.honeyBg,
         borderWidth: 2,
-        borderColor: colors.YELLOW,
+        borderColor: palette.honey,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
@@ -247,11 +249,10 @@ const styles = StyleSheet.create({
     },
     cardContent: {
         backgroundColor: colors.WHITE,
-        borderRadius: 10,
-        padding: 12,
-        borderWidth: 1,
-        borderColor: colors.GREY_LIGHT,
+        borderRadius: 16,
+        padding: 14,
         flex: 1,
+        ...v2shadow.soft,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -260,12 +261,12 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         paddingBottom: 8,
         borderBottomWidth: 1,
-        borderBottomColor: colors.GREY_LIGHT,
+        borderBottomColor: palette.borderCool,
     },
     cardDate: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: colors.BLACK,
+        fontSize: 15,
+        fontFamily: fonts.soraBold,
+        color: palette.ink,
         marginBottom: 2,
     },
     cardTime: {
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     changeCountBadge: {
-        backgroundColor: colors.YELLOW,
+        backgroundColor: palette.honey,
         borderRadius: 10,
         paddingHorizontal: 8,
         paddingVertical: 3,
@@ -288,8 +289,8 @@ const styles = StyleSheet.create({
     },
     changeCountText: {
         fontSize: 12,
-        fontWeight: 'bold',
-        color: colors.BLACK,
+        fontFamily: fonts.soraBold,
+        color: palette.navy,
     },
     changesList: {
         gap: 4,

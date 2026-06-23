@@ -7,6 +7,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import logger from '../../helpers/logger';
 import { ScannerFormScreenProps } from '../../types/navigation';
 import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
 
 const FormScreen = ({ navigation, route }: ScannerFormScreenProps) => {
   const insets = useSafeAreaInsets();
@@ -151,7 +152,7 @@ const FormScreen = ({ navigation, route }: ScannerFormScreenProps) => {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: colors.BG_APP,
+    backgroundColor: palette.mist,
   },
   content: {
     paddingHorizontal: 20,
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   },
   netSub: {
     fontSize: 11,
-    color: colors.HONEY[800],
+    color: palette.honeyText,
     fontWeight: '500',
   },
   netValue: {
@@ -295,10 +296,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.BG_DARK,
+    backgroundColor: palette.navy,
     paddingVertical: 16,
     borderRadius: 14,
-    shadowColor: colors.BG_DARK,
+    shadowColor: palette.navy,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

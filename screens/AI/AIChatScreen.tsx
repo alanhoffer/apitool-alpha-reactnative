@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { sendAIMessage, sendAIAudio, AIChatMessage } from '../../modules/API/AIChat';
 import colors from '../../constants/colors';
+import { palette, fonts } from '../../constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../../helpers/logger';
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -278,7 +279,7 @@ const AIChatScreen = ({ navigation }: any) => {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
         <View style={{ paddingTop: insets.top }} />
-        <Ionicons name="lock-closed" size={56} color={colors.YELLOW} style={{ marginBottom: 16 }} />
+        <Ionicons name="lock-closed" size={56} color={palette.honey} style={{ marginBottom: 16 }} />
         <Text style={{ fontSize: 22, fontWeight: '800', color: colors.TEXT_PRIMARY, textAlign: 'center', marginBottom: 8 }}>
           Asistente IA
         </Text>
@@ -286,7 +287,7 @@ const AIChatScreen = ({ navigation }: any) => {
           El asistente IA está disponible desde el plan Apicultor. Actualizá tu suscripción para acceder.
         </Text>
         <TouchableOpacity
-          style={{ backgroundColor: colors.YELLOW, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14 }}
+          style={{ backgroundColor: palette.honey, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14 }}
           onPress={() => navigation.navigate('Profile', { screen: 'SubscriptionScreen' })}
         >
           <Text style={{ color: colors.WHITE, fontWeight: '700', fontSize: 16 }}>Ver planes</Text>
@@ -306,7 +307,7 @@ const AIChatScreen = ({ navigation }: any) => {
     >
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.SLATE[900]} />
+          <Ionicons name="arrow-back" size={24} color={palette.navy} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <View style={styles.headerIconWrapper}>
@@ -464,7 +465,7 @@ const AIChatScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafaf9',
+    backgroundColor: palette.mist,
   },
   header: {
     flexDirection: 'row',
@@ -515,7 +516,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.SLATE[900],
+    color: palette.navy,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -573,7 +574,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.SLATE[900],
+    color: palette.navy,
     marginBottom: 12,
   },
   emptyText: {
@@ -620,7 +621,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   userMessage: {
-    backgroundColor: colors.SLATE[900],
+    backgroundColor: palette.navy,
     borderBottomRightRadius: 4,
   },
   assistantMessage: {
@@ -697,7 +698,7 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     paddingHorizontal: 12,
     fontSize: 15,
-    color: colors.SLATE[900],
+    color: palette.navy,
     paddingTop: 8,
     paddingBottom: 8,
   },
@@ -720,7 +721,7 @@ const styles = StyleSheet.create({
   recordingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.SLATE[900],
+    backgroundColor: palette.navy,
     borderRadius: 28,
     paddingHorizontal: 16,
     paddingVertical: 8,

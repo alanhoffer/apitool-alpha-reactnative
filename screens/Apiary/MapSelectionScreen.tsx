@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Alert, Pla
 import MapView, { Marker, PROVIDER_DEFAULT, Region, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 import colors from '../../constants/colors';
+import { palette } from '../../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import logger from '../../helpers/logger';
@@ -214,7 +215,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
     // if (loading) {
     //     return (
     //         <View style={styles.loadingContainer}>
-    //             <ActivityIndicator size="large" color={colors.YELLOW} />
+    //             <ActivityIndicator size="large" color={palette.honey} />
     //             <Text style={styles.loadingText}>Cargando mapa...</Text>
     //         </View>
     //     );
@@ -233,7 +234,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                 showsUserLocation={true}
                 showsMyLocationButton={Platform.OS === 'android'}
                 loadingEnabled={true}
-                loadingIndicatorColor={colors.YELLOW}
+                loadingIndicatorColor={palette.honey}
                 onMapReady={() => {
                     logger.debug('[MapSelectionScreen] Mapa listo');
                     // Si tenemos coordenadas iniciales, centrar el mapa inmediatamente
@@ -289,7 +290,7 @@ const MapSelectionScreen = ({ navigation, route }: MapSelectionScreenProps) => {
                                 <MaterialIcons
                                     name="hive"
                                     size={32}
-                                    color={colors.YELLOW}
+                                    color={palette.honey}
                                 />
                             </View>
                         </View>
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     confirmButton: {
-        backgroundColor: colors.YELLOW,
+        backgroundColor: palette.honey,
         paddingVertical: 12,
         paddingHorizontal: 30,
         borderRadius: 8,
@@ -425,7 +426,7 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
         elevation: 5,
         borderWidth: 2,
-        borderColor: colors.YELLOW,
+        borderColor: palette.honey,
     },
 });
 

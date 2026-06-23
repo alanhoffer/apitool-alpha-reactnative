@@ -15,6 +15,7 @@ import { settingsItems } from "../../constants/Apiary/settingsItems";
 import { UISettingsItem } from "../../constants/interfaces/UI/Settings/UISettings";
 import { SettingItem } from "../../components/apiary/ApiarySettingItem";
 import colors from "../../constants/colors";
+import { palette, fonts } from "../../constants/theme";
 
 
 const DEFAULT_SETTINGS: IApiarySettingsItems = {
@@ -98,27 +99,27 @@ function ApiarySettingsScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        backgroundColor: colors.BG_SECTION
+        backgroundColor: palette.cream
     },
     container: {
         alignItems: 'center',
     },
     settingsTitle: {
-        marginVertical: 25,
-        width: wp('85%'),
+        marginVertical: 24,
+        width: '88%',
     },
     settingsTitleText: {
         fontSize: 28,
-        fontWeight: '700',
-        color: colors.TEXT_LINK,
+        fontFamily: fonts.soraExtraBold,
+        color: palette.ink,
         marginBottom: 8,
-        letterSpacing: 0.5,
+        letterSpacing: -0.4,
     },
     settingsSubTitleText: {
-        color: colors.TEXT_MUTED,
-        fontSize: 16,
-        fontWeight: '400',
-        lineHeight: 24,
+        color: palette.inkMuted,
+        fontSize: 14.5,
+        fontFamily: fonts.manrope,
+        lineHeight: 21,
     },
     settingsList: {
 
