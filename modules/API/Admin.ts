@@ -8,6 +8,7 @@ export interface IAdminUser {
   surname: string;
   email: string;
   role: string;
+  active: boolean;
   apiaryCount: number;
   hiveCount: number;
 }
@@ -29,6 +30,12 @@ export const getUserApiaries = async (userId: number): Promise<IApiary[]> => {
 /** PUT /admin/users/:id/role — cambiar rol (admin). */
 export const updateUserRole = async (userId: number, role: string): Promise<IAdminUser> => {
   const res = await apiClient.put<IAdminUser>(`admin/users/${userId}/role`, { role });
+  return res.data;
+};
+
+/** PUT /admin/users/:id/active — activar/desactivar (admin). */
+export const updateUserActive = async (userId: number, active: boolean): Promise<IAdminUser> => {
+  const res = await apiClient.put<IAdminUser>(`admin/users/${userId}/active`, { active });
   return res.data;
 };
 

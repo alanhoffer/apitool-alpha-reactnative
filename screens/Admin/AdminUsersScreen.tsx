@@ -74,7 +74,10 @@ export default function AdminUsersScreen({ navigation }: any) {
                   <View style={[styles.roleBadge, u.role === 'admin' && styles.roleAdmin]}>
                     <Text style={[styles.roleText, u.role === 'admin' && { color: palette.navy }]}>{ROLE_LABEL[u.role] || u.role}</Text>
                   </View>
-                  <Text style={styles.counts}>{u.apiaryCount} apiarios · {u.hiveCount} colmenas</Text>
+                  {u.active === false && (
+                    <View style={styles.inactiveBadge}><Text style={styles.inactiveText}>INACTIVA</Text></View>
+                  )}
+                  <Text style={styles.counts}>{u.apiaryCount} ap · {u.hiveCount} col</Text>
                 </View>
               </View>
               <ChevronRight />
@@ -107,5 +110,7 @@ const styles = StyleSheet.create({
   roleBadge: { backgroundColor: palette.mist, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
   roleAdmin: { backgroundColor: palette.honey },
   roleText: { fontFamily: fonts.manropeBold, fontSize: 10.5, color: palette.inkMuted },
+  inactiveBadge: { backgroundColor: palette.badBg, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  inactiveText: { fontFamily: fonts.manropeBold, fontSize: 10, color: palette.badText },
   counts: { fontFamily: fonts.manrope, fontSize: 11.5, color: palette.slate, flexShrink: 1 },
 });

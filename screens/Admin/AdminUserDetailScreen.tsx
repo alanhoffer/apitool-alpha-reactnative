@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, ToastAndroid, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { getUserApiaries, updateUserRole, deleteUser, IAdminUser, ADMIN_ROLES } from '../../modules/API/Admin';
+import { getUserApiaries, updateUserRole, updateUserActive, deleteUser, IAdminUser, ADMIN_ROLES } from '../../modules/API/Admin';
 import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
 import Capitalize from '../../modules/Capitalize';
 import logger from '../../helpers/logger';
@@ -20,6 +20,19 @@ export default function AdminUserDetailScreen({ route, navigation }: any) {
   const [apiaries, setApiaries] = useState<IApiary[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingRole, setSavingRole] = useState(false);
+  const [savingActive, setSavingActive] = useState(false);
+
+  const toggleActive = async () => {
+    if (savingActive) return;
+    setSavingActive(true);
+    try {
+      const updated = await updateUserActive(user.id, !user.active);
+      setUser(updated);
+      ToastAndroid.show(updated.active ? 'Cuenta activada' : 'Cuenta desactivada', ToastAndroid.SHORT);
+    } catch (error: any) {
+      ToastAndroid.show(error?.response?.data?.detail || 'No se pudo cambiar el estado', ToastAndroid.SHORT);
+    } finally { setSavingActive(false); }
+  };
 
   const load = useCallback(async () => {
     try { setApiaries(await getUserApiaries(initial.id)); }
@@ -117,6 +130,20 @@ export default function AdminUserDetailScreen({ route, navigation }: any) {
           );
         })}
 
+        {/* Estado de la cuenta */}
+        <Text style={styles.sectionLabel}>Estado de la cuenta</Text>
+        <TouchableOpacity style={styles.activeRow} onPress={toggleActive} disabled={savingActive} activeOpacity={0.85}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.activeLabel}>{user.active ? 'Activa' : 'Desactivada'}</Text>
+            <Text style={styles.activeSub}>{user.active ? 'Puede iniciar sesión' : 'No puede iniciar sesión'}</Text>
+          </View>
+          {savingActive ? <ActivityIndicator size="small" color={palette.honeyDark} /> : (
+            <View style={[styles.toggle, user.active && styles.toggleOn]}>
+              <View style={[styles.knob, user.active && styles.knobOn]} />
+            </View>
+          )}
+        </TouchableOpacity>
+
         {/* Eliminar */}
         <Text style={styles.sectionLabel}>Zona peligrosa</Text>
         <TouchableOpacity style={styles.deleteBtn} onPress={confirmDelete} activeOpacity={0.85}>
@@ -153,4 +180,11 @@ const styles = StyleSheet.create({
   hivesText: { fontFamily: fonts.soraExtraBold, fontSize: 15, color: palette.ink },
   deleteBtn: { backgroundColor: palette.badBg, borderRadius: radius.lg, paddingVertical: 15, alignItems: 'center' },
   deleteText: { fontFamily: fonts.soraBold, fontSize: 15, color: palette.bad },
+  activeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: palette.white, borderRadius: radius.lg, padding: 16, ...shadow.soft },
+  activeLabel: { fontFamily: fonts.soraBold, fontSize: 15, color: palette.ink },
+  activeSub: { fontFamily: fonts.manrope, fontSize: 12, color: palette.slate, marginTop: 2 },
+  toggle: { width: 46, height: 28, borderRadius: 14, backgroundColor: palette.border, padding: 3, justifyContent: 'center' },
+  toggleOn: { backgroundColor: palette.good },
+  knob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff' },
+  knobOn: { alignSelf: 'flex-end' },
 });
