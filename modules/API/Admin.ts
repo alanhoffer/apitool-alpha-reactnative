@@ -84,6 +84,32 @@ export const createSeasonalTip = async (input: ISeasonalTipInput): Promise<ISeas
   return res.data;
 };
 
+// ─── Métricas globales + broadcast ─────────────────────────────────────────────
+export interface IAdminStats {
+  users: number;
+  apiaries: number;
+  hives: number;
+  news: number;
+  guides: number;
+  tasks: number;
+}
+
+/** GET /admin/stats — métricas globales (admin). */
+export const getAdminStats = async (): Promise<IAdminStats | null> => {
+  try {
+    const res = await apiClient.get<IAdminStats>('admin/stats');
+    return res.data;
+  } catch {
+    return null;
+  }
+};
+
+/** POST /admin/broadcast — aviso a todos los usuarios (admin). */
+export const sendBroadcast = async (title: string, message: string, type: string = 'INFO'): Promise<{ recipients: number; pushed: number }> => {
+  const res = await apiClient.post<{ recipients: number; pushed: number }>('admin/broadcast', { title, message, type });
+  return res.data;
+};
+
 // ─── Mantenimiento / Cache ─────────────────────────────────────────────────────
 /** GET /cache/stats — métricas del caché (admin). */
 export const getCacheStats = async (): Promise<Record<string, any> | null> => {
