@@ -1,4 +1,42 @@
 import apiClient from './client';
+import { IApiary } from '../../constants/interfaces/Apiary/IApiary';
+
+// ─── Usuarios (admin) ──────────────────────────────────────────────────────────
+export interface IAdminUser {
+  id: number;
+  name: string;
+  surname: string;
+  email: string;
+  role: string;
+  apiaryCount: number;
+  hiveCount: number;
+}
+
+export const ADMIN_ROLES = ['apicultor', 'apicultor_premium', 'moderador', 'admin'];
+
+/** GET /admin/users — lista todos los usuarios (admin). */
+export const getUsers = async (): Promise<IAdminUser[]> => {
+  const res = await apiClient.get<IAdminUser[]>('admin/users');
+  return res.data || [];
+};
+
+/** GET /admin/users/:id/apiaries — apiarios de un usuario (admin). */
+export const getUserApiaries = async (userId: number): Promise<IApiary[]> => {
+  const res = await apiClient.get<any>(`admin/users/${userId}/apiaries`);
+  return (Array.isArray(res.data) ? res.data : (res.data?.data || [])) as IApiary[];
+};
+
+/** PUT /admin/users/:id/role — cambiar rol (admin). */
+export const updateUserRole = async (userId: number, role: string): Promise<IAdminUser> => {
+  const res = await apiClient.put<IAdminUser>(`admin/users/${userId}/role`, { role });
+  return res.data;
+};
+
+/** DELETE /admin/users/:id — eliminar usuario y sus datos (admin). */
+export const deleteUser = async (userId: number): Promise<boolean> => {
+  const res = await apiClient.delete(`admin/users/${userId}`);
+  return res.status >= 200 && res.status < 300;
+};
 
 // ─── Recomendaciones / Tips estacionales ──────────────────────────────────────
 export interface ISeasonalTip {
