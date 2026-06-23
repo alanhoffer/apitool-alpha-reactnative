@@ -62,6 +62,7 @@ import AdminRecommendationsScreen from '../screens/Admin/AdminRecommendationsScr
 import AdminMaintenanceScreen from '../screens/Admin/AdminMaintenanceScreen';
 import AdminUsersScreen from '../screens/Admin/AdminUsersScreen';
 import AdminUserDetailScreen from '../screens/Admin/AdminUserDetailScreen';
+import AdminGuidesScreen from '../screens/Admin/AdminGuidesScreen';
 
 const Stack = createNativeStackNavigator<any>();
 const ApiaryStack = createNativeStackNavigator<any>();
@@ -147,6 +148,7 @@ function ProfileNavigator() {
             <ProfileStack.Screen component={AdminMaintenanceScreen as any} name="AdminMaintenanceScreen" />
             <ProfileStack.Screen component={AdminUsersScreen as any} name="AdminUsersScreen" />
             <ProfileStack.Screen component={AdminUserDetailScreen as any} name="AdminUserDetailScreen" />
+            <ProfileStack.Screen component={AdminGuidesScreen as any} name="AdminGuidesScreen" />
         </ProfileStack.Navigator>
     );
 }

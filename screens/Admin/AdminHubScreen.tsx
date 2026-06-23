@@ -8,6 +8,7 @@ import { ChevronLeft } from '../../components/v2/icons';
 const ITEMS = [
   { icon: 'account-group-outline', label: 'Usuarios', sub: 'Ver usuarios, apiarios, rol y baja', route: 'AdminUsersScreen' },
   { icon: 'newspaper-variant-outline', label: 'Noticias', sub: 'Crear, editar y borrar noticias', route: 'AdminNewsScreen' },
+  { icon: 'book-open-page-variant-outline', label: 'Guías', sub: 'Gestionar guías de la app', route: 'AdminGuidesScreen' },
   { icon: 'lightbulb-on-outline', label: 'Recomendaciones', sub: 'Tips estacionales del dashboard', route: 'AdminRecommendationsScreen' },
   { icon: 'database-cog-outline', label: 'Mantenimiento', sub: 'Caché del servidor', route: 'AdminMaintenanceScreen' },
 ];

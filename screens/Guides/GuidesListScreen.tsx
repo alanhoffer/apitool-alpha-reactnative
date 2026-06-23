@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     FlatList,
     ScrollView,
@@ -14,32 +15,45 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import colors from '../../constants/colors';
 import { palette, fonts } from '../../constants/theme';
-import { APICULTURE_GUIDES, GUIDE_CATEGORIES, GuideItem } from '../../constants/guides';
+import { APICULTURE_GUIDES, GuideItem } from '../../constants/guides';
+import { getGuides } from '../../modules/API/Guides';
 
 const SCREEN_PADDING = 16;
 
 export default function GuidesListScreen({ navigation }: any) {
     const insets = useSafeAreaInsets();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState(GUIDE_CATEGORIES[0]);
+    const [selectedCategory, setSelectedCategory] = useState('Todas');
+    const [guides, setGuides] = useState<GuideItem[]>(APICULTURE_GUIDES);
+
+    useFocusEffect(useCallback(() => {
+        let active = true;
+        getGuides().then((list) => { if (active) setGuides(list); });
+        return () => { active = false; };
+    }, []));
+
+    const categories = useMemo(
+        () => ['Todas', ...Array.from(new Set(guides.map((g) => g.category)))],
+        [guides],
+    );
 
     const filteredGuides = useMemo(() => {
-        return APICULTURE_GUIDES.filter((guide) => {
+        return guides.filter((guide) => {
             const normalizedSearch = searchQuery.toLowerCase().trim();
             const matchesSearch =
                 guide.title.toLowerCase().includes(normalizedSearch) ||
                 guide.description.toLowerCase().includes(normalizedSearch) ||
                 guide.category.toLowerCase().includes(normalizedSearch);
-            const matchesCategory = selectedCategory === GUIDE_CATEGORIES[0] || guide.category === selectedCategory;
+            const matchesCategory = selectedCategory === 'Todas' || guide.category === selectedCategory;
             return matchesSearch && matchesCategory;
         });
-    }, [searchQuery, selectedCategory]);
+    }, [searchQuery, selectedCategory, guides]);
 
     const featuredGuide = filteredGuides[0];
     const regularGuides = featuredGuide ? filteredGuides.slice(1) : [];
 
     const openGuide = (guide: GuideItem) => {
-        navigation.navigate('GuideDetailScreen', { guideId: guide.id, title: guide.title });
+        navigation.navigate('GuideDetailScreen', { guideId: guide.id, title: guide.title, guide });
     };
 
     const renderGuideItem = ({ item }: { item: GuideItem }) => (
@@ -135,7 +149,7 @@ export default function GuidesListScreen({ navigation }: any) {
                         <Text style={styles.heroStatLabel}>guias</Text>
                     </View>
                     <View style={styles.heroStatCard}>
-                        <Text style={styles.heroStatValue}>{GUIDE_CATEGORIES.length - 1}</Text>
+                        <Text style={styles.heroStatValue}>{categories.length - 1}</Text>
                         <Text style={styles.heroStatLabel}>temas</Text>
                     </View>
                 </View>
@@ -165,7 +179,7 @@ export default function GuidesListScreen({ navigation }: any) {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.categoryContainer}
             >
-                {GUIDE_CATEGORIES.map((category) => {
+                {categories.map((category) => {
                     const isActive = selectedCategory === category;
                     return (
                         <TouchableOpacity
@@ -192,7 +206,7 @@ export default function GuidesListScreen({ navigation }: any) {
 
             <View style={styles.resultsHeader}>
                 <Text style={styles.resultsTitle}>
-                    {selectedCategory === GUIDE_CATEGORIES[0] ? 'Todas las guias' : selectedCategory}
+                    {selectedCategory === 'Todas' ? 'Todas las guias' : selectedCategory}
                 </Text>
                 <View style={styles.resultsBadge}>
                     <Text style={styles.resultsBadgeText}>{filteredGuides.length}</Text>
@@ -232,7 +246,7 @@ export default function GuidesListScreen({ navigation }: any) {
                                 style={styles.resetButton}
                                 onPress={() => {
                                     setSearchQuery('');
-                                    setSelectedCategory(GUIDE_CATEGORIES[0]);
+                                    setSelectedCategory('Todas');
                                 }}
                             >
                                 <Text style={styles.resetButtonText}>Ver todas las guias</Text>

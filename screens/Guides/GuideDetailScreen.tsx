@@ -9,8 +9,8 @@ import { getGuideById } from '../../constants/guides';
 
 export default function GuideDetailScreen({ route, navigation }: any) {
     const insets = useSafeAreaInsets();
-    const { guideId, title: fallbackTitle } = route.params || {};
-    const guide = useMemo(() => getGuideById(guideId), [guideId]);
+    const { guideId, title: fallbackTitle, guide: passedGuide } = route.params || {};
+    const guide = useMemo(() => passedGuide || getGuideById(guideId), [passedGuide, guideId]);
     const title = guide?.title || fallbackTitle || 'Guia detallada';
     const description = guide?.description || 'Contenido practico para el manejo diario del apiario.';
     const category = guide?.category || 'Guia';
