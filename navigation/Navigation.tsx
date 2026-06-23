@@ -57,6 +57,9 @@ import GuidesListScreen from '../screens/Guides/GuidesListScreen';
 import GuideDetailScreen from '../screens/Guides/GuideDetailScreen';
 import SubscriptionScreen from '../screens/Subscription/SubscriptionScreen';
 import AdminNewsScreen from '../screens/Admin/AdminNewsScreen';
+import AdminHubScreen from '../screens/Admin/AdminHubScreen';
+import AdminRecommendationsScreen from '../screens/Admin/AdminRecommendationsScreen';
+import AdminMaintenanceScreen from '../screens/Admin/AdminMaintenanceScreen';
 
 const Stack = createNativeStackNavigator<any>();
 const ApiaryStack = createNativeStackNavigator<any>();
@@ -136,7 +139,10 @@ function ProfileNavigator() {
             <ProfileStack.Screen component={SubscriptionScreen as any} name="SubscriptionScreen" />
             <ProfileStack.Screen component={SupportLegalScreen as any} name="SupportLegalScreen" />
             <ProfileStack.Screen component={DeleteAccountScreen as any} name="DeleteAccountScreen" />
+            <ProfileStack.Screen component={AdminHubScreen as any} name="AdminHubScreen" />
             <ProfileStack.Screen component={AdminNewsScreen as any} name="AdminNewsScreen" />
+            <ProfileStack.Screen component={AdminRecommendationsScreen as any} name="AdminRecommendationsScreen" />
+            <ProfileStack.Screen component={AdminMaintenanceScreen as any} name="AdminMaintenanceScreen" />
         </ProfileStack.Navigator>
     );
 }

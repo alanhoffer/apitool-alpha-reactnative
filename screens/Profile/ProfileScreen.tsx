@@ -120,7 +120,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                         <>
                             <Text style={styles.sectionLabel}>Administración</Text>
                             <View style={styles.card}>
-                                <MenuItem icon="newspaper-variant-outline" label="Noticias" subLabel="Crear, editar y borrar noticias" onPress={() => navigation.navigate('AdminNewsScreen')} />
+                                <MenuItem icon="shield-crown-outline" label="Panel de administración" subLabel="Noticias, recomendaciones y mantenimiento" onPress={() => navigation.navigate('AdminHubScreen')} />
                             </View>
                         </>
                     )}
