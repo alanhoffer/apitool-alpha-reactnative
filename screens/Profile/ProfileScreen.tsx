@@ -115,6 +115,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                         <MenuItem icon="cellphone" label="Mis Dispositivos" subLabel="Gestionar sesiones activas" onPress={() => navigation.navigate('DevicesScreen')} />
                     </View>
 
+                    {/* Administración (solo admin) */}
+                    {String(profile?.role).toLowerCase() === 'admin' && (
+                        <>
+                            <Text style={styles.sectionLabel}>Administración</Text>
+                            <View style={styles.card}>
+                                <MenuItem icon="newspaper-variant-outline" label="Noticias" subLabel="Crear, editar y borrar noticias" onPress={() => navigation.navigate('AdminNewsScreen')} />
+                            </View>
+                        </>
+                    )}
+
                     {/* Suscripción */}
                     <Text style={styles.sectionLabel}>Suscripción</Text>
                     <View style={styles.card}>
